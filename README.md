@@ -9,14 +9,6 @@ Auskunfts-Chatbot für Ruhpolding, ganz ohne Backend.
 React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui (Base-UI-Variante,
 Style `base-nova`).
 
-## Start
-
-```bash
-npm run dev        # Entwicklungsserver auf http://localhost:5173
-npm run build      # Produktionsbuild nach dist/
-npm run typecheck  # tsc ohne Emit
-```
-
 ## Aufbau
 
 | Pfad | Inhalt |
