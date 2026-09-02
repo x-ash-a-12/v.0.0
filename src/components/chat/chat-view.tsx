@@ -4,19 +4,32 @@ import { ChatComposer } from "@/components/chat/chat-composer"
 import { ChatHeader } from "@/components/chat/chat-header"
 import { MessageItem } from "@/components/chat/message-item"
 import { QuickReplies } from "@/components/chat/quick-replies"
+import { StreamingBubble } from "@/components/chat/streaming-bubble"
 import { TypingIndicator } from "@/components/chat/typing-indicator"
 import { useChat } from "@/hooks/use-chat"
 
 export function ChatView() {
-  const { messages, activeChips, isTyping, selectChip, sendText, reset } =
-    useChat()
+  const {
+    messages,
+    activeChips,
+    isTyping,
+    streaming,
+    selectChip,
+    sendText,
+    reset,
+  } = useChat()
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
-  }, [messages, isTyping, activeChips])
+    // Während des Streamings hart nachziehen. Eine weiche Animation je
+    // Häppchen käme nie hinterher und würde sichtbar zittern.
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: streaming === null ? "smooth" : "auto",
+    })
+  }, [messages, isTyping, activeChips, streaming])
 
   return (
     <div className="@container flex h-full min-h-0 w-full flex-col overflow-hidden bg-background text-foreground">
@@ -37,9 +50,16 @@ export function ChatView() {
             />
           ))}
 
+          {streaming !== null ? (
+            <StreamingBubble
+              text={streaming}
+              showAvatar={messages[messages.length - 1]?.role !== "bot"}
+            />
+          ) : null}
+
           {isTyping ? <TypingIndicator /> : null}
 
-          {!isTyping && activeChips.length > 0 ? (
+          {!isTyping && streaming === null && activeChips.length > 0 ? (
             <div className="pl-10">
               <QuickReplies chips={activeChips} onSelect={selectChip} />
             </div>

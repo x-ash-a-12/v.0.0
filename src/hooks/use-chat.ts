@@ -17,37 +17,87 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** Tippdauer grob an die Textlänge koppeln, damit es echt wirkt. */
-function typingDelay(text: string) {
-  return Math.min(1600, 450 + text.length * 12)
+/** Zufallswert im Bereich [min, max). */
+function zufall(min: number, max: number) {
+  return min + Math.random() * (max - min)
+}
+
+/** Kurze Denkpause vor jeder Antwort, in der die Punkte laufen. */
+function denkpause() {
+  return zufall(400, 900)
+}
+
+/** Zwei bis fünf Zeichen je Schritt, das trifft die Optik echter Token. */
+function haeppchen() {
+  return Math.floor(zufall(2, 6))
+}
+
+/** Wer Animationen abgewählt hat, bekommt den Text sofort vollständig. */
+function magKeineAnimation() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
 }
 
 export function useChat() {
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
   const [activeChips, setActiveChips] = React.useState<Chip[]>([])
   const [isTyping, setIsTyping] = React.useState(true)
+  /** Die gerade entstehende Nachricht, getrennt von der fertigen Liste. */
+  const [streaming, setStreaming] = React.useState<string | null>(null)
   const runIdRef = React.useRef(0)
 
   const runNode = React.useCallback(async (id: string) => {
     const myRun = runIdRef.current + 1
     runIdRef.current = myRun
+    const aktiv = () => runIdRef.current === myRun
 
     const node = getNode(id)
     setActiveChips([])
+    setStreaming(null)
     setIsTyping(true)
 
-    for (const text of node.messages) {
-      await sleep(typingDelay(text))
-      if (runIdRef.current !== myRun) return
+    const sofort = magKeineAnimation()
+
+    for (let i = 0; i < node.messages.length; i++) {
+      const text = node.messages[i]
+
+      await sleep(denkpause())
+      if (!aktiv()) return
+      setIsTyping(false)
+
+      if (!sofort) {
+        setStreaming("")
+        let pos = 0
+        while (pos < text.length) {
+          await sleep(zufall(20, 35))
+          // Der Abbruch muss innerhalb der Schleife greifen, sonst bleibt
+          // eine halbe Blase stehen.
+          if (!aktiv()) {
+            setStreaming(null)
+            return
+          }
+          pos = Math.min(text.length, pos + haeppchen())
+          setStreaming(text.slice(0, pos))
+        }
+        setStreaming(null)
+      }
+
       setMessages((prev) => [
         ...prev,
         { id: uid(), role: "bot", kind: "text", text },
       ])
+
+      if (i < node.messages.length - 1 || node.card) {
+        setIsTyping(true)
+      }
     }
 
     if (node.card) {
+      setIsTyping(true)
       await sleep(650)
-      if (runIdRef.current !== myRun) return
+      if (!aktiv()) return
       setMessages((prev) => [
         ...prev,
         { id: uid(), role: "bot", kind: "card", card: node.card! },
@@ -55,7 +105,7 @@ export function useChat() {
     }
 
     await sleep(250)
-    if (runIdRef.current !== myRun) return
+    if (!aktiv()) return
     setIsTyping(false)
     setActiveChips(node.chips ?? [])
   }, [])
@@ -88,6 +138,7 @@ export function useChat() {
     runIdRef.current += 1
     setMessages([])
     setActiveChips([])
+    setStreaming(null)
     setIsTyping(false)
     void runNode("start")
   }, [runNode])
@@ -100,5 +151,13 @@ export function useChat() {
   }, [])
   /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
-  return { messages, activeChips, isTyping, selectChip, sendText, reset }
+  return {
+    messages,
+    activeChips,
+    isTyping,
+    streaming,
+    selectChip,
+    sendText,
+    reset,
+  }
 }

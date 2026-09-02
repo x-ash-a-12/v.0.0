@@ -1,3 +1,5 @@
+import * as React from "react"
+
 import { BotAvatar } from "@/components/chat/bot-avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ChatMessage } from "@/hooks/use-chat"
@@ -42,7 +44,14 @@ type MessageItemProps = {
   showAvatar: boolean
 }
 
-export function MessageItem({ message, showAvatar }: MessageItemProps) {
+/**
+ * Memoisiert, damit die gestaffelte Ausgabe einer neuen Nachricht nicht bei
+ * jedem Häppchen die gesamte bisherige Liste neu rendert.
+ */
+export const MessageItem = React.memo(function MessageItem({
+  message,
+  showAvatar,
+}: MessageItemProps) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
@@ -76,4 +85,4 @@ export function MessageItem({ message, showAvatar }: MessageItemProps) {
       </div>
     </div>
   )
-}
+})
