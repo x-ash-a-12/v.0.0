@@ -199,20 +199,46 @@ export const ANREISE = {
   gaestekarteBahnBis: "Traunstein",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Langlauf in Ruhpolding.
+ * Geprüft: https://www.ruhpolding.de/langlaufen, abgerufen 2026-09-03
+ *
+ * Die Seite beschreibt ein "imposantes Loipennetz" und nennt einzelne Loipen
+ * mit Längen, etwa die Drei-Seen-Loipe mit 12,3 km, aber weder eine Summe
+ * noch Preise für einen Loipenpass. Auch die Wintersuche über die Gemeinde
+ * und die Chiemgau Arena hat dazu nichts ergeben.
+ */
 export const LOIPEN = {
-  /** @demo */ netz: "75 km",
-  /** @demo */ spurarten: "klassisch und Skating",
-  /** @demo */ passTag: "5,00 €",
-  /** @demo */ passWoche: "20,00 €",
-  /** @demo */ gaestekarte: "Loipen kostenlos",
+  /** @ungeprueft keine offizielle Gesamtlänge des Netzes gefunden */
+  netz: "75 km",
+  /** @ungeprueft Spurarten auf der Langlaufseite nicht ausgewiesen */
+  spurarten: "klassisch und Skating",
+  /** @ungeprueft kein Preis für einen Loipenpass gefunden */
+  passTag: "5,00 €",
+  /** @ungeprueft siehe passTag */
+  passWoche: "20,00 €",
+  /** @ungeprueft keine Angabe, ob die Chiemgau Karte die Loipen einschließt */
+  gaestekarte: "Loipen kostenlos",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Alpiner Wintersport.
+ * Quelle: https://www.ruhpolding.de/ski-alpin
+ * Abgerufen: 2026-09-03
+ *
+ * Ruhpolding hat drei Skigebiete: Unternberg, Skiarena Westernberg und
+ * Skilift Maiergschwendt.
+ */
 export const WINTER = {
-  /** @demo */ skigebiet: "Westernberg",
-  /** @demo */ sportgeschaeft: "Sport Amort",
-  /** @demo */ langlaufShop: "Langlauf-Shop",
+  skigebiet: "Westernberg",
+  /**
+   * @ungeprueft Die Skiseite nennt keine Verleihbetriebe namentlich. In der
+   * Suche taucht "Sport Plenk" auf, aber nicht im Volltext einer offiziellen
+   * Seite. Siehe Bericht.
+   */
+  sportgeschaeft: "Sport Amort",
+  /** @ungeprueft siehe sportgeschaeft */
+  langlaufShop: "Langlauf-Shop",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
