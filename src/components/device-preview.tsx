@@ -1,5 +1,6 @@
 import * as React from "react"
 import {
+  Download,
   Expand,
   Monitor,
   MonitorSmartphone,
@@ -17,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { StandortContext, STANDORTE } from "@/lib/location"
+import { exportiere } from "@/lib/telemetry"
 import { cn } from "@/lib/utils"
 
 type Device = {
@@ -163,6 +165,18 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
             ))}
           </SelectContent>
         </Select>
+
+        {/* Auswertung der Tests, ebenfalls Werkzeug des Versuchsleiters. */}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={exportiere}
+          className="ml-auto shrink-0 gap-1.5 text-muted-foreground"
+        >
+          <Download className="size-3.5" />
+          <span className="hidden sm:inline">Protokoll</span>
+        </Button>
       </div>
 
       <StandortContext.Provider value={standort}>

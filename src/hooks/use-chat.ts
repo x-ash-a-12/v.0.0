@@ -14,6 +14,7 @@ import {
 import { fallbackKnoten } from "@/lib/fallback"
 import { aufloesen, useStandort } from "@/lib/location"
 import { type Sprache } from "@/lib/sprache"
+import { protokolliere } from "@/lib/telemetry"
 import {
   erkenneSprache,
   uebersetze,
@@ -98,11 +99,24 @@ export function useChat() {
 
     const roh = typeof ziel === "string" ? getNode(ziel) : ziel
     const node = uebersetze(roh, spracheRef.current)
+
     setActiveChips([])
     setStreaming(null)
     setIsTyping(true)
 
     const sofort = magKeineAnimation()
+
+    // Die Denkpause der ersten Nachricht steht vor allem, was Zustand
+    // verändert. Ein Lauf, den der nächste Klick sofort ablöst, darf weder
+    // im Gedächtnis noch im Protokoll auftauchen.
+    await sleep(denkpause())
+    if (!aktiv()) return
+
+    protokolliere({
+      art: "antwort",
+      knoten: node.id,
+      standort: standortRef.current.id,
+    })
 
     const verlauf = verlaufRef.current
     // Beim zweiten Mal die kurze Fassung, statt dieselbe Textwand noch
@@ -127,8 +141,11 @@ export function useChat() {
     for (let i = 0; i < nachrichten.length; i++) {
       const text = nachrichten[i]
 
-      await sleep(denkpause())
-      if (!aktiv()) return
+      // Die Pause der ersten Nachricht ist oben schon vergangen.
+      if (i > 0) {
+        await sleep(denkpause())
+        if (!aktiv()) return
+      }
       setIsTyping(false)
 
       if (!sofort) {
@@ -186,6 +203,7 @@ export function useChat() {
 
   const selectChip = React.useCallback(
     (chip: Chip) => {
+      protokolliere({ art: "chip", text: chip.label, knoten: chip.to })
       setMessages((prev) => [
         ...prev,
         { id: uid(), role: "user", kind: "text", text: chip.label },
@@ -213,6 +231,8 @@ export function useChat() {
       }
 
       const ergebnis = matchIntent(text)
+      protokolliere({ art: "eingabe", text, treffer: ergebnis.kind })
+
       if (ergebnis.kind === "hit") {
         void runNode(ergebnis.to)
       } else if (ergebnis.kind === "ambiguous") {
@@ -231,6 +251,7 @@ export function useChat() {
   )
 
   const reset = React.useCallback(() => {
+    protokolliere({ art: "reset" })
     runIdRef.current += 1
     verlaufRef.current = neuerVerlauf()
     spracheRef.current = "de"
