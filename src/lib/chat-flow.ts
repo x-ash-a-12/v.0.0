@@ -93,14 +93,6 @@ export const FLOW: Record<string, FlowNode> = {
     chips: menuChips,
   },
 
-  fallback: {
-    id: "fallback",
-    messages: [
-      "Das habe ich leider nicht verstanden. Ich bin ein Prototyp mit vorgegebenen Themen. Wähle am besten eines davon aus:",
-    ],
-    chips: menuChips,
-  },
-
   danke: {
     id: "danke",
     messages: [
@@ -423,16 +415,27 @@ const INTENTS: Intent[] = [
   { test: /hallo|grüß|servus|\bhi\b|\bhey\b|guten (tag|morgen|abend)|moin/i, to: "menu" },
 ]
 
-/** Ordnet freien Text einem Knoten zu, sonst dem Fallback. */
-export function matchIntent(text: string): string {
+/** Ordnet freien Text einem Knoten zu, oder null, wenn nichts greift. */
+export function matchIntent(text: string): string | null {
   for (const intent of INTENTS) {
     if (intent.test.test(text)) {
       return intent.to
     }
   }
-  return "fallback"
+  return null
+}
+
+/**
+ * Notknoten für unbekannte IDs. Freier Text landet nicht mehr hier, dafür
+ * sorgt fallback.ts. Diesen Knoten sieht nur, wer eine ID ansteuert, die es
+ * nicht gibt, also im Fall eines Programmierfehlers.
+ */
+const NOTKNOTEN: FlowNode = {
+  id: "notknoten",
+  messages: ["Da ist mir etwas dazwischengekommen. Wähle am besten ein Thema."],
+  chips: menuChips,
 }
 
 export function getNode(id: string): FlowNode {
-  return FLOW[id] ?? FLOW.fallback
+  return FLOW[id] ?? NOTKNOTEN
 }

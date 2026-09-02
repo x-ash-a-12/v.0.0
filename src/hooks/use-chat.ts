@@ -1,6 +1,13 @@
 import * as React from "react"
 
-import { getNode, matchIntent, type Chip, type InfoCard } from "@/lib/chat-flow"
+import {
+  getNode,
+  matchIntent,
+  type Chip,
+  type FlowNode,
+  type InfoCard,
+} from "@/lib/chat-flow"
+import { fallbackKnoten } from "@/lib/fallback"
 
 export type ChatMessage =
   | { id: string; role: "user"; kind: "text"; text: string }
@@ -48,12 +55,13 @@ export function useChat() {
   const [streaming, setStreaming] = React.useState<string | null>(null)
   const runIdRef = React.useRef(0)
 
-  const runNode = React.useCallback(async (id: string) => {
+  /** Nimmt eine Knoten-ID oder einen zur Laufzeit gebauten Knoten. */
+  const runNode = React.useCallback(async (ziel: string | FlowNode) => {
     const myRun = runIdRef.current + 1
     runIdRef.current = myRun
     const aktiv = () => runIdRef.current === myRun
 
-    const node = getNode(id)
+    const node = typeof ziel === "string" ? getNode(ziel) : ziel
     setActiveChips([])
     setStreaming(null)
     setIsTyping(true)
@@ -129,7 +137,8 @@ export function useChat() {
         ...prev,
         { id: uid(), role: "user", kind: "text", text },
       ])
-      void runNode(matchIntent(text))
+      const ziel = matchIntent(text)
+      void runNode(ziel ?? fallbackKnoten(text))
     },
     [runNode],
   )
