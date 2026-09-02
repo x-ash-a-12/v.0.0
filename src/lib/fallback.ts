@@ -4,6 +4,7 @@ import {
   type Chip,
   type FlowNode,
 } from "@/lib/chat-flow"
+import { leitbegriff, STOPWOERTER, zerlege } from "@/lib/sprache"
 
 /**
  * Weicher zweiter Durchgang, wenn kein INTENTS-Muster gegriffen hat.
@@ -15,20 +16,6 @@ import {
  */
 
 export type WeicherTreffer = { topic: string; label: string; score: number }
-
-/** Übliche deutsche Füllwörter, die nichts über das Thema aussagen. */
-const STOPWOERTER = new Set([
-  "ich", "du", "wo", "was", "wie", "kann", "gibt", "es", "der", "die", "das",
-  "ein", "eine", "einen", "einem", "und", "oder", "mit", "für", "bei", "nach",
-  "von", "zu", "in", "am", "im", "auf", "ist", "sind", "hab", "habe", "gerne",
-  "bitte", "mal", "denn", "noch", "dem", "den", "des", "hin", "her", "man",
-  "mir", "mich", "sich", "wir", "ihr", "sie", "er", "uns", "euch", "aber",
-  "auch", "wann", "warum", "welche", "welcher", "welches", "gehen", "geht",
-  "machen", "macht", "sein", "seid", "wird", "werden", "würde", "könnte",
-  "möchte", "will", "soll", "muss", "darf", "dort", "hier", "heute", "morgen",
-  "etwas", "nichts", "viel", "sehr", "schon", "nur", "also", "dann", "wenn",
-  "weil", "dass", "als", "aus", "über", "unter", "vor", "hinter", "neben",
-])
 
 /**
  * Stichwörter je Thema, als Wortstämme. Sie werden als Teilstring geprüft,
@@ -78,23 +65,6 @@ const STICHWOERTER: Record<string, string[]> = {
   ],
 }
 
-/** Fließtextform je Thema, damit die Rückfrage nicht nach Menü klingt. */
-const SATZFORM: Record<string, string> = {
-  wandern: "Wandern und die Bergbahnen",
-  events: "Veranstaltungen im Ort",
-  anreise: "Anreise und Parken",
-  wetter: "das Wetter",
-  essen: "Essen und Einkehr",
-  familie: "Angebote für Familien",
-  winter: "Winter und Langlauf",
-  unterkunft: "eine Unterkunft",
-  info: "die Tourist-Information",
-}
-
-function zerlege(text: string): string[] {
-  return text.toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean)
-}
-
 /** Themen nach Stichworttreffern sortiert, höchstens die besten zwei. */
 export function weicheSuche(text: string): WeicherTreffer[] {
   const woerter = zerlege(text).filter((wort) => !STOPWOERTER.has(wort))
@@ -119,22 +89,6 @@ export function weicheSuche(text: string): WeicherTreffer[] {
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 2)
-}
-
-/**
- * Das längste inhaltstragende Wort, in der Schreibweise der Eingabe.
- *
- * Der Plan nennt "mehr als vier Zeichen". Die Schwelle liegt hier bei vier,
- * sonst fiele das Beispiel aus dem Akzeptanzkriterium ("Hund") heraus.
- */
-export function leitbegriff(text: string): string | null {
-  let beste: string | null = null
-  for (const wort of text.match(/[a-zA-ZäöüÄÖÜß]+/g) ?? []) {
-    if (wort.length < 4) continue
-    if (STOPWOERTER.has(wort.toLowerCase())) continue
-    if (!beste || wort.length > beste.length) beste = wort
-  }
-  return beste
 }
 
 /* Formulierungen. Je Fall mindestens vier, damit sich im selben Gespräch
@@ -182,6 +136,10 @@ const NICHTS_OHNE_BEGRIFF = [
   `Da muss ich passen. Frag gern noch einmal anders, oder wähle eines der Themen.`,
 ]
 
+function satzform(topic: string | undefined): string {
+  return TOPICS.find((eintrag) => eintrag.id === topic)?.satz ?? ""
+}
+
 function fuelle(
   vorlage: string,
   begriff: string | null,
@@ -189,8 +147,8 @@ function fuelle(
 ): string {
   return vorlage
     .replace("{begriff}", begriff ?? "")
-    .replace("{a}", SATZFORM[treffer[0]?.topic] ?? "")
-    .replace("{b}", SATZFORM[treffer[1]?.topic] ?? "")
+    .replace("{a}", satzform(treffer[0]?.topic))
+    .replace("{b}", satzform(treffer[1]?.topic))
 }
 
 /**

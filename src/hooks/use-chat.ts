@@ -3,6 +3,7 @@ import * as React from "react"
 import {
   getNode,
   matchIntent,
+  rueckfrageKnoten,
   ueberbrueckung,
   type Chip,
   type FlowNode,
@@ -145,8 +146,14 @@ export function useChat() {
         ...prev,
         { id: uid(), role: "user", kind: "text", text },
       ])
-      const ziel = matchIntent(text)
-      void runNode(ziel ?? fallbackKnoten(text))
+      const ergebnis = matchIntent(text)
+      if (ergebnis.kind === "hit") {
+        void runNode(ergebnis.to)
+      } else if (ergebnis.kind === "ambiguous") {
+        void runNode(rueckfrageKnoten(ergebnis.candidates, ergebnis.term))
+      } else {
+        void runNode(fallbackKnoten(text))
+      }
     },
     [runNode],
   )

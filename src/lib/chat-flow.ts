@@ -11,6 +11,7 @@ import {
   BedDouble,
 } from "lucide-react"
 
+import { leitbegriff } from "@/lib/sprache"
 import {
   ANREISE,
   BERGBAHNEN,
@@ -58,19 +59,69 @@ export type FlowNode = {
 export type Topic = {
   id: string
   label: string
+  /**
+   * Fließtextform für Rückfragen. Das Chip-Label liest sich mitten im Satz
+   * wie ein Menüeintrag, diese Form nicht.
+   */
+  satz: string
   icon: LucideIcon
 }
 
 export const TOPICS: Topic[] = [
-  { id: "wandern", label: "Wandern & Bergbahnen", icon: Mountain },
-  { id: "events", label: "Veranstaltungen", icon: CalendarDays },
-  { id: "anreise", label: "Anreise & Parken", icon: Bus },
-  { id: "wetter", label: "Wetter & Bergwetter", icon: CloudSun },
-  { id: "essen", label: "Essen & Einkehr", icon: Utensils },
-  { id: "familie", label: "Mit Kindern unterwegs", icon: Users },
-  { id: "winter", label: "Winter & Langlauf", icon: Snowflake },
-  { id: "unterkunft", label: "Übernachten", icon: BedDouble },
-  { id: "info", label: "Tourist-Information", icon: Info },
+  {
+    id: "wandern",
+    label: "Wandern & Bergbahnen",
+    satz: "Wandern und die Bergbahnen",
+    icon: Mountain,
+  },
+  {
+    id: "events",
+    label: "Veranstaltungen",
+    satz: "Veranstaltungen im Ort",
+    icon: CalendarDays,
+  },
+  {
+    id: "anreise",
+    label: "Anreise & Parken",
+    satz: "Anreise und Parken",
+    icon: Bus,
+  },
+  {
+    id: "wetter",
+    label: "Wetter & Bergwetter",
+    satz: "das Wetter",
+    icon: CloudSun,
+  },
+  {
+    id: "essen",
+    label: "Essen & Einkehr",
+    satz: "Essen und Einkehr",
+    icon: Utensils,
+  },
+  {
+    id: "familie",
+    label: "Mit Kindern unterwegs",
+    satz: "Angebote für Familien",
+    icon: Users,
+  },
+  {
+    id: "winter",
+    label: "Winter & Langlauf",
+    satz: "Winter und Langlauf",
+    icon: Snowflake,
+  },
+  {
+    id: "unterkunft",
+    label: "Übernachten",
+    satz: "eine Unterkunft",
+    icon: BedDouble,
+  },
+  {
+    id: "info",
+    label: "Tourist-Information",
+    satz: "die Tourist-Information",
+    icon: Info,
+  },
 ]
 
 const menuChips: Chip[] = TOPICS.map((topic) => ({
@@ -417,48 +468,165 @@ export const FLOW: Record<string, FlowNode> = {
   },
 }
 
-type Intent = { test: RegExp; to: string }
+type Intent = { test: RegExp; to: string; topic: string }
+
+/**
+ * Begrüßung und Dank sind kein Thema im Sinne der Themenauswahl. Treffen sie
+ * zusammen mit einem echten Thema, entscheidet das echte Thema, sonst würde
+ * "Danke, wo kann ich parken?" zur Rückfrage.
+ */
+const SMALLTALK = "smalltalk"
 
 /** Reihenfolge zählt: spezielle Muster vor allgemeinen. */
 const INTENTS: Intent[] = [
-  { test: /danke|vielen dank|passt|super|klasse|top\b/i, to: "danke" },
-  { test: /biathlon|weltcup|arena/i, to: "events-biathlon" },
-  { test: /webcam|kamera/i, to: "wetter-webcam" },
-  { test: /park(en|platz|haus)?|wohnmobil|stellplatz/i, to: "anreise-parken" },
-  { test: /\bbus\b|ortsbus|öpnv|gästekarte|gastkarte|guest/i, to: "anreise-bus" },
-  { test: /loipe|loipenpass/i, to: "winter-loipe" },
-  { test: /verleih|ausleih|mieten/i, to: "winter-verleih" },
-  { test: /bauernhof|hof\b/i, to: "unterkunft-hof" },
-  { test: /barrierefrei|rollstuhl|reisen für alle/i, to: "unterkunft-barrierefrei" },
-  { test: /wickel|stillen|baby/i, to: "familie-baby" },
-  { test: /spielplatz/i, to: "essen-huette" },
-  { test: /ruhetag|geschlossen/i, to: "essen-ruhetag" },
+  { test: /danke|vielen dank|passt|super|klasse|top\b/i, to: "danke", topic: SMALLTALK },
+  { test: /biathlon|weltcup|arena/i, to: "events-biathlon", topic: "events" },
+  { test: /webcam|kamera/i, to: "wetter-webcam", topic: "wetter" },
+  { test: /park(en|platz|haus)?|wohnmobil|stellplatz/i, to: "anreise-parken", topic: "anreise" },
+  { test: /\bbus\b|ortsbus|öpnv|gästekarte|gastkarte|guest/i, to: "anreise-bus", topic: "anreise" },
+  { test: /loipe|loipenpass/i, to: "winter-loipe", topic: "winter" },
+  { test: /verleih|ausleih|mieten/i, to: "winter-verleih", topic: "winter" },
+  // Wortgrenze auch vorn, sonst gilt jeder Bahnhof als Bauernhof.
+  { test: /bauernhof|\bhof\b/i, to: "unterkunft-hof", topic: "unterkunft" },
+  { test: /barrierefrei|rollstuhl|reisen für alle/i, to: "unterkunft-barrierefrei", topic: "unterkunft" },
+  { test: /wickel|stillen|baby/i, to: "familie-baby", topic: "familie" },
+  { test: /spielplatz/i, to: "essen-huette", topic: "essen" },
+  { test: /ruhetag|geschlossen/i, to: "essen-ruhetag", topic: "essen" },
   {
     test: /wander|tour\b|wandern|gipfel|rauschberg|unternberg|sonntagshorn|bergbahn|gondel|seilbahn|sessel(bahn|lift)|hütte|hüttenwanderung/i,
     to: "wandern",
+    topic: "wandern",
   },
-  { test: /event|veranstalt|konzert|markt|programm|was ist los|heute abend/i, to: "events" },
-  { test: /anreise|anfahrt|autobahn|\ba8\b|\bzug\b|bahn|münchen|route|navigation|wie komme ich/i, to: "anreise" },
-  { test: /wetter|regen|sonne|temperatur|gewitter|prognose|vorhersage|schnee(lage)?/i, to: "wetter" },
-  { test: /essen|restaurant|gasthaus|einkehr|hunger|pizzeria|wirt|frühstück|kulinar/i, to: "essen" },
-  { test: /kind(er)?|familie|freizeitpark|vitalwelt|schwimmbad/i, to: "familie" },
-  { test: /winter|langlauf|ski\b|skifahren|rodel|schlitten|eislauf/i, to: "winter" },
-  { test: /übernacht|unterkunft|hotel|ferienwohnung|zimmer|pension|schlafen|apartment/i, to: "unterkunft" },
+  {
+    test: /event|veranstalt|konzert|markt|programm|was ist los|heute abend/i,
+    to: "events",
+    topic: "events",
+  },
+  {
+    // "bahn" mit Wortgrenze, sonst zieht jede Bergbahn, Seilbahn und
+    // Sesselbahn das Thema Anreise in die Frage hinein.
+    test: /anreise|anfahrt|autobahn|\ba8\b|\bzug\b|bahnhof|\bbahn\b|münchen|route|navigation|wie komme ich/i,
+    to: "anreise",
+    topic: "anreise",
+  },
+  {
+    test: /wetter|regen|sonne|temperatur|gewitter|prognose|vorhersage|schnee(lage)?/i,
+    to: "wetter",
+    topic: "wetter",
+  },
+  {
+    test: /essen|restaurant|gasthaus|einkehr|hunger|pizzeria|wirt|frühstück|kulinar/i,
+    to: "essen",
+    topic: "essen",
+  },
+  {
+    // Wortgrenze hinter der Endung, sonst zieht "Kinderwagen" das Thema
+    // Familie in eine Wanderfrage hinein und macht sie künstlich mehrdeutig.
+    test: /kind(er|ern)?\b|familie|freizeitpark|vitalwelt|schwimmbad/i,
+    to: "familie",
+    topic: "familie",
+  },
+  {
+    test: /winter|langlauf|ski\b|skifahren|rodel|schlitten|eislauf/i,
+    to: "winter",
+    topic: "winter",
+  },
+  {
+    test: /übernacht|unterkunft|hotel|ferienwohnung|zimmer|pension|schlafen|apartment/i,
+    to: "unterkunft",
+    topic: "unterkunft",
+  },
   {
     test: /öffnungszeit|kontakt|telefon|adresse|erreichen|tourist.?info|e-?mail|anschrift/i,
     to: "info",
+    topic: "info",
   },
-  { test: /hallo|grüß|servus|\bhi\b|\bhey\b|guten (tag|morgen|abend)|moin/i, to: "menu" },
+  {
+    test: /hallo|grüß|servus|\bhi\b|\bhey\b|guten (tag|morgen|abend)|moin/i,
+    to: "menu",
+    topic: SMALLTALK,
+  },
 ]
 
-/** Ordnet freien Text einem Knoten zu, oder null, wenn nichts greift. */
-export function matchIntent(text: string): string | null {
-  for (const intent of INTENTS) {
-    if (intent.test.test(text)) {
-      return intent.to
-    }
+export type MatchResult =
+  | { kind: "hit"; to: string }
+  | { kind: "ambiguous"; candidates: Chip[]; term: string | null }
+  | { kind: "miss"; term: string | null }
+
+/**
+ * Ordnet freien Text zu. Anders als früher bricht die Suche nicht beim ersten
+ * Treffer ab: greifen Muster aus mehreren Themen, ist die Eingabe mehrdeutig
+ * und wird zur Rückfrage, statt stillschweigend das erste Thema zu nehmen.
+ */
+export function matchIntent(text: string): MatchResult {
+  const treffer = INTENTS.filter((intent) => intent.test.test(text))
+  const term = leitbegriff(text)
+
+  const inhaltlich = treffer.filter((intent) => intent.topic !== SMALLTALK)
+  const relevant = inhaltlich.length > 0 ? inhaltlich : treffer
+
+  if (relevant.length === 0) return { kind: "miss", term }
+
+  // Set erhält die Reihenfolge des ersten Auftretens, also die des
+  // spezifischsten Musters.
+  const themen = [...new Set(relevant.map((intent) => intent.topic))]
+  if (themen.length === 1) return { kind: "hit", to: relevant[0].to }
+
+  const candidates: Chip[] = themen.slice(0, 3).map((thema) => ({
+    label: TOPICS.find((topic) => topic.id === thema)?.label ?? thema,
+    // Ziel ist der spezifischste Knoten dieses Themas, nicht der
+    // Themeneinstieg. So landet die Testperson direkt bei ihrer Frage.
+    to: relevant.find((intent) => intent.topic === thema)!.to,
+  }))
+
+  return { kind: "ambiguous", candidates, term }
+}
+
+/* Rückfrage bei Mehrdeutigkeit. */
+
+const RUECKFRAGEN = [
+  "Damit ich dir das Richtige raussuche: geht es dir um {themen}?",
+  "Das kann ich unterschiedlich verstehen. Meinst du {themen}?",
+  "Kurze Rückfrage, damit ich nichts Falsches zeige: {themen}?",
+  "Da gibt es mehrere Richtungen. Soll ich dir {themen} zeigen?",
+] as const
+
+/** Nur wenn ein Leitbegriff vorliegt, sonst bliebe der Platzhalter leer. */
+const RUECKFRAGEN_MIT_BEGRIFF = [
+  "Bei „{begriff}“ bin ich nicht sicher, worauf du hinauswillst: {themen}?",
+  "„{begriff}“ kann ich hier zweierlei verstehen. Geht es dir um {themen}?",
+  "Damit ich „{begriff}“ richtig einordne: {themen}?",
+] as const
+
+/** "A oder B", bei dreien "A, B oder C". */
+function aufzaehlung(teile: string[]): string {
+  if (teile.length <= 1) return teile[0] ?? ""
+  return `${teile.slice(0, -1).join(", ")} oder ${teile[teile.length - 1]}`
+}
+
+/** Die Rückfrage als fertiger Knoten, mit den Kandidaten als Chips. */
+export function rueckfrageKnoten(
+  candidates: Chip[],
+  term: string | null,
+): FlowNode {
+  const themen = aufzaehlung(
+    candidates.map(
+      (chip) =>
+        TOPICS.find((topic) => chip.to.startsWith(topic.id))?.satz ?? chip.label,
+    ),
+  )
+
+  const vorlage = waehleVariante(
+    term ? [...RUECKFRAGEN, ...RUECKFRAGEN_MIT_BEGRIFF] : RUECKFRAGEN,
+  )
+
+  return {
+    id: "rueckfrage-mehrdeutig",
+    messages: [
+      vorlage.replace("{themen}", themen).replace("{begriff}", term ?? ""),
+    ],
+    chips: [...candidates, { label: "Andere Frage", to: "menu" }],
   }
-  return null
 }
 
 /**
