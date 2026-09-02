@@ -8,6 +8,7 @@ import {
   type Chip,
   type FlowNode,
   type InfoCard,
+  type QrPayload,
 } from "@/lib/chat-flow"
 import { fallbackKnoten } from "@/lib/fallback"
 import { aufloesen, useStandort } from "@/lib/location"
@@ -16,6 +17,7 @@ export type ChatMessage =
   | { id: string; role: "user"; kind: "text"; text: string }
   | { id: string; role: "bot"; kind: "text"; text: string }
   | { id: string; role: "bot"; kind: "card"; card: InfoCard }
+  | { id: string; role: "bot"; kind: "qr"; qr: QrPayload }
 
 let counter = 0
 function uid() {
@@ -116,7 +118,7 @@ export function useChat() {
         { id: uid(), role: "bot", kind: "text", text },
       ])
 
-      if (i < nachrichten.length - 1 || node.card) {
+      if (i < nachrichten.length - 1 || node.card || node.qr) {
         setIsTyping(true)
       }
     }
@@ -128,6 +130,16 @@ export function useChat() {
       setMessages((prev) => [
         ...prev,
         { id: uid(), role: "bot", kind: "card", card: node.card! },
+      ])
+    }
+
+    if (node.qr) {
+      setIsTyping(true)
+      await sleep(zufall(600, 1000))
+      if (!aktiv()) return
+      setMessages((prev) => [
+        ...prev,
+        { id: uid(), role: "bot", kind: "qr", qr: node.qr! },
       ])
     }
 

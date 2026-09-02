@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { BotAvatar } from "@/components/chat/bot-avatar"
+import { QrCard } from "@/components/chat/qr-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ChatMessage } from "@/hooks/use-chat"
 import type { InfoCard } from "@/lib/chat-flow"
@@ -79,8 +80,10 @@ export const MessageItem = React.memo(function MessageItem({
           <div className={cn(bubbleBase, "rounded-bl-sm bg-muted text-foreground")}>
             {message.text}
           </div>
-        ) : (
+        ) : message.kind === "card" ? (
           <InfoCardView card={message.card} />
+        ) : (
+          <QrCard qr={message.qr} />
         )}
       </div>
     </div>

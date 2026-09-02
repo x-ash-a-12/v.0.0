@@ -40,6 +40,23 @@ export type InfoCard = {
   note?: string
 }
 
+/** Ein QR-Code zum Mitnehmen auf das eigene Gerät. */
+export type QrPayload = {
+  title: string
+  hint: string
+  url: string
+}
+
+/**
+ * Google-Maps-Suchabfrage für ein Ziel in Ruhpolding. Das ist keine erfundene
+ * Tatsache, sondern eine Abfrage, die die Karte selbst beantwortet.
+ */
+function mapsSuche(ziel: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${ziel} Ruhpolding`,
+  )}`
+}
+
 /** Ein Knoten im vordefinierten Gesprächsbaum. */
 export type FlowNode = {
   id: string
@@ -53,6 +70,8 @@ export type FlowNode = {
    * plausibel wirkt.
    */
   bridge?: boolean
+  /** Wird als eigene Karte mit QR-Code unter die Antwort gehängt. */
+  qr?: QrPayload
 }
 
 /** Thema für die Startauswahl und das Menü. */
@@ -205,6 +224,11 @@ export const FLOW: Record<string, FlowNode> = {
     messages: [
       `Für den Kinderwagen eignet sich der Rundweg am ${WANDERN.foerchensee} (${WANDERN.foerchenseeRunde}) oder der ${WANDERN.uferwegTraun}. Beide sind ganzjährig begehbar und brauchen keine Bergausrüstung.`,
     ],
+    qr: {
+      title: `Weg zum ${WANDERN.foerchensee}`,
+      hint: "Scanne den Code, um die Route mitzunehmen.",
+      url: mapsSuche(WANDERN.foerchensee),
+    },
     chips: backChips("wandern"),
   },
   "wandern-schwer": {
@@ -212,6 +236,11 @@ export const FLOW: Record<string, FlowNode> = {
     messages: [
       `Anspruchsvoll ist der Aufstieg auf das ${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe}), den höchsten Berg der Chiemgauer Alpen. Gehzeit ${WANDERN.sonntagshornGehzeit} ab dem ${WANDERN.sonntagshornStart}, festes Schuhwerk und Trittsicherheit vorausgesetzt.`,
     ],
+    qr: {
+      title: `Weg zum ${WANDERN.sonntagshornStart}`,
+      hint: "Scanne den Code, um den Startpunkt mitzunehmen.",
+      url: mapsSuche(WANDERN.sonntagshornStart),
+    },
     chips: backChips("wandern"),
   },
   "bergbahn-preise": {
@@ -256,6 +285,11 @@ export const FLOW: Record<string, FlowNode> = {
     messages: [
       `Der ${EVENTS.biathlonName} findet ${EVENTS.biathlonTermin} in der ${EVENTS.chiemgauArena} statt. Tickets gibt es online und an der Tageskasse. Vom Ortszentrum fährt ein kostenloser Skibus im ${EVENTS.skibusTakt} zur Arena, von hier sind es {naehe:arena}.`,
     ],
+    qr: {
+      title: `Weg zur ${EVENTS.chiemgauArena}`,
+      hint: "Scanne den Code, um die Route mitzunehmen.",
+      url: mapsSuche(EVENTS.chiemgauArena),
+    },
     chips: backChips("events"),
   },
   "events-woche": {
@@ -292,6 +326,11 @@ export const FLOW: Record<string, FlowNode> = {
         { label: "Wohnmobile", value: PARKEN.wohnmobile },
       ],
       note: PARKEN.gaestekarteHinweis,
+    },
+    qr: {
+      title: `Weg zum ${PARKEN.rathaus}`,
+      hint: "Scanne den Code, um dich hinführen zu lassen.",
+      url: mapsSuche(PARKEN.rathaus),
     },
     chips: backChips("anreise"),
   },
