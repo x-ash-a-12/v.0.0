@@ -30,28 +30,56 @@ export const TOURIST_INFO = {
   kartenhinweis: "Stand: 3. September 2026, Angaben ohne Gewähr.",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Bergbahnen Ruhpolding, Sommerbetrieb.
+ *
+ * Quelle Unternberg: https://meinebergwelt.de/preise-oeffnungszeiten-sessellift/
+ * Quelle Rauschberg: https://www.ruhpolding.de/rauschberg-bahn
+ * Abgerufen: 2026-09-03
+ *
+ * ACHTUNG: Die Rauschbergbahn fährt nicht. Die Betreiberseite von Ruhpolding
+ * Tourismus schreibt: "Aufgrund eines geplanten Neubaus der Rauschbergbahn ist
+ * auf unbestimmte Zeit kein Fahrbetrieb möglich." Es gibt dort folglich weder
+ * Preise noch Betriebszeiten. Die frühere Betreiberdomain rauschbergbahn.com
+ * leitet inzwischen auf eine fremde Seite um und ist keine Quelle mehr.
+ *
+ * Die Sommerbetriebszeiten des Unternbergs gelten laut Quelle für den
+ * Zeitraum 29. Juni bis 14. September.
+ */
 export const BERGBAHNEN = {
-  /** @demo */ rauschbergName: "Rauschberg",
-  /** @demo */ rauschbergBahn: "Gondelbahn",
-  /** @demo */ rauschbergBahnEn: "gondola",
-  /** @demo */ unternbergName: "Unternberg",
-  /** @demo */ unternbergBahn: "Sesselbahn",
-  /** @demo */ unternbergBahnEn: "chairlift",
-  /** @demo */ rauschbergErwachsen: "24,00 €",
-  /** @demo */ unternbergErwachsen: "19,50 €",
-  /** @demo */ kinderAlter: "6 bis 15 Jahre",
-  /** @demo */ ermaessigungKinder: "50 % Ermäßigung",
-  /** @demo */ ermaessigungGaestekarte: "20 % Ermäßigung",
+  rauschbergName: "Rauschberg",
+  /** @ungeprueft Bauart nicht belegt, die Bahn ist außer Betrieb. */
+  rauschbergBahn: "Gondelbahn",
+  /** @ungeprueft siehe rauschbergBahn */
+  rauschbergBahnEn: "gondola",
+  unternbergName: "Unternberg",
+  /** Ruhpolding Tourismus führt sie als "Unternberg Sesselbahn". */
+  unternbergBahn: "Sesselbahn",
+  unternbergBahnEn: "chairlift",
+  /** @ungeprueft kein Fahrbetrieb, es gibt derzeit keinen Preis. */
+  rauschbergErwachsen: "24,00 €",
+  /** Berg- und Talfahrt Erwachsene. */
+  unternbergErwachsen: "19,50 €",
+  /** Die Quelle fasst Kinder und Jugendliche zusammen. */
+  kinderAlter: "5 bis 17 Jahre",
+  /** Eigener Preis statt Prozentsatz: Berg- und Talfahrt 13,00 €. */
+  ermaessigungKinder: "13,00 €",
+  /**
+   * @ungeprueft Die Quelle nennt nur die Ruhpoldinger Bürgerkarte mit 50 %,
+   * keine Ermäßigung auf die Gästekarte. Siehe Bericht.
+   */
+  ermaessigungGaestekarte: "20 % Ermäßigung",
   /*
    * Zeiten ohne Sprachbestandteil, damit die deutsche und die englische
    * Fassung sie gleichermaßen einsetzen können.
    */
-  /** @demo */ betriebSommerVon: "9:00",
-  /** @demo */ betriebSommerBis: "16:30",
-  /** @demo */ letzteBergfahrt: "16:00",
-  /** @demo Fußnote der Preiskarte, entfällt sobald die Preise belegt sind. */
-  kartenhinweis: "Preise nur zu Demonstrationszwecken.",
+  betriebSommerVon: "10",
+  betriebSommerBis: "18",
+  /** Die Quelle schreibt "halbe Stunde vor Schließung", also 17:30 Uhr. */
+  letzteBergfahrt: "17:30",
+  /** Fußnote der Preiskarte. */
+  kartenhinweis:
+    "Unternberg, Stand 3. September 2026. Für den Rauschberg gibt es wegen des Bahnneubaus derzeit keinen Fahrbetrieb.",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
