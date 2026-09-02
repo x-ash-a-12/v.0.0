@@ -241,26 +241,52 @@ export const WINTER = {
   langlaufShop: "Langlauf-Shop",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Wiederkehrende Veranstaltungen.
+ * Quelle Biathlon: https://www.biathlonworld.com/venue/RUH (Veranstalter IBU)
+ * Quelle Arena: https://www.chiemgau-arena.de/
+ * Abgerufen: 2026-09-03
+ *
+ * Zum Namen: Die IBU führt den kommenden Weltcup als "LaVita IBU World Cup
+ * Biathlon", die Arena-Startseite nennt noch die Ausgabe 2026 als "BMW IBU
+ * World Cup Biathlon Ruhpolding 2026". Hier steht die Fassung des
+ * Veranstalters. Der Namenssponsor wechselt, der Wert altert also.
+ *
+ * Geprüft, aber ohne Angabe geblieben: https://www.ruhpolding.de/veranstaltungen
+ * verweist nur auf den Veranstaltungskalender, ohne feste Termine zu nennen.
+ */
 export const EVENTS = {
-  /** @demo */ chiemgauArena: "Chiemgau Arena",
-  /** @demo */ kurpark: "Kurpark",
-  /** @demo */ rathausplatz: "Rathausplatz",
-  /** @demo */ biathlonKurz: "Biathlon-Weltcup",
-  /** @demo */ biathlonKurzEn: "biathlon world cup",
-  /** @demo */ biathlonName: "BMW IBU Weltcup Biathlon",
-  /** @demo */ biathlonMonat: "im Januar",
-  /** @demo */ biathlonMonatEn: "in January",
-  /** @demo */ biathlonTermin: "vom 8. bis 12. Januar",
-  /** @demo */ skibusTakt: "15-Minuten-Takt",
-  /** @demo */ sommerkonzerte: "Ruhpoldinger Sommerkonzerte",
-  /** @demo */ sommerkonzerteEn: "Ruhpolding summer concerts",
-  /** @demo */ sommerkonzerteZeit: "Mai bis September, mittwochs 20:00 Uhr",
-  /** @demo */ sommerkonzerteZeitEn: "May to September, Wednesdays at 8 pm",
-  /** @demo */ wochenmarkt: "Wochenmarkt",
-  /** @demo */ wochenmarktEn: "weekly market",
-  /** @demo */ wochenmarktZeit: "jeden Freitag von 8:00 bis 12:00 Uhr",
-  /** @demo */ wochenmarktZeitEn: "every Friday from 8 am to 12 noon",
+  chiemgauArena: "Chiemgau Arena",
+  /** @ungeprueft Ort auf keiner geprüften Seite namentlich belegt */
+  kurpark: "Kurpark",
+  /** @ungeprueft Ort auf keiner geprüften Seite namentlich belegt */
+  rathausplatz: "Rathausplatz",
+  /** Gattungsbezeichnung, Kurzform des belegten Veranstaltungsnamens. */
+  biathlonKurz: "Biathlon-Weltcup",
+  biathlonKurzEn: "biathlon world cup",
+  biathlonName: "LaVita IBU World Cup Biathlon",
+  biathlonMonat: "im Januar",
+  biathlonMonatEn: "in January",
+  /** Nächste Ausgabe laut IBU-Kalender. */
+  biathlonTermin: "vom 4. bis 10. Januar 2027",
+  /** @ungeprueft kein Skibus zur Arena und kein Takt belegt */
+  skibusTakt: "15-Minuten-Takt",
+  /** @ungeprueft Veranstaltung auf den geprüften Seiten nicht belegt */
+  sommerkonzerte: "Ruhpoldinger Sommerkonzerte",
+  /** @ungeprueft siehe sommerkonzerte */
+  sommerkonzerteEn: "Ruhpolding summer concerts",
+  /** @ungeprueft kein Zeitraum und keine Uhrzeit belegt */
+  sommerkonzerteZeit: "Mai bis September, mittwochs 20:00 Uhr",
+  /** @ungeprueft siehe sommerkonzerteZeit */
+  sommerkonzerteZeitEn: "May to September, Wednesdays at 8 pm",
+  /** @ungeprueft Wochenmarkt auf den geprüften Seiten nicht belegt */
+  wochenmarkt: "Wochenmarkt",
+  /** @ungeprueft siehe wochenmarkt */
+  wochenmarktEn: "weekly market",
+  /** @ungeprueft kein Wochentag und keine Uhrzeit belegt */
+  wochenmarktZeit: "jeden Freitag von 8:00 bis 12:00 Uhr",
+  /** @ungeprueft siehe wochenmarktZeit */
+  wochenmarktZeitEn: "every Friday from 8 am to 12 noon",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
