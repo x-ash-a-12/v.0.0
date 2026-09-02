@@ -149,24 +149,54 @@ export const PARKEN = {
   gaestekarteHinweis: "Mit der Gästekarte sind die Ortsparkplätze frei.",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Anreise und Mobilität vor Ort.
+ * Quelle Anreise: https://www.ruhpolding.de/anreise-nach-ruhpolding
+ * Quelle Mobilität: https://www.ruhpolding.de/mobilitaet-vor-ort
+ * Abgerufen: 2026-09-03
+ *
+ * Zur Bahn schreibt Ruhpolding Tourismus nur, dass die Bayerische Regiobahn
+ * Traunstein mit Ruhpolding verbindet. Eine durchgehende Verbindung ab
+ * München ist dort nicht belegt, ebensowenig ein Takt oder eine Fahrzeit.
+ */
 export const ANREISE = {
-  /** @demo */ autobahn: "A8",
-  /** @demo */ ausfahrt: "Siegsdorf",
-  /** @demo */ bundesstrasse: "B306",
-  /** @demo */ fahrzeitAbAusfahrt: "rund 10 Minuten",
-  /** @demo */ fahrzeitAbAusfahrtEn: "about ten minutes",
-  /** @demo */ bahnTakt: "stündlich",
-  /** @demo */ bahnTaktEn: "hourly",
-  /** @demo */ bahnAbfahrtsort: "München Hauptbahnhof",
-  /** @demo */ bahnFahrzeit: "etwa 1:40 Stunden",
-  /** @demo */ bahnFahrzeitEn: "about one hour and forty minutes",
-  /** @demo */ bahnhofZumZentrum: "10 Gehminuten",
-  /** @demo */ bahnhofZumZentrumEn: "a ten minute walk",
-  /** @demo */ ortsbusLinie: "Linie 9495",
-  /** @demo */ ortsbusTakt: "werktags im Stundentakt",
-  /** @demo */ gaestekarteName: "GUEST",
-  /** @demo */ gaestekarteBahnBis: "Traunstein",
+  autobahn: "A8",
+  ausfahrt: "Siegsdorf Ost / Traunstein",
+  /**
+   * @ungeprueft Die Quelle nennt keine Straßennummer, sondern nur die
+   * Entfernung ab der Ausfahrt.
+   */
+  bundesstrasse: "B306",
+  /** Die Quelle gibt eine Entfernung an, keine Fahrzeit: "rund 8 km". */
+  fahrzeitAbAusfahrt: "rund 8 km",
+  fahrzeitAbAusfahrtEn: "about 8 km",
+  /** @ungeprueft kein Takt belegt */
+  bahnTakt: "stündlich",
+  /** @ungeprueft siehe bahnTakt */
+  bahnTaktEn: "hourly",
+  /**
+   * @ungeprueft Belegt ist nur die Strecke Traunstein–Ruhpolding der
+   * Bayerischen Regiobahn, nicht eine Fahrt ab München.
+   */
+  bahnAbfahrtsort: "München Hauptbahnhof",
+  /** @ungeprueft keine Fahrzeit belegt */
+  bahnFahrzeit: "etwa 1:40 Stunden",
+  /** @ungeprueft siehe bahnFahrzeit */
+  bahnFahrzeitEn: "about one hour and forty minutes",
+  /** @ungeprueft keine Angabe zur Entfernung Bahnhof–Zentrum gefunden */
+  bahnhofZumZentrum: "10 Gehminuten",
+  /** @ungeprueft siehe bahnhofZumZentrum */
+  bahnhofZumZentrumEn: "a ten minute walk",
+  /** Die Ruhpoldinger Dorflinie. Daneben fährt der Rufbus DORLI. */
+  ortsbusLinie: "Linien 9532 und 9533",
+  /**
+   * @ungeprueft Für die Dorflinie ist kein Takt belegt. Der Rufbus DORLI
+   * fährt laut Quelle "ohne festen Fahrplan", Mo bis Fr 07:00 bis 22:00 Uhr.
+   */
+  ortsbusTakt: "werktags im Stundentakt",
+  /** Die Karte heißt "Chiemgau Karte", siehe Bericht zur Satzstellung. */
+  gaestekarteName: "Chiemgau Karte",
+  gaestekarteBahnBis: "Traunstein",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
