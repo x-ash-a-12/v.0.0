@@ -13,6 +13,12 @@ import {
 } from "@/lib/chat-flow"
 import { fallbackKnoten } from "@/lib/fallback"
 import { aufloesen, useStandort } from "@/lib/location"
+import { type Sprache } from "@/lib/sprache"
+import {
+  erkenneSprache,
+  uebersetze,
+  WECHSELHINWEIS,
+} from "@/lib/i18n"
 import {
   istWiederholung,
   merken,
@@ -78,13 +84,20 @@ export function useChat() {
   /** Was in diesem Gespräch schon gezeigt wurde. */
   const verlaufRef = React.useRef(neuerVerlauf())
 
+  /** Dialogsprache. Sie folgt der Eingabe und wird beim Reset zurückgesetzt. */
+  const [sprache, setSprache] = React.useState<Sprache>("de")
+  const spracheRef = React.useRef<Sprache>("de")
+  /** Wechselhinweis, den die nächste Antwort voranstellt. */
+  const wechselRef = React.useRef<string | null>(null)
+
   /** Nimmt eine Knoten-ID oder einen zur Laufzeit gebauten Knoten. */
   const runNode = React.useCallback(async (ziel: string | FlowNode) => {
     const myRun = runIdRef.current + 1
     runIdRef.current = myRun
     const aktiv = () => runIdRef.current === myRun
 
-    const node = typeof ziel === "string" ? getNode(ziel) : ziel
+    const roh = typeof ziel === "string" ? getNode(ziel) : ziel
+    const node = uebersetze(roh, spracheRef.current)
     setActiveChips([])
     setStreaming(null)
     setIsTyping(true)
@@ -101,11 +114,15 @@ export function useChat() {
 
     // Karten brauchen Vorlauf, sonst pulsieren nur die Punkte. Eine kurze
     // Zwischenmeldung füllt die Wartezeit, statt sie zu verstecken.
+    const wechsel = wechselRef.current
+    wechselRef.current = null
+
     const nachrichten = [
+      ...(wechsel ? [wechsel] : []),
       ...(bezug ? [bezug] : []),
       ...(node.bridge || node.card ? [ueberbrueckung()] : []),
       ...ausformulieren(inhalt),
-    ].map((text) => aufloesen(text, standortRef.current))
+    ].map((text) => aufloesen(text, standortRef.current, spracheRef.current))
 
     for (let i = 0; i < nachrichten.length; i++) {
       const text = nachrichten[i]
@@ -186,13 +203,28 @@ export function useChat() {
         ...prev,
         { id: uid(), role: "user", kind: "text", text },
       ])
+      // Die Antwort folgt der Sprache der Eingabe. Bleibt sie uneindeutig,
+      // etwa bei einem einzelnen Wort, gilt die bisherige weiter.
+      const erkannt = erkenneSprache(text)
+      if (erkannt && erkannt !== spracheRef.current) {
+        spracheRef.current = erkannt
+        setSprache(erkannt)
+        wechselRef.current = WECHSELHINWEIS[erkannt]
+      }
+
       const ergebnis = matchIntent(text)
       if (ergebnis.kind === "hit") {
         void runNode(ergebnis.to)
       } else if (ergebnis.kind === "ambiguous") {
-        void runNode(rueckfrageKnoten(ergebnis.candidates, ergebnis.term))
+        void runNode(
+          rueckfrageKnoten(
+            ergebnis.candidates,
+            ergebnis.term,
+            spracheRef.current,
+          ),
+        )
       } else {
-        void runNode(fallbackKnoten(text))
+        void runNode(fallbackKnoten(text, spracheRef.current))
       }
     },
     [runNode],
@@ -201,6 +233,9 @@ export function useChat() {
   const reset = React.useCallback(() => {
     runIdRef.current += 1
     verlaufRef.current = neuerVerlauf()
+    spracheRef.current = "de"
+    wechselRef.current = null
+    setSprache("de")
     setMessages([])
     setActiveChips([])
     setStreaming(null)
@@ -221,6 +256,7 @@ export function useChat() {
     activeChips,
     isTyping,
     streaming,
+    sprache,
     selectChip,
     sendText,
     reset,

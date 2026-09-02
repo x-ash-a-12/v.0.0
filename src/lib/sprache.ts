@@ -6,6 +6,9 @@
  * sonst gegenseitig importieren müssten.
  */
 
+/** Die Dialogsprachen des Prototyps. */
+export type Sprache = "de" | "en"
+
 /** Übliche deutsche Füllwörter, die nichts über das Thema aussagen. */
 export const STOPWOERTER = new Set([
   "ich", "du", "wo", "was", "wie", "kann", "gibt", "es", "der", "die", "das",

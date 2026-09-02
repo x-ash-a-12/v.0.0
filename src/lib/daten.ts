@@ -5,6 +5,9 @@
  * öffentlich zugängliche Angaben ersetzt werden. Suchen mit:
  *   grep -n "@demo" src/lib/daten.ts
  *
+ * Felder mit der Endung En sind die englische Fassung derselben Angabe,
+ * für die Sprachumschaltung. Ändert sich der Wert, ändern sich beide.
+ *
  * Tagesaktuelle Angaben (Wetter, Prognose, Schneelage, Wochenprogramm)
  * stehen bewusst nicht hier. Sie sind in chat-flow.ts mit "SIMULIERT:"
  * gekennzeichnet, weil sie ohne Datenanbindung gar nicht echt sein können.
@@ -24,22 +27,30 @@ export const TOURIST_INFO = {
 export const BERGBAHNEN = {
   /** @demo */ rauschbergName: "Rauschberg",
   /** @demo */ rauschbergBahn: "Gondelbahn",
+  /** @demo */ rauschbergBahnEn: "gondola",
   /** @demo */ unternbergName: "Unternberg",
   /** @demo */ unternbergBahn: "Sesselbahn",
+  /** @demo */ unternbergBahnEn: "chairlift",
   /** @demo */ rauschbergErwachsen: "24,00 €",
   /** @demo */ unternbergErwachsen: "19,50 €",
   /** @demo */ kinderAlter: "6 bis 15 Jahre",
   /** @demo */ ermaessigungKinder: "50 % Ermäßigung",
   /** @demo */ ermaessigungGaestekarte: "20 % Ermäßigung",
-  /** @demo */ betriebszeitSommer: "9:00 bis 16:30 Uhr",
-  /** @demo */ letzteBergfahrt: "16:00 Uhr",
+  /*
+   * Zeiten ohne Sprachbestandteil, damit die deutsche und die englische
+   * Fassung sie gleichermaßen einsetzen können.
+   */
+  /** @demo */ betriebSommerVon: "9:00",
+  /** @demo */ betriebSommerBis: "16:30",
+  /** @demo */ letzteBergfahrt: "16:00",
   /** @demo Fußnote der Preiskarte, entfällt sobald die Preise belegt sind. */
   kartenhinweis: "Preise nur zu Demonstrationszwecken.",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
 export const WANDERN = {
-  /** @demo */ wegenetz: "rund 250 km",
+  /** @demo Ohne "rund", das Wort steht im Antworttext. */
+  wegenetzKm: "250 km",
   /** @demo */ foerchensee: "Förchensee",
   /** @demo */ foerchenseeRunde: "etwa 3 km, eben",
   /** @demo */ uferwegTraun: "Uferweg entlang der Traun",
@@ -67,10 +78,14 @@ export const ANREISE = {
   /** @demo */ ausfahrt: "Siegsdorf",
   /** @demo */ bundesstrasse: "B306",
   /** @demo */ fahrzeitAbAusfahrt: "rund 10 Minuten",
+  /** @demo */ fahrzeitAbAusfahrtEn: "about ten minutes",
   /** @demo */ bahnTakt: "stündlich",
+  /** @demo */ bahnTaktEn: "hourly",
   /** @demo */ bahnAbfahrtsort: "München Hauptbahnhof",
   /** @demo */ bahnFahrzeit: "etwa 1:40 Stunden",
+  /** @demo */ bahnFahrzeitEn: "about one hour and forty minutes",
   /** @demo */ bahnhofZumZentrum: "10 Gehminuten",
+  /** @demo */ bahnhofZumZentrumEn: "a ten minute walk",
   /** @demo */ ortsbusLinie: "Linie 9495",
   /** @demo */ ortsbusTakt: "werktags im Stundentakt",
   /** @demo */ gaestekarteName: "GUEST",
@@ -99,14 +114,20 @@ export const EVENTS = {
   /** @demo */ kurpark: "Kurpark",
   /** @demo */ rathausplatz: "Rathausplatz",
   /** @demo */ biathlonKurz: "Biathlon-Weltcup",
+  /** @demo */ biathlonKurzEn: "biathlon world cup",
   /** @demo */ biathlonName: "BMW IBU Weltcup Biathlon",
   /** @demo */ biathlonMonat: "im Januar",
+  /** @demo */ biathlonMonatEn: "in January",
   /** @demo */ biathlonTermin: "vom 8. bis 12. Januar",
   /** @demo */ skibusTakt: "15-Minuten-Takt",
   /** @demo */ sommerkonzerte: "Ruhpoldinger Sommerkonzerte",
+  /** @demo */ sommerkonzerteEn: "Ruhpolding summer concerts",
   /** @demo */ sommerkonzerteZeit: "Mai bis September, mittwochs 20:00 Uhr",
+  /** @demo */ sommerkonzerteZeitEn: "May to September, Wednesdays at 8 pm",
   /** @demo */ wochenmarkt: "Wochenmarkt",
+  /** @demo */ wochenmarktEn: "weekly market",
   /** @demo */ wochenmarktZeit: "jeden Freitag von 8:00 bis 12:00 Uhr",
+  /** @demo */ wochenmarktZeitEn: "every Friday from 8 am to 12 noon",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
@@ -126,9 +147,12 @@ export const GASTRONOMIE = {
 export const FAMILIE = {
   /** @demo */ freizeitpark: "Freizeitpark Ruhpolding",
   /** @demo */ freizeitparkOeffnung: "ab 9:30 Uhr",
+  /** @demo */ freizeitparkOeffnungEn: "from 9.30 am",
   /** @demo */ vitalwelt: "Vitalwelt",
   /** @demo */ barfussweg: "Barfußweg",
+  /** @demo */ barfusswegEn: "barefoot trail",
   /** @demo */ bergbahnMuseum: "Bergbahn-Museum",
+  /** @demo */ bergbahnMuseumEn: "mountain lift museum",
   /** @demo */ kletterhalle: "Kletterhalle in Inzell",
   /** @demo */ kletterhalleFahrzeit: "15 Minuten",
   /** @demo */ heimatmuseum: "Heimatmuseum",
@@ -137,6 +161,7 @@ export const FAMILIE = {
 /** Quelle: noch offen. Stand: noch offen. */
 export const UNTERKUNFT = {
   /** @demo */ hoechsteKategorie: "4-Sterne-Hotel",
+  /** @demo */ hoechsteKategorieEn: "four star hotel",
   /** @demo Steht am Satzanfang, deshalb groß geschrieben. */
   hoefeAnzahl: "Rund 20",
   /** @demo */ zertifizierung: "Reisen für Alle",

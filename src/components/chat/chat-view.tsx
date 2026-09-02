@@ -14,6 +14,7 @@ export function ChatView() {
     activeChips,
     isTyping,
     streaming,
+    sprache,
     selectChip,
     sendText,
     reset,
@@ -33,7 +34,7 @@ export function ChatView() {
 
   return (
     <div className="@container flex h-full min-h-0 w-full flex-col overflow-hidden bg-background text-foreground">
-      <ChatHeader onReset={reset} />
+      <ChatHeader onReset={reset} sprache={sprache} />
 
       <div
         ref={scrollRef}

@@ -11,7 +11,7 @@ import {
   BedDouble,
 } from "lucide-react"
 
-import { leitbegriff } from "@/lib/sprache"
+import { leitbegriff, type Sprache } from "@/lib/sprache"
 import {
   ANREISE,
   BERGBAHNEN,
@@ -102,6 +102,9 @@ export type Topic = {
    * wie ein Menüeintrag, diese Form nicht.
    */
   satz: string
+  /** Englische Fassungen für die Sprachumschaltung (AP9). */
+  labelEn: string
+  satzEn: string
   icon: LucideIcon
 }
 
@@ -110,54 +113,72 @@ export const TOPICS: Topic[] = [
     id: "wandern",
     label: "Wandern & Bergbahnen",
     satz: "Wandern und die Bergbahnen",
+    labelEn: "Hiking & mountain lifts",
+    satzEn: "hiking and the mountain lifts",
     icon: Mountain,
   },
   {
     id: "events",
     label: "Veranstaltungen",
     satz: "Veranstaltungen im Ort",
+    labelEn: "Events",
+    satzEn: "events in the village",
     icon: CalendarDays,
   },
   {
     id: "anreise",
     label: "Anreise & Parken",
     satz: "Anreise und Parken",
+    labelEn: "Getting here & parking",
+    satzEn: "getting here and parking",
     icon: Bus,
   },
   {
     id: "wetter",
     label: "Wetter & Bergwetter",
     satz: "das Wetter",
+    labelEn: "Weather",
+    satzEn: "the weather",
     icon: CloudSun,
   },
   {
     id: "essen",
     label: "Essen & Einkehr",
     satz: "Essen und Einkehr",
+    labelEn: "Food & drink",
+    satzEn: "food and drink",
     icon: Utensils,
   },
   {
     id: "familie",
     label: "Mit Kindern unterwegs",
     satz: "Angebote für Familien",
+    labelEn: "With children",
+    satzEn: "things to do with children",
     icon: Users,
   },
   {
     id: "winter",
     label: "Winter & Langlauf",
     satz: "Winter und Langlauf",
+    labelEn: "Winter & cross-country",
+    satzEn: "winter and cross-country skiing",
     icon: Snowflake,
   },
   {
     id: "unterkunft",
     label: "Übernachten",
     satz: "eine Unterkunft",
+    labelEn: "Where to stay",
+    satzEn: "somewhere to stay",
     icon: BedDouble,
   },
   {
     id: "info",
     label: "Tourist-Information",
     satz: "die Tourist-Information",
+    labelEn: "Tourist information",
+    satzEn: "the tourist information",
     icon: Info,
   },
 ]
@@ -236,17 +257,17 @@ export const FLOW: Record<string, FlowNode> = {
     id: "wandern",
     topic: "wandern",
     kurz: [
-      `Wie gesagt: ${WANDERN.wegenetz} markierte Wege, und die Bergbahnen fahren im Sommer von ${BERGBAHNEN.betriebszeitSommer}.`,
+      `Wie gesagt: rund ${WANDERN.wegenetzKm} markierte Wege, und die Bergbahnen fahren im Sommer von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr.`,
     ],
     messages: [
       [
-        `Ruhpolding hat ${WANDERN.wegenetz} markierte Wanderwege. Beliebt sind der ${BERGBAHNEN.rauschbergName} mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die flache Runde um den ${WANDERN.foerchensee}.`,
-        `Das Wegenetz umfasst ${WANDERN.wegenetz}, alles markiert. Am häufigsten gegangen werden der ${BERGBAHNEN.rauschbergName}, den die ${BERGBAHNEN.rauschbergBahn} ab dem Ort erschließt, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die ebene Runde um den ${WANDERN.foerchensee}.`,
-        `Zur Auswahl stehen ${WANDERN.wegenetz} markierte Wege. Besonders gefragt sind der ${BERGBAHNEN.rauschbergName}, erreichbar mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn}, und flach die Runde um den ${WANDERN.foerchensee}.`,
+        `Ruhpolding hat rund ${WANDERN.wegenetzKm} markierte Wanderwege. Beliebt sind der ${BERGBAHNEN.rauschbergName} mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die flache Runde um den ${WANDERN.foerchensee}.`,
+        `Das Wegenetz umfasst rund ${WANDERN.wegenetzKm}, alles markiert. Am häufigsten gegangen werden der ${BERGBAHNEN.rauschbergName}, den die ${BERGBAHNEN.rauschbergBahn} ab dem Ort erschließt, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die ebene Runde um den ${WANDERN.foerchensee}.`,
+        `Zur Auswahl stehen rund ${WANDERN.wegenetzKm} markierte Wege. Besonders gefragt sind der ${BERGBAHNEN.rauschbergName}, erreichbar mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn}, und flach die Runde um den ${WANDERN.foerchensee}.`,
       ],
       [
-        `Die Bergbahnen fahren im Sommer täglich von ${BERGBAHNEN.betriebszeitSommer}, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt}. Von hier sind es {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
-        `Beide Bahnen sind im Sommer täglich von ${BERGBAHNEN.betriebszeitSommer} in Betrieb, die letzte Bergfahrt geht um ${BERGBAHNEN.letzteBergfahrt}. Zur Talstation ${BERGBAHNEN.rauschbergName} sind es von hier {naehe:rauschberg}.`,
+        `Die Bergbahnen fahren im Sommer täglich von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt} Uhr. Von hier sind es {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
+        `Beide Bahnen sind im Sommer täglich von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr in Betrieb, die letzte Bergfahrt geht um ${BERGBAHNEN.letzteBergfahrt} Uhr. Zur Talstation ${BERGBAHNEN.rauschbergName} sind es von hier {naehe:rauschberg}.`,
       ],
     ],
     chips: [
@@ -635,70 +656,70 @@ const SMALLTALK = "smalltalk"
 
 /** Reihenfolge zählt: spezielle Muster vor allgemeinen. */
 const INTENTS: Intent[] = [
-  { test: /danke|vielen dank|passt|super|klasse|top\b/i, to: "danke", topic: SMALLTALK },
-  { test: /biathlon|weltcup|arena/i, to: "events-biathlon", topic: "events" },
-  { test: /webcam|kamera/i, to: "wetter-webcam", topic: "wetter" },
-  { test: /park(en|platz|haus)?|wohnmobil|stellplatz/i, to: "anreise-parken", topic: "anreise" },
-  { test: /\bbus\b|ortsbus|öpnv|gästekarte|gastkarte|guest/i, to: "anreise-bus", topic: "anreise" },
-  { test: /loipe|loipenpass/i, to: "winter-loipe", topic: "winter" },
-  { test: /verleih|ausleih|mieten/i, to: "winter-verleih", topic: "winter" },
+  { test: /danke|vielen dank|passt|super|klasse|top\b|thanks|thank you|perfect/i, to: "danke", topic: SMALLTALK },
+  { test: /biathlon|weltcup|world cup|arena/i, to: "events-biathlon", topic: "events" },
+  { test: /webcam|kamera|camera/i, to: "wetter-webcam", topic: "wetter" },
+  { test: /park(en|platz|haus|ing)?|wohnmobil|stellplatz|camper|motorhome/i, to: "anreise-parken", topic: "anreise" },
+  { test: /\bbus\b|ortsbus|öpnv|gästekarte|gastkarte|guest card|public transport/i, to: "anreise-bus", topic: "anreise" },
+  { test: /loipe|loipenpass|cross.?country|trail pass/i, to: "winter-loipe", topic: "winter" },
+  { test: /verleih|ausleih|mieten|\brental\b|\bhire\b|\brent\b/i, to: "winter-verleih", topic: "winter" },
   // Wortgrenze auch vorn, sonst gilt jeder Bahnhof als Bauernhof.
-  { test: /bauernhof|\bhof\b/i, to: "unterkunft-hof", topic: "unterkunft" },
-  { test: /barrierefrei|rollstuhl|reisen für alle/i, to: "unterkunft-barrierefrei", topic: "unterkunft" },
-  { test: /wickel|stillen|baby/i, to: "familie-baby", topic: "familie" },
-  { test: /spielplatz/i, to: "essen-huette", topic: "essen" },
-  { test: /ruhetag|geschlossen/i, to: "essen-ruhetag", topic: "essen" },
+  { test: /bauernhof|\bhof\b|\bfarm\b/i, to: "unterkunft-hof", topic: "unterkunft" },
+  { test: /barrierefrei|rollstuhl|reisen für alle|accessible|wheelchair/i, to: "unterkunft-barrierefrei", topic: "unterkunft" },
+  { test: /wickel|stillen|baby|nappy|nappies|changing table|breastfeed/i, to: "familie-baby", topic: "familie" },
+  { test: /spielplatz|playground/i, to: "essen-huette", topic: "essen" },
+  { test: /ruhetag|geschlossen|closing day|closed/i, to: "essen-ruhetag", topic: "essen" },
   {
-    test: /wander|tour\b|wandern|gipfel|rauschberg|unternberg|sonntagshorn|bergbahn|gondel|seilbahn|sessel(bahn|lift)|hütte|hüttenwanderung/i,
+    test: /wander|tour\b|wandern|gipfel|rauschberg|unternberg|sonntagshorn|bergbahn|gondel|seilbahn|sessel(bahn|lift)|hütte|hüttenwanderung|hik(e|ing)|\btrail|summit|cable car|mountain lift/i,
     to: "wandern",
     topic: "wandern",
   },
   {
-    test: /event|veranstalt|konzert|markt|programm|was ist los|heute abend/i,
+    test: /event|veranstalt|konzert|markt|programm|was ist los|heute abend|concert|festival|what.s on/i,
     to: "events",
     topic: "events",
   },
   {
     // "bahn" mit Wortgrenze, sonst zieht jede Bergbahn, Seilbahn und
     // Sesselbahn das Thema Anreise in die Frage hinein.
-    test: /anreise|anfahrt|autobahn|\ba8\b|\bzug\b|bahnhof|\bbahn\b|münchen|route|navigation|wie komme ich/i,
+    test: /anreise|anfahrt|autobahn|\ba8\b|\bzug\b|bahnhof|\bbahn\b|münchen|route|navigation|wie komme ich|how do i get|get(ting)? (here|there)|\btrain\b|\bstation\b|motorway/i,
     to: "anreise",
     topic: "anreise",
   },
   {
-    test: /wetter|regen|sonne|temperatur|gewitter|prognose|vorhersage|schnee(lage)?/i,
+    test: /wetter|regen|sonne|temperatur|gewitter|prognose|vorhersage|schnee(lage)?|weather|\brain|forecast|temperature|thunderstorm/i,
     to: "wetter",
     topic: "wetter",
   },
   {
-    test: /essen|restaurant|gasthaus|einkehr|hunger|pizzeria|wirt|frühstück|kulinar/i,
+    test: /essen|restaurant|gasthaus|einkehr|hunger|pizzeria|wirt|frühstück|kulinar|\beat\b|\bfood\b|dinner|lunch|breakfast|hungry/i,
     to: "essen",
     topic: "essen",
   },
   {
     // Wortgrenze hinter der Endung, sonst zieht "Kinderwagen" das Thema
     // Familie in eine Wanderfrage hinein und macht sie künstlich mehrdeutig.
-    test: /kind(er|ern)?\b|familie|freizeitpark|vitalwelt|schwimmbad/i,
+    test: /kind(er|ern)?\b|familie|freizeitpark|vitalwelt|schwimmbad|child(ren)?\b|\bkids?\b|family|swimming/i,
     to: "familie",
     topic: "familie",
   },
   {
-    test: /winter|langlauf|ski\b|skifahren|rodel|schlitten|eislauf/i,
+    test: /winter|langlauf|ski\b|skifahren|rodel|schlitten|eislauf|skiing|sledg(e|ing)|toboggan|skating/i,
     to: "winter",
     topic: "winter",
   },
   {
-    test: /übernacht|unterkunft|hotel|ferienwohnung|zimmer|pension|schlafen|apartment/i,
+    test: /übernacht|unterkunft|hotel|ferienwohnung|zimmer|pension|schlafen|apartment|\bstay\b|accommodation|\broom\b|guest house|\bsleep\b/i,
     to: "unterkunft",
     topic: "unterkunft",
   },
   {
-    test: /öffnungszeit|kontakt|telefon|adresse|erreichen|tourist.?info|e-?mail|anschrift/i,
+    test: /öffnungszeit|kontakt|telefon|adresse|erreichen|tourist.?info|e-?mail|anschrift|opening hours|contact|phone|address|tourist information/i,
     to: "info",
     topic: "info",
   },
   {
-    test: /hallo|grüß|servus|\bhi\b|\bhey\b|guten (tag|morgen|abend)|moin/i,
+    test: /hallo|grüß|servus|\bhi\b|\bhey\b|guten (tag|morgen|abend)|moin|hello|good (morning|afternoon|evening)/i,
     to: "menu",
     topic: SMALLTALK,
   },
@@ -729,6 +750,7 @@ export function matchIntent(text: string): MatchResult {
   if (themen.length === 1) return { kind: "hit", to: relevant[0].to }
 
   const candidates: Chip[] = themen.slice(0, 3).map((thema) => ({
+    // Deutsches Label; rueckfrageKnoten tauscht es für Englisch aus.
     label: TOPICS.find((topic) => topic.id === thema)?.label ?? thema,
     // Ziel ist der spezifischste Knoten dieses Themas, nicht der
     // Themeneinstieg. So landet die Testperson direkt bei ihrer Frage.
@@ -754,34 +776,56 @@ const RUECKFRAGEN_MIT_BEGRIFF = [
   "Damit ich „{begriff}“ richtig einordne: {themen}?",
 ] as const
 
+const RUECKFRAGEN_EN = [
+  "So I show you the right thing: is this about {themen}?",
+  "That could go two ways. Do you mean {themen}?",
+  "Quick check so I do not show the wrong thing: {themen}?",
+  "There are several directions here. Shall I show you {themen}?",
+] as const
+
 /** "A oder B", bei dreien "A, B oder C". */
-function aufzaehlung(teile: string[]): string {
+function aufzaehlung(teile: string[], sprache: Sprache): string {
   if (teile.length <= 1) return teile[0] ?? ""
-  return `${teile.slice(0, -1).join(", ")} oder ${teile[teile.length - 1]}`
+  const letztes = teile[teile.length - 1]
+  const davor = teile.slice(0, -1).join(", ")
+  return sprache === "en" ? `${davor} or ${letztes}` : `${davor} oder ${letztes}`
 }
 
 /** Die Rückfrage als fertiger Knoten, mit den Kandidaten als Chips. */
 export function rueckfrageKnoten(
   candidates: Chip[],
   term: string | null,
+  sprache: Sprache = "de",
 ): FlowNode {
   const themen = aufzaehlung(
-    candidates.map(
-      (chip) =>
-        TOPICS.find((topic) => chip.to.startsWith(topic.id))?.satz ?? chip.label,
-    ),
+    candidates.map((chip) => {
+      const topic = TOPICS.find((eintrag) => chip.to.startsWith(eintrag.id))
+      if (!topic) return chip.label
+      return sprache === "en" ? topic.satzEn : topic.satz
+    }),
+    sprache,
   )
 
-  const vorlage = waehleVariante(
-    term ? [...RUECKFRAGEN, ...RUECKFRAGEN_MIT_BEGRIFF] : RUECKFRAGEN,
-  )
+  const vorlage =
+    sprache === "en"
+      ? waehleVariante(RUECKFRAGEN_EN)
+      : waehleVariante(
+          term ? [...RUECKFRAGEN, ...RUECKFRAGEN_MIT_BEGRIFF] : RUECKFRAGEN,
+        )
 
   return {
     id: "rueckfrage-mehrdeutig",
     messages: [
       vorlage.replace("{themen}", themen).replace("{begriff}", term ?? ""),
     ],
-    chips: [...candidates, { label: "Andere Frage", to: "menu" }],
+    chips: [
+      ...candidates.map((chip) => {
+        const topic = TOPICS.find((eintrag) => chip.to.startsWith(eintrag.id))
+        if (!topic || sprache !== "en") return chip
+        return { ...chip, label: topic.labelEn }
+      }),
+      { label: sprache === "en" ? "Something else" : "Andere Frage", to: "menu" },
+    ],
   }
 }
 

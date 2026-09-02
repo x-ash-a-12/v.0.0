@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { BERGBAHNEN, TOURIST_INFO } from "@/lib/daten"
+import { type Sprache } from "@/lib/sprache"
 
 /**
  * Simulierter Aufstellort des Terminals.
@@ -18,8 +19,12 @@ export type Standort = {
    * "am" lautet.
    */
   kurz: string
+  /** Englisch, ohne Präposition: der Satz lautet "You are currently at ...". */
+  kurzEn: string
   /** Wegangaben zu den Zielen, die in Antworten vorkommen. */
   naehe: Record<string, string>
+  /** Dieselben Wegangaben auf Englisch. */
+  naeheEn: Record<string, string>
 }
 
 /*
@@ -32,6 +37,7 @@ export const STANDORTE: Standort[] = [
     id: "info",
     label: `Tourist-Information, ${TOURIST_INFO.adresse.split(",")[0]}`,
     kurz: "an der Tourist-Information",
+    kurzEn: "the tourist information",
     naehe: {
       // DATEN: vom Autor zu ersetzen
       touristinfo: "ein paar Schritte",
@@ -40,11 +46,20 @@ export const STANDORTE: Standort[] = [
       vitalwelt: "5 Gehminuten",
       bahnhof: "10 Gehminuten",
     },
+    naeheEn: {
+      // DATEN: vom Autor zu ersetzen
+      touristinfo: "a few steps",
+      rauschberg: "a 12 minute walk",
+      arena: "a 20 minute walk",
+      vitalwelt: "a 5 minute walk",
+      bahnhof: "a 10 minute walk",
+    },
   },
   {
     id: "bahnhof",
     label: "Bahnhof Ruhpolding",
     kurz: "am Bahnhof",
+    kurzEn: "the railway station",
     naehe: {
       // DATEN: vom Autor zu ersetzen
       touristinfo: "10 Gehminuten",
@@ -53,11 +68,20 @@ export const STANDORTE: Standort[] = [
       vitalwelt: "12 Gehminuten",
       bahnhof: "keine zwei Schritte",
     },
+    naeheEn: {
+      // DATEN: vom Autor zu ersetzen
+      touristinfo: "a 10 minute walk",
+      rauschberg: "a 20 minute walk",
+      arena: "a 25 minute walk",
+      vitalwelt: "a 12 minute walk",
+      bahnhof: "no distance at all",
+    },
   },
   {
     id: "rauschberg",
     label: `Talstation ${BERGBAHNEN.rauschbergName}`,
     kurz: `an der Talstation ${BERGBAHNEN.rauschbergName}`,
+    kurzEn: `the ${BERGBAHNEN.rauschbergName} valley station`,
     naehe: {
       // DATEN: vom Autor zu ersetzen
       touristinfo: "12 Gehminuten",
@@ -65,6 +89,14 @@ export const STANDORTE: Standort[] = [
       arena: "15 Gehminuten",
       vitalwelt: "15 Gehminuten",
       bahnhof: "20 Gehminuten",
+    },
+    naeheEn: {
+      // DATEN: vom Autor zu ersetzen
+      touristinfo: "a 12 minute walk",
+      rauschberg: "less than 100 metres",
+      arena: "a 15 minute walk",
+      vitalwelt: "a 15 minute walk",
+      bahnhof: "a 20 minute walk",
     },
   },
 ]
@@ -75,16 +107,22 @@ export const STANDORTE: Standort[] = [
  * Unbekannte Platzhalter verschwinden, statt sichtbar stehen zu bleiben: eine
  * geschweifte Klammer im Text würde den Prototyp im Test sofort entlarven.
  */
-export function aufloesen(text: string, standort: Standort): string {
+export function aufloesen(
+  text: string,
+  standort: Standort,
+  sprache: Sprache = "de",
+): string {
+  const en = sprache === "en"
   return text.replace(
     /\{(naehe|standort):([a-zA-Z]+)\}/g,
     (_treffer, art: string, schluessel: string) => {
       if (art === "standort") {
-        if (schluessel === "kurz") return standort.kurz
+        if (schluessel === "kurz") return en ? standort.kurzEn : standort.kurz
         if (schluessel === "label") return standort.label
         return ""
       }
-      return standort.naehe[schluessel] ?? ""
+      const wege = en ? standort.naeheEn : standort.naehe
+      return wege[schluessel] ?? ""
     },
   )
 }
