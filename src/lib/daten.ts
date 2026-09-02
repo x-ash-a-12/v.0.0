@@ -13,14 +13,21 @@
  * gekennzeichnet, weil sie ohne Datenanbindung gar nicht echt sein können.
  */
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Tourist-Information Ruhpolding, Kontakt und Öffnungszeiten.
+ * Quelle: https://www.ruhpolding.de/kontakt
+ * Abgerufen: 2026-09-03
+ *
+ * Die Seite nennt eine einzige Fassung der Öffnungszeiten, ohne zwischen
+ * Haupt- und Nebensaison zu unterscheiden.
+ */
 export const TOURIST_INFO = {
-  /** @demo */ adresse: "Hauptstraße 60, 83324 Ruhpolding",
-  /** @demo */ telefon: "08663 8806-0",
-  /** @demo */ email: "info@ruhpolding.de",
-  /** @demo */ oeffnungszeiten: "Mo bis Fr 8:30 bis 17:00, Sa 9:00 bis 12:00",
-  /** @demo Fußnote der Kontaktkarte, entfällt sobald die Daten belegt sind. */
-  kartenhinweis: "Kontaktdaten nur zu Demonstrationszwecken.",
+  adresse: "Bahnhofstraße 8, 83324 Ruhpolding",
+  telefon: "+49 (0) 8663 88060",
+  email: "tourismus@ruhpolding.de",
+  oeffnungszeiten: "Mo bis Fr 9 bis 17 Uhr, Sa 9 bis 12 Uhr",
+  /** Fußnote der Kontaktkarte, nennt jetzt den Stand statt des Demo-Status. */
+  kartenhinweis: "Stand: 3. September 2026, Angaben ohne Gewähr.",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
