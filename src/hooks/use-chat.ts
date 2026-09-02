@@ -12,6 +12,12 @@ import {
 } from "@/lib/chat-flow"
 import { fallbackKnoten } from "@/lib/fallback"
 import { aufloesen, useStandort } from "@/lib/location"
+import {
+  istWiederholung,
+  merken,
+  neuerVerlauf,
+  zieheRueckbezug,
+} from "@/lib/memory"
 
 export type ChatMessage =
   | { id: string; role: "user"; kind: "text"; text: string }
@@ -68,6 +74,9 @@ export function useChat() {
     standortRef.current = standort
   }, [standort])
 
+  /** Was in diesem Gespräch schon gezeigt wurde. */
+  const verlaufRef = React.useRef(neuerVerlauf())
+
   /** Nimmt eine Knoten-ID oder einen zur Laufzeit gebauten Knoten. */
   const runNode = React.useCallback(async (ziel: string | FlowNode) => {
     const myRun = runIdRef.current + 1
@@ -81,13 +90,21 @@ export function useChat() {
 
     const sofort = magKeineAnimation()
 
+    const verlauf = verlaufRef.current
+    // Beim zweiten Mal die kurze Fassung, statt dieselbe Textwand noch
+    // einmal auszurollen.
+    const inhalt =
+      istWiederholung(verlauf, node) && node.kurz ? node.kurz : node.messages
+    const bezug = zieheRueckbezug(verlauf, node)
+    merken(verlauf, node)
+
     // Karten brauchen Vorlauf, sonst pulsieren nur die Punkte. Eine kurze
     // Zwischenmeldung füllt die Wartezeit, statt sie zu verstecken.
-    const nachrichten = (
-      node.bridge || node.card
-        ? [ueberbrueckung(), ...node.messages]
-        : node.messages
-    ).map((text) => aufloesen(text, standortRef.current))
+    const nachrichten = [
+      ...(bezug ? [bezug] : []),
+      ...(node.bridge || node.card ? [ueberbrueckung()] : []),
+      ...inhalt,
+    ].map((text) => aufloesen(text, standortRef.current))
 
     for (let i = 0; i < nachrichten.length; i++) {
       const text = nachrichten[i]
@@ -182,6 +199,7 @@ export function useChat() {
 
   const reset = React.useCallback(() => {
     runIdRef.current += 1
+    verlaufRef.current = neuerVerlauf()
     setMessages([])
     setActiveChips([])
     setStreaming(null)
