@@ -168,7 +168,7 @@ export const FLOW: Record<string, FlowNode> = {
     id: "start",
     messages: [
       "Grüß Gott und herzlich willkommen bei der Tourist-Information Ruhpolding. Ich bin der digitale Assistent und helfe bei Fragen rund um deinen Aufenthalt.",
-      "Wobei kann ich helfen? Du kannst ein Thema wählen oder frei tippen.",
+      "Du stehst gerade {standort:kurz}. Wobei kann ich helfen? Du kannst ein Thema wählen oder frei tippen.",
     ],
     chips: menuChips,
   },
@@ -191,7 +191,7 @@ export const FLOW: Record<string, FlowNode> = {
     id: "wandern",
     messages: [
       `Ruhpolding hat ${WANDERN.wegenetz} markierte Wanderwege. Beliebt sind der ${BERGBAHNEN.rauschbergName} mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die flache Runde um den ${WANDERN.foerchensee}.`,
-      `Die Bergbahnen fahren im Sommer täglich von ${BERGBAHNEN.betriebszeitSommer}, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt}.`,
+      `Die Bergbahnen fahren im Sommer täglich von ${BERGBAHNEN.betriebszeitSommer}, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt}. Von hier sind es {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
     ],
     chips: [
       { label: "Leichte Tour mit Kinderwagen", to: "wandern-leicht" },
@@ -254,7 +254,7 @@ export const FLOW: Record<string, FlowNode> = {
     id: "events-biathlon",
     bridge: true,
     messages: [
-      `Der ${EVENTS.biathlonName} findet ${EVENTS.biathlonTermin} in der ${EVENTS.chiemgauArena} statt. Tickets gibt es online und an der Tageskasse. Vom Ortszentrum fährt ein kostenloser Skibus im ${EVENTS.skibusTakt} zur Arena.`,
+      `Der ${EVENTS.biathlonName} findet ${EVENTS.biathlonTermin} in der ${EVENTS.chiemgauArena} statt. Tickets gibt es online und an der Tageskasse. Vom Ortszentrum fährt ein kostenloser Skibus im ${EVENTS.skibusTakt} zur Arena, von hier sind es {naehe:arena}.`,
     ],
     chips: backChips("events"),
   },
@@ -272,7 +272,7 @@ export const FLOW: Record<string, FlowNode> = {
     id: "anreise",
     messages: [
       `Mit dem Auto über die ${ANREISE.autobahn} bis zur Ausfahrt ${ANREISE.ausfahrt}, dann die ${ANREISE.bundesstrasse}, ${ANREISE.fahrzeitAbAusfahrt}.`,
-      `Mit der Bahn ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort} nach Ruhpolding, Fahrzeit ${ANREISE.bahnFahrzeit}. Der Bahnhof liegt ${ANREISE.bahnhofZumZentrum} vom Zentrum.`,
+      `Mit der Bahn ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort} nach Ruhpolding, Fahrzeit ${ANREISE.bahnFahrzeit}. Der Bahnhof liegt ${ANREISE.bahnhofZumZentrum} vom Zentrum, von hier sind es {naehe:bahnhof}.`,
     ],
     chips: [
       { label: "Parken im Ort", to: "anreise-parken" },
@@ -365,6 +365,7 @@ export const FLOW: Record<string, FlowNode> = {
     id: "familie",
     messages: [
       `Für Familien lohnen sich der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften (${FAMILIE.freizeitparkOeffnung}), die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Bei Regen ist das ${FAMILIE.bergbahnMuseum} eine Option.`,
+      `Zur ${FAMILIE.vitalwelt} sind es von hier {naehe:vitalwelt}.`,
     ],
     chips: [
       { label: "Angebote bei Regen", to: "familie-regen" },
@@ -390,7 +391,7 @@ export const FLOW: Record<string, FlowNode> = {
   winter: {
     id: "winter",
     messages: [
-      `Ruhpolding ist ein Zentrum für Langlauf: rund ${LOIPEN.netz} gespurte Loipen und das Wettkampfstadion in der ${EVENTS.chiemgauArena}, das öffentlich genutzt werden kann. Alpin gibt es kleinere Skigebiete am ${WINTER.skigebiet} und in Inzell.`,
+      `Ruhpolding ist ein Zentrum für Langlauf: rund ${LOIPEN.netz} gespurte Loipen und das Wettkampfstadion in der ${EVENTS.chiemgauArena}, das öffentlich genutzt werden kann. Von hier sind es {naehe:arena} dorthin. Alpin gibt es kleinere Skigebiete am ${WINTER.skigebiet} und in Inzell.`,
     ],
     chips: [
       { label: "Loipen & Loipenpass", to: "winter-loipe" },
@@ -452,7 +453,7 @@ export const FLOW: Record<string, FlowNode> = {
   info: {
     id: "info",
     messages: [
-      "Hier die Kontaktdaten der Tourist-Information. Vor Ort helfen dir die Mitarbeitenden auch persönlich weiter.",
+      "Hier die Kontaktdaten der Tourist-Information. Vor Ort helfen dir die Mitarbeitenden auch persönlich weiter, von hier sind es {naehe:touristinfo}.",
     ],
     card: {
       title: "Tourist-Information Ruhpolding",

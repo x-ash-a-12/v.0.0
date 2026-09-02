@@ -10,6 +10,7 @@ import {
   type InfoCard,
 } from "@/lib/chat-flow"
 import { fallbackKnoten } from "@/lib/fallback"
+import { aufloesen, useStandort } from "@/lib/location"
 
 export type ChatMessage =
   | { id: string; role: "user"; kind: "text"; text: string }
@@ -57,6 +58,14 @@ export function useChat() {
   const [streaming, setStreaming] = React.useState<string | null>(null)
   const runIdRef = React.useRef(0)
 
+  // Über eine Ref, damit ein Standortwechsel runNode nicht neu erzeugt und
+  // das laufende Gespräch nicht abbricht. Er wirkt ab der nächsten Antwort.
+  const standort = useStandort()
+  const standortRef = React.useRef(standort)
+  React.useEffect(() => {
+    standortRef.current = standort
+  }, [standort])
+
   /** Nimmt eine Knoten-ID oder einen zur Laufzeit gebauten Knoten. */
   const runNode = React.useCallback(async (ziel: string | FlowNode) => {
     const myRun = runIdRef.current + 1
@@ -72,10 +81,11 @@ export function useChat() {
 
     // Karten brauchen Vorlauf, sonst pulsieren nur die Punkte. Eine kurze
     // Zwischenmeldung füllt die Wartezeit, statt sie zu verstecken.
-    const nachrichten =
+    const nachrichten = (
       node.bridge || node.card
         ? [ueberbrueckung(), ...node.messages]
         : node.messages
+    ).map((text) => aufloesen(text, standortRef.current))
 
     for (let i = 0; i < nachrichten.length; i++) {
       const text = nachrichten[i]

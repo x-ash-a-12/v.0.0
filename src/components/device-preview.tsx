@@ -9,6 +9,14 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { StandortContext, STANDORTE } from "@/lib/location"
 import { cn } from "@/lib/utils"
 
 type Device = {
@@ -99,6 +107,12 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
   const [activeId, setActiveId] = React.useState("responsive")
   const device = DEVICES.find((entry) => entry.id === activeId) ?? DEVICES[0]
 
+  // Der Aufstellort ist ein Werkzeug des Versuchsleiters und gehört deshalb
+  // in die Vorschauleiste, nicht in die Chat-Oberfläche.
+  const [standortId, setStandortId] = React.useState(STANDORTE[0].id)
+  const standort =
+    STANDORTE.find((eintrag) => eintrag.id === standortId) ?? STANDORTE[0]
+
   return (
     <div className="flex h-svh w-full flex-col overflow-hidden bg-muted/40">
       <div className="flex flex-wrap items-center gap-1.5 border-b bg-background px-3 py-2">
@@ -123,9 +137,37 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
             </Button>
           )
         })}
+
+        <span className="mr-1 ml-3 text-xs font-medium text-muted-foreground">
+          Standort
+        </span>
+        <Select
+          value={standortId}
+          // Base UI meldet null, wenn die Auswahl geleert wird. Der Prototyp
+          // braucht immer einen Aufstellort, deshalb bleibt der bisherige.
+          onValueChange={(wert) => setStandortId(wert ?? standortId)}
+        >
+          <SelectTrigger size="sm" className="w-64" aria-label="Aufstellort">
+            {/* Base UI kennt nur den Wert, das Label steht in STANDORTE. */}
+            <SelectValue>
+              {(wert) =>
+                STANDORTE.find((eintrag) => eintrag.id === wert)?.label ?? ""
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {STANDORTE.map((eintrag) => (
+              <SelectItem key={eintrag.id} value={eintrag.id}>
+                {eintrag.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <DeviceStage device={device}>{children}</DeviceStage>
+      <StandortContext.Provider value={standort}>
+        <DeviceStage device={device}>{children}</DeviceStage>
+      </StandortContext.Provider>
     </div>
   )
 }
