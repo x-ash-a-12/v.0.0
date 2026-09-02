@@ -60,8 +60,16 @@ function mapsSuche(ziel: string): string {
 /** Ein Knoten im vordefinierten Gesprächsbaum. */
 export type FlowNode = {
   id: string
-  /** Jeder Eintrag wird zu einer eigenen Sprechblase. */
-  messages: string[]
+  /**
+   * Jeder Eintrag wird zu einer eigenen Sprechblase. Steht dort statt eines
+   * Texts eine Liste, ist sie eine Variantenliste: beim Ausgeben wird eine
+   * davon gezogen. Ein Modell formuliert nie zweimal identisch, feste Strings
+   * sind bei Wiederholung sofort als Datenbank erkennbar.
+   *
+   * Jede Variante muss denselben Informationsgehalt haben. Getauscht wird
+   * die Formulierung, nie der Inhalt.
+   */
+  messages: (string | string[])[]
   card?: InfoCard
   chips?: Chip[]
   /**
@@ -82,7 +90,7 @@ export type FlowNode = {
    * Verkürzte Fassung, wenn der Knoten ein zweites Mal angesteuert wird.
    * Dieselbe Textwand zweimal zu lesen fällt im Test sofort auf.
    */
-  kurz?: string[]
+  kurz?: (string | string[])[]
 }
 
 /** Thema für die Startauswahl und das Menü. */
@@ -181,6 +189,13 @@ export function waehleVariante(varianten: readonly string[]): string {
   return varianten[index]
 }
 
+/** Löst die Variantenlisten einer Nachrichtenfolge zu festen Texten auf. */
+export function ausformulieren(messages: (string | string[])[]): string[] {
+  return messages.map((eintrag) =>
+    Array.isArray(eintrag) ? waehleVariante(eintrag) : eintrag,
+  )
+}
+
 /** Überbrückung, solange die eigentliche Antwort noch nicht steht. */
 const UEBERBRUECKUNGEN = [
   "Einen Moment, ich schaue nach.",
@@ -224,8 +239,15 @@ export const FLOW: Record<string, FlowNode> = {
       `Wie gesagt: ${WANDERN.wegenetz} markierte Wege, und die Bergbahnen fahren im Sommer von ${BERGBAHNEN.betriebszeitSommer}.`,
     ],
     messages: [
-      `Ruhpolding hat ${WANDERN.wegenetz} markierte Wanderwege. Beliebt sind der ${BERGBAHNEN.rauschbergName} mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die flache Runde um den ${WANDERN.foerchensee}.`,
-      `Die Bergbahnen fahren im Sommer täglich von ${BERGBAHNEN.betriebszeitSommer}, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt}. Von hier sind es {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
+      [
+        `Ruhpolding hat ${WANDERN.wegenetz} markierte Wanderwege. Beliebt sind der ${BERGBAHNEN.rauschbergName} mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die flache Runde um den ${WANDERN.foerchensee}.`,
+        `Das Wegenetz umfasst ${WANDERN.wegenetz}, alles markiert. Am häufigsten gegangen werden der ${BERGBAHNEN.rauschbergName}, den die ${BERGBAHNEN.rauschbergBahn} ab dem Ort erschließt, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die ebene Runde um den ${WANDERN.foerchensee}.`,
+        `Zur Auswahl stehen ${WANDERN.wegenetz} markierte Wege. Besonders gefragt sind der ${BERGBAHNEN.rauschbergName}, erreichbar mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn}, und flach die Runde um den ${WANDERN.foerchensee}.`,
+      ],
+      [
+        `Die Bergbahnen fahren im Sommer täglich von ${BERGBAHNEN.betriebszeitSommer}, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt}. Von hier sind es {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
+        `Beide Bahnen sind im Sommer täglich von ${BERGBAHNEN.betriebszeitSommer} in Betrieb, die letzte Bergfahrt geht um ${BERGBAHNEN.letzteBergfahrt}. Zur Talstation ${BERGBAHNEN.rauschbergName} sind es von hier {naehe:rauschberg}.`,
+      ],
     ],
     chips: [
       { label: "Leichte Tour mit Kinderwagen", to: "wandern-leicht" },
@@ -293,7 +315,11 @@ export const FLOW: Record<string, FlowNode> = {
       `Wie gesagt: ${EVENTS.biathlonKurz} ${EVENTS.biathlonMonat}, ${EVENTS.sommerkonzerte} ${EVENTS.sommerkonzerteZeit}, ${EVENTS.wochenmarkt} ${EVENTS.wochenmarktZeit}.`,
     ],
     messages: [
-      `Feste Termine im Jahr: der ${EVENTS.biathlonKurz} in der ${EVENTS.chiemgauArena} ${EVENTS.biathlonMonat}, die ${EVENTS.sommerkonzerte} am ${EVENTS.kurpark} (${EVENTS.sommerkonzerteZeit}) und der ${EVENTS.wochenmarkt} ${EVENTS.wochenmarktZeit} am ${EVENTS.rathausplatz}.`,
+      [
+        `Feste Termine im Jahr: der ${EVENTS.biathlonKurz} in der ${EVENTS.chiemgauArena} ${EVENTS.biathlonMonat}, die ${EVENTS.sommerkonzerte} am ${EVENTS.kurpark} (${EVENTS.sommerkonzerteZeit}) und der ${EVENTS.wochenmarkt} ${EVENTS.wochenmarktZeit} am ${EVENTS.rathausplatz}.`,
+        `Drei Termine stehen jedes Jahr fest: ${EVENTS.biathlonMonat} der ${EVENTS.biathlonKurz} in der ${EVENTS.chiemgauArena}, ${EVENTS.sommerkonzerteZeit} die ${EVENTS.sommerkonzerte} am ${EVENTS.kurpark}, dazu der ${EVENTS.wochenmarkt} ${EVENTS.wochenmarktZeit} am ${EVENTS.rathausplatz}.`,
+        `Im Jahreslauf gibt es den ${EVENTS.biathlonKurz} ${EVENTS.biathlonMonat} in der ${EVENTS.chiemgauArena}, die ${EVENTS.sommerkonzerte} am ${EVENTS.kurpark} (${EVENTS.sommerkonzerteZeit}) sowie ${EVENTS.wochenmarktZeit} den ${EVENTS.wochenmarkt} am ${EVENTS.rathausplatz}.`,
+      ],
     ],
     chips: [
       { label: "Biathlon-Weltcup", to: "events-biathlon" },
@@ -333,8 +359,14 @@ export const FLOW: Record<string, FlowNode> = {
       `Wie gesagt: mit dem Auto über die ${ANREISE.autobahn} bis ${ANREISE.ausfahrt}, mit der Bahn ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort}.`,
     ],
     messages: [
-      `Mit dem Auto über die ${ANREISE.autobahn} bis zur Ausfahrt ${ANREISE.ausfahrt}, dann die ${ANREISE.bundesstrasse}, ${ANREISE.fahrzeitAbAusfahrt}.`,
-      `Mit der Bahn ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort} nach Ruhpolding, Fahrzeit ${ANREISE.bahnFahrzeit}. Der Bahnhof liegt ${ANREISE.bahnhofZumZentrum} vom Zentrum, von hier sind es {naehe:bahnhof}.`,
+      [
+        `Mit dem Auto über die ${ANREISE.autobahn} bis zur Ausfahrt ${ANREISE.ausfahrt}, dann die ${ANREISE.bundesstrasse}, ${ANREISE.fahrzeitAbAusfahrt}.`,
+        `Wer mit dem Auto kommt, verlässt die ${ANREISE.autobahn} bei ${ANREISE.ausfahrt} und fährt über die ${ANREISE.bundesstrasse} weiter, ${ANREISE.fahrzeitAbAusfahrt}.`,
+      ],
+      [
+        `Mit der Bahn ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort} nach Ruhpolding, Fahrzeit ${ANREISE.bahnFahrzeit}. Der Bahnhof liegt ${ANREISE.bahnhofZumZentrum} vom Zentrum, von hier sind es {naehe:bahnhof}.`,
+        `Züge fahren ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort}, die Fahrt dauert ${ANREISE.bahnFahrzeit}. Vom Bahnhof ins Zentrum sind es ${ANREISE.bahnhofZumZentrum}, von hier bis dorthin {naehe:bahnhof}.`,
+      ],
     ],
     chips: [
       { label: "Parken im Ort", to: "anreise-parken" },
@@ -382,7 +414,10 @@ export const FLOW: Record<string, FlowNode> = {
     // SIMULIERT: tagesaktuelle Angabe, im Prototyp ohne Datenanbindung nicht
     // echt darstellbar. In Abschnitt 4.4 der Arbeit als Grenze auszuweisen.
     messages: [
-      "Aktuelle Demo-Lage: heute heiter bei 22 °C im Tal, Nullgradgrenze bei 3.200 m, schwacher Wind. Für morgen sind am Nachmittag Wärmegewitter möglich, ein früher Tourenstart ist ratsam.",
+      [
+        "Aktuelle Demo-Lage: heute heiter bei 22 °C im Tal, Nullgradgrenze bei 3.200 m, schwacher Wind. Für morgen sind am Nachmittag Wärmegewitter möglich, ein früher Tourenstart ist ratsam.",
+        "Die Demo-Lage heute: heiter, 22 °C im Tal, schwacher Wind, Nullgradgrenze auf 3.200 m. Morgen können am Nachmittag Wärmegewitter aufziehen, deshalb früh losgehen.",
+      ],
     ],
     chips: [
       { label: "Bergwetter 3 Tage", to: "wetter-3tage" },
@@ -418,7 +453,10 @@ export const FLOW: Record<string, FlowNode> = {
       `Wie gesagt: die ${GASTRONOMIE.gipfelalm} am Berg, im Ort das ${GASTRONOMIE.gasthausPost} und die ${GASTRONOMIE.pizzeria}.`,
     ],
     messages: [
-      `Von der Berghütte bis zum gehobenen Lokal ist alles da. Auf dem ${BERGBAHNEN.rauschbergName} die ${GASTRONOMIE.gipfelalm} mit Panoramaterrasse, im Ort das ${GASTRONOMIE.gasthausPost} mit bayerischer Küche und die ${GASTRONOMIE.pizzeria}. Gehoben isst man im Restaurant des Hotels ${GASTRONOMIE.hotelGehoben}.`,
+      [
+        `Von der Berghütte bis zum gehobenen Lokal ist alles da. Auf dem ${BERGBAHNEN.rauschbergName} die ${GASTRONOMIE.gipfelalm} mit Panoramaterrasse, im Ort das ${GASTRONOMIE.gasthausPost} mit bayerischer Küche und die ${GASTRONOMIE.pizzeria}. Gehoben isst man im Restaurant des Hotels ${GASTRONOMIE.hotelGehoben}.`,
+        `Die Spanne reicht von der Berghütte bis zum gehobenen Lokal: oben am ${BERGBAHNEN.rauschbergName} die ${GASTRONOMIE.gipfelalm} mit Panoramaterrasse, unten im Ort das ${GASTRONOMIE.gasthausPost} mit bayerischer Küche und die ${GASTRONOMIE.pizzeria}, gehoben das Restaurant des Hotels ${GASTRONOMIE.hotelGehoben}.`,
+      ],
     ],
     chips: [
       { label: "Hütten mit Spielplatz", to: "essen-huette" },
@@ -450,8 +488,14 @@ export const FLOW: Record<string, FlowNode> = {
       `Wie gesagt: ${FAMILIE.freizeitpark}, ${FAMILIE.vitalwelt} und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}.`,
     ],
     messages: [
-      `Für Familien lohnen sich der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften (${FAMILIE.freizeitparkOeffnung}), die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Bei Regen ist das ${FAMILIE.bergbahnMuseum} eine Option.`,
-      `Zur ${FAMILIE.vitalwelt} sind es von hier {naehe:vitalwelt}.`,
+      [
+        `Für Familien lohnen sich der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften (${FAMILIE.freizeitparkOeffnung}), die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Bei Regen ist das ${FAMILIE.bergbahnMuseum} eine Option.`,
+        `Mit Kindern lohnen sich vor allem drei Ziele: der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften, geöffnet ${FAMILIE.freizeitparkOeffnung}, die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Regnet es, bietet sich das ${FAMILIE.bergbahnMuseum} an.`,
+      ],
+      [
+        `Zur ${FAMILIE.vitalwelt} sind es von hier {naehe:vitalwelt}.`,
+        `Die ${FAMILIE.vitalwelt} erreichst du von hier in {naehe:vitalwelt}.`,
+      ],
     ],
     chips: [
       { label: "Angebote bei Regen", to: "familie-regen" },
@@ -483,7 +527,10 @@ export const FLOW: Record<string, FlowNode> = {
       `Wie gesagt: rund ${LOIPEN.netz} Loipen und das Wettkampfstadion in der ${EVENTS.chiemgauArena}.`,
     ],
     messages: [
-      `Ruhpolding ist ein Zentrum für Langlauf: rund ${LOIPEN.netz} gespurte Loipen und das Wettkampfstadion in der ${EVENTS.chiemgauArena}, das öffentlich genutzt werden kann. Von hier sind es {naehe:arena} dorthin. Alpin gibt es kleinere Skigebiete am ${WINTER.skigebiet} und in Inzell.`,
+      [
+        `Ruhpolding ist ein Zentrum für Langlauf: rund ${LOIPEN.netz} gespurte Loipen und das Wettkampfstadion in der ${EVENTS.chiemgauArena}, das öffentlich genutzt werden kann. Von hier sind es {naehe:arena} dorthin. Alpin gibt es kleinere Skigebiete am ${WINTER.skigebiet} und in Inzell.`,
+        `Der Schwerpunkt liegt im Winter beim Langlauf: rund ${LOIPEN.netz} gespurte Loipen, dazu das öffentlich nutzbare Wettkampfstadion in der ${EVENTS.chiemgauArena}, {naehe:arena} von hier. Alpin bleiben die kleineren Skigebiete am ${WINTER.skigebiet} und in Inzell.`,
+      ],
     ],
     chips: [
       { label: "Loipen & Loipenpass", to: "winter-loipe" },
@@ -525,7 +572,10 @@ export const FLOW: Record<string, FlowNode> = {
       `Wie gesagt: vom Ferienzimmer bis zum ${UNTERKUNFT.hoechsteKategorie}, buchbar über die Gästekarten-Plattform oder direkt beim Gastgeber.`,
     ],
     messages: [
-      `Vom Ferienzimmer über den Bauernhof bis zum ${UNTERKUNFT.hoechsteKategorie} ist das Angebot breit. Buchbar ist alles über die offizielle Gästekarten-Plattform oder direkt bei den Gastgebern. Die Tourist-Info vermittelt bei freier Kapazität auch spontan.`,
+      [
+        `Vom Ferienzimmer über den Bauernhof bis zum ${UNTERKUNFT.hoechsteKategorie} ist das Angebot breit. Buchbar ist alles über die offizielle Gästekarten-Plattform oder direkt bei den Gastgebern. Die Tourist-Info vermittelt bei freier Kapazität auch spontan.`,
+        `Das Angebot reicht vom Ferienzimmer über den Bauernhof bis zum ${UNTERKUNFT.hoechsteKategorie}. Buchen lässt sich alles über die offizielle Gästekarten-Plattform oder direkt beim Gastgeber, und die Tourist-Info vermittelt auch spontan, solange etwas frei ist.`,
+      ],
     ],
     chips: [
       { label: "Urlaub am Bauernhof", to: "unterkunft-hof" },
@@ -555,7 +605,10 @@ export const FLOW: Record<string, FlowNode> = {
     topic: "info",
     kurz: ["Wie gesagt, hier noch einmal die Kontaktdaten."],
     messages: [
-      "Hier die Kontaktdaten der Tourist-Information. Vor Ort helfen dir die Mitarbeitenden auch persönlich weiter, von hier sind es {naehe:touristinfo}.",
+      [
+        "Hier die Kontaktdaten der Tourist-Information. Vor Ort helfen dir die Mitarbeitenden auch persönlich weiter, von hier sind es {naehe:touristinfo}.",
+        "Das sind die Kontaktdaten der Tourist-Information. Persönlich weiter hilft dir das Team auch vor Ort, von hier sind es {naehe:touristinfo}.",
+      ],
     ],
     card: {
       title: "Tourist-Information Ruhpolding",

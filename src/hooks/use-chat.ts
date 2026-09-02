@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import {
+  ausformulieren,
   getNode,
   matchIntent,
   rueckfrageKnoten,
@@ -103,7 +104,7 @@ export function useChat() {
     const nachrichten = [
       ...(bezug ? [bezug] : []),
       ...(node.bridge || node.card ? [ueberbrueckung()] : []),
-      ...inhalt,
+      ...ausformulieren(inhalt),
     ].map((text) => aufloesen(text, standortRef.current))
 
     for (let i = 0; i < nachrichten.length; i++) {
