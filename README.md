@@ -11,12 +11,12 @@ Style `base-nova`).
 
 ## Aufbau
 
-| Pfad | Inhalt |
-|---|---|
-| `src/lib/chat-flow.ts` | Vordefinierter Gesprächsbaum: Knoten, Info-Karten, Themen und die Stichwort-Erkennung für Freitext |
-| `src/hooks/use-chat.ts` | Gesprächslogik: Nachrichten-State, Tippsimulation, Abbruch laufender Antworten |
-| `src/components/chat/` | UI-Bausteine: Kopfzeile, Nachrichten, Schnellantworten, Tippanzeige, Eingabe |
-| `src/components/device-preview.tsx` | Rahmen zum Umschalten zwischen Mobil, Tablet, Desktop und Service-Terminal |
+| Pfad                                | Inhalt                                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `src/lib/chat-flow.ts`              | Vordefinierter Gesprächsbaum: Knoten, Info-Karten, Themen und die Stichwort-Erkennung für Freitext |
+| `src/hooks/use-chat.ts`             | Gesprächslogik: Nachrichten-State, Tippsimulation, Abbruch laufender Antworten                     |
+| `src/components/chat/`              | UI-Bausteine: Kopfzeile, Nachrichten, Schnellantworten, Tippanzeige, Eingabe                       |
+| `src/components/device-preview.tsx` | Rahmen zum Umschalten zwischen Mobil, Tablet, Desktop und Service-Terminal                         |
 
 ## Interaktion ohne Backend
 
