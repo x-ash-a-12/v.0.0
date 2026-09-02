@@ -114,16 +114,39 @@ export const WANDERN = {
   sonntagshornStart: "Wanderparkplatz Holzknechtmuseum / Laubau",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Parken in Ruhpolding.
+ * Quelle Zentrum: https://www.ruhpolding-rathaus.de/parkplaetze-im-zentrum
+ * Quelle Wanderparkplätze: https://www.ruhpolding-rathaus.de/wanderparkplaetze
+ * Abgerufen: 2026-09-03
+ *
+ * Die Gemeinde gibt für die Wanderparkplätze den Stand 01.01.2025 an. Die
+ * meisten Plätze im Zentrum sind gebührenfrei, Geld kostet dort nur die
+ * Rathaus-Tiefgarage.
+ */
 export const PARKEN = {
-  /** @demo */ rathaus: "Parkplatz Rathaus",
-  /** @demo */ rathausTarif: "1,00 €/Std., Tageskarte 6,00 €",
-  /** @demo */ laubau: "Wanderparkplatz Laubau",
-  /** @demo */ laubauTarif: "kostenlos",
-  /** @demo */ vitalwelt: "Parkhaus Vitalwelt",
-  /** @demo */ vitalweltTarif: "1,50 €/Std.",
-  /** @demo */ wohnmobile: "Stellplatz an der Chiemgau Arena",
-  /** @demo */ gaestekarteHinweis: "Mit der Gästekarte sind die Ortsparkplätze frei.",
+  rathaus: "Rathaus Tiefgarage",
+  /** Zeitlich unbegrenzt, nur PKW. Eine Tageskarte gibt es nicht. */
+  rathausTarif: "1,00 € pro Stunde",
+  laubau: "Wanderparkplatz Laubau",
+  /** Gebührenpflichtig täglich 8 bis 18 Uhr, Tagesticket 9,00 €. */
+  laubauTarif: "Tagesticket 9,00 €",
+  /**
+   * @ungeprueft Ein Parkhaus an der Vitalwelt steht weder in der Liste der
+   * Zentrumsparkplätze noch bei den Wanderparkplätzen. Der Wohnmobilplatz P1
+   * liegt laut Gemeinde "Richtung Schwimmbad".
+   */
+  vitalwelt: "Parkhaus Vitalwelt",
+  /** @ungeprueft siehe vitalwelt */
+  vitalweltTarif: "1,50 €/Std.",
+  /** Platz P1 an der Hauptstraße 75, bis 48 h 20,00 €. */
+  wohnmobile: "Hauptstraße 75, bis 24 h 10,00 €",
+  /**
+   * @ungeprueft Die Gemeindeseiten sagen nichts über kostenloses Parken mit
+   * Gästekarte. Ermäßigt wird nur mit der Ruhpoldinger Bürgerkarte, und die
+   * ist für Einheimische. Siehe Bericht.
+   */
+  gaestekarteHinweis: "Mit der Gästekarte sind die Ortsparkplätze frei.",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
