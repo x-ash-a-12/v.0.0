@@ -82,17 +82,36 @@ export const BERGBAHNEN = {
     "Unternberg, Stand 3. September 2026. Für den Rauschberg gibt es wegen des Bahnneubaus derzeit keinen Fahrbetrieb.",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Wandern in Ruhpolding.
+ * Quelle: https://www.ruhpolding.de/sonntagshorn-1961-m
+ * Abgerufen: 2026-09-03
+ *
+ * Geprüft, aber ohne Angabe geblieben: https://www.ruhpolding.de/wandern und
+ * https://www.ruhpolding.de/schoensten-wander-spazierwege nennen weder eine
+ * Gesamtlänge des Wegenetzes noch einen Rundweg am Förchensee.
+ */
 export const WANDERN = {
-  /** @demo Ohne "rund", das Wort steht im Antworttext. */
+  /**
+   * @ungeprueft Keine offizielle Gesamtangabe gefunden. Weder die
+   * Wanderübersicht noch die Wegeliste nennt eine Kilometersumme.
+   * Ohne "rund", das Wort steht im Antworttext.
+   */
   wegenetzKm: "250 km",
-  /** @demo */ foerchensee: "Förchensee",
-  /** @demo */ foerchenseeRunde: "etwa 3 km, eben",
-  /** @demo */ uferwegTraun: "Uferweg entlang der Traun",
-  /** @demo */ sonntagshorn: "Sonntagshorn",
-  /** @demo */ sonntagshornHoehe: "1.961 m",
-  /** @demo */ sonntagshornGehzeit: "rund 4 Stunden",
-  /** @demo */ sonntagshornStart: "Parkplatz Vorderlahnerkopf",
+  /** @ungeprueft auf den geprüften Seiten nicht namentlich genannt */
+  foerchensee: "Förchensee",
+  /** @ungeprueft kein Rundweg am Förchensee mit Längenangabe gefunden */
+  foerchenseeRunde: "etwa 3 km, eben",
+  /**
+   * @ungeprueft Ein reiner Uferweg ist nicht belegt. Die Wegeliste führt
+   * "Traunauen und Taubensee" mit 8,6 km und 02:15 h, was nicht dasselbe ist.
+   */
+  uferwegTraun: "Uferweg entlang der Traun",
+  sonntagshorn: "Sonntagshorn",
+  sonntagshornHoehe: "1.961 m",
+  /** Die Quelle gibt "09:00 Stunden" für die Tour ab Laubau an. */
+  sonntagshornGehzeit: "9 Stunden",
+  sonntagshornStart: "Wanderparkplatz Holzknechtmuseum / Laubau",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
