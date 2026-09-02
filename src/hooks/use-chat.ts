@@ -3,6 +3,7 @@ import * as React from "react"
 import {
   getNode,
   matchIntent,
+  ueberbrueckung,
   type Chip,
   type FlowNode,
   type InfoCard,
@@ -68,8 +69,15 @@ export function useChat() {
 
     const sofort = magKeineAnimation()
 
-    for (let i = 0; i < node.messages.length; i++) {
-      const text = node.messages[i]
+    // Karten brauchen Vorlauf, sonst pulsieren nur die Punkte. Eine kurze
+    // Zwischenmeldung füllt die Wartezeit, statt sie zu verstecken.
+    const nachrichten =
+      node.bridge || node.card
+        ? [ueberbrueckung(), ...node.messages]
+        : node.messages
+
+    for (let i = 0; i < nachrichten.length; i++) {
+      const text = nachrichten[i]
 
       await sleep(denkpause())
       if (!aktiv()) return
@@ -97,14 +105,14 @@ export function useChat() {
         { id: uid(), role: "bot", kind: "text", text },
       ])
 
-      if (i < node.messages.length - 1 || node.card) {
+      if (i < nachrichten.length - 1 || node.card) {
         setIsTyping(true)
       }
     }
 
     if (node.card) {
       setIsTyping(true)
-      await sleep(650)
+      await sleep(zufall(600, 1000))
       if (!aktiv()) return
       setMessages((prev) => [
         ...prev,

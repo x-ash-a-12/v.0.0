@@ -1,4 +1,9 @@
-import { TOPICS, type Chip, type FlowNode } from "@/lib/chat-flow"
+import {
+  TOPICS,
+  waehleVariante,
+  type Chip,
+  type FlowNode,
+} from "@/lib/chat-flow"
 
 /**
  * Weicher zweiter Durchgang, wenn kein INTENTS-Muster gegriffen hat.
@@ -177,19 +182,6 @@ const NICHTS_OHNE_BEGRIFF = [
   `Da muss ich passen. Frag gern noch einmal anders, oder wähle eines der Themen.`,
 ]
 
-/** Zuletzt gezogene Variante je Fall, damit sich nichts direkt wiederholt. */
-const zuletzt = new Map<string[], number>()
-
-function waehle(varianten: string[]): string {
-  const vorher = zuletzt.get(varianten)
-  let index = Math.floor(Math.random() * varianten.length)
-  while (varianten.length > 1 && index === vorher) {
-    index = Math.floor(Math.random() * varianten.length)
-  }
-  zuletzt.set(varianten, index)
-  return varianten[index]
-}
-
 function fuelle(
   vorlage: string,
   begriff: string | null,
@@ -225,7 +217,7 @@ export function fallbackKnoten(text: string): FlowNode {
 
   return {
     id: "rueckfrage",
-    messages: [fuelle(waehle(varianten), begriff, treffer)],
+    messages: [fuelle(waehleVariante(varianten), begriff, treffer)],
     chips,
   }
 }

@@ -46,6 +46,12 @@ export type FlowNode = {
   messages: string[]
   card?: InfoCard
   chips?: Chip[]
+  /**
+   * Erzwingt eine Überbrückung vor der Antwort. Knoten mit Karte bekommen
+   * sie ohnehin, hier steht sie für Antworten, bei denen Nachschlagen
+   * plausibel wirkt.
+   */
+  bridge?: boolean
 }
 
 /** Thema für die Startauswahl und das Menü. */
@@ -76,6 +82,35 @@ const backChips = (topic: string): Chip[] => [
   { label: "Zurück zum Thema", to: topic },
   { label: "Andere Frage", to: "menu" },
 ]
+
+/** Zuletzt gezogener Index je Variantenliste, als Schlüssel die Liste selbst. */
+const zuletzt = new Map<readonly string[], number>()
+
+/**
+ * Zieht eine Variante, nie zweimal dieselbe hintereinander. Wiederholt sich
+ * eine Formulierung im selben Gespräch wortgleich, ist die Wirkung dahin.
+ */
+export function waehleVariante(varianten: readonly string[]): string {
+  const vorher = zuletzt.get(varianten)
+  let index = Math.floor(Math.random() * varianten.length)
+  while (varianten.length > 1 && index === vorher) {
+    index = Math.floor(Math.random() * varianten.length)
+  }
+  zuletzt.set(varianten, index)
+  return varianten[index]
+}
+
+/** Überbrückung, solange die eigentliche Antwort noch nicht steht. */
+const UEBERBRUECKUNGEN = [
+  "Einen Moment, ich schaue nach.",
+  "Ich sehe kurz nach.",
+  "Das habe ich gleich.",
+  "Moment, ich hole die Zahlen.",
+] as const
+
+export function ueberbrueckung(): string {
+  return waehleVariante(UEBERBRUECKUNGEN)
+}
 
 export const FLOW: Record<string, FlowNode> = {
   start: {
@@ -166,6 +201,7 @@ export const FLOW: Record<string, FlowNode> = {
   },
   "events-biathlon": {
     id: "events-biathlon",
+    bridge: true,
     messages: [
       `Der ${EVENTS.biathlonName} findet ${EVENTS.biathlonTermin} in der ${EVENTS.chiemgauArena} statt. Tickets gibt es online und an der Tageskasse. Vom Ortszentrum fährt ein kostenloser Skibus im ${EVENTS.skibusTakt} zur Arena.`,
     ],
