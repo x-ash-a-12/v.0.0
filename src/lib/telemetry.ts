@@ -16,6 +16,22 @@ export type LogEintrag = {
   /** Roheingabe bei "eingabe", Beschriftung bei "chip". */
   text?: string
   treffer?: "hit" | "ambiguous" | "miss"
+  /**
+   * Bei einem Treffer die Stufe, die ihn erzeugt hat. In der Auswertung
+   * unterscheidbar zu machen, ob eine Eingabe am Wortschatz hing oder am
+   * Gesprächszustand, ist der Unterschied zwischen "es hat funktioniert" und
+   * einer Aussage darüber, warum.
+   */
+  grund?:
+    | "meta"
+    | "auswahl"
+    | "lexikon"
+    | "anapher"
+    | "wiederholung"
+    | "navigation"
+    | "zielwahl"
+    | "empfehlung"
+    | "fahrplan"
   knoten?: string
   standort?: string
 }
@@ -56,7 +72,7 @@ export function exportiere(): void {
       eintraege,
     },
     null,
-    2,
+    2
   )
 
   const blob = new Blob([inhalt], { type: "application/json" })

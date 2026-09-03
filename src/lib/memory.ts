@@ -52,7 +52,7 @@ const ABSTAND = 3
  */
 export function zieheRueckbezug(
   verlauf: Verlauf,
-  node: FlowNode,
+  node: FlowNode
 ): string | null {
   const thema = node.topic
   if (!thema) return null

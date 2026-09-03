@@ -23,12 +23,46 @@ import {
 /** Wortlisten zur Erkennung. Ab zwei Treffern gilt die Sprache als erkannt. */
 const MARKER: Record<Sprache, string[]> = {
   en: [
-    "the", "is", "are", "where", "how", "what", "can", "you", "i", "my",
-    "do", "does", "there", "any", "please", "we", "me", "get", "to",
+    "the",
+    "is",
+    "are",
+    "where",
+    "how",
+    "what",
+    "can",
+    "you",
+    "i",
+    "my",
+    "do",
+    "does",
+    "there",
+    "any",
+    "please",
+    "we",
+    "me",
+    "get",
+    "to",
   ],
   de: [
-    "der", "die", "das", "wo", "wie", "was", "kann", "ich", "mein", "gibt",
-    "es", "und", "mit", "für", "bei", "einen", "eine", "sind", "wir",
+    "der",
+    "die",
+    "das",
+    "wo",
+    "wie",
+    "was",
+    "kann",
+    "ich",
+    "mein",
+    "gibt",
+    "es",
+    "und",
+    "mit",
+    "für",
+    "bei",
+    "einen",
+    "eine",
+    "sind",
+    "wir",
   ],
 }
 
@@ -39,7 +73,10 @@ const MINDESTTREFFER = 2
  * uneindeutig ist. Dann bleibt die zuletzt erkannte Sprache stehen.
  */
 export function erkenneSprache(text: string): Sprache | null {
-  const woerter = text.toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean)
+  const woerter = text
+    .toLowerCase()
+    .split(/[^a-zäöüß]+/)
+    .filter(Boolean)
   const zaehle = (sprache: Sprache) =>
     woerter.filter((wort) => MARKER[sprache].includes(wort)).length
 
@@ -90,6 +127,54 @@ const EN: Record<string, Uebersetzung> = {
     ],
     chips: CHIPS_ALLGEMEIN,
   },
+  /*
+   * Die Meta-Knoten stehen bewusst auch auf Englisch bereit.
+   *
+   * "Where am I" und "what can you do" sind für einen englischsprachigen
+   * Gast die ersten Eingaben überhaupt. Ausgerechnet dort mit dem Hinweis
+   * zu antworten, die Auskunft liege nur auf Deutsch vor, würde die
+   * Sprachumschaltung im Test genau an der Stelle entwerten, an der sie
+   * zuerst auffällt.
+   */
+  standort: {
+    messages: [
+      `You are currently at {standort:kurz}, here in Ruhpolding in the Chiemgau. From here it is {naehe:touristinfo} to the tourist information and {naehe:rauschberg} to the ${BERGBAHNEN.rauschbergName} valley station.`,
+    ],
+    chips: {
+      "empfehlung:hier:0": "What can I do here?",
+      anreise: "Getting here & parking",
+      menu: "Something else",
+    },
+  },
+  "ueber-mich": {
+    messages: [
+      "I am the digital assistant of the Ruhpolding tourist information, not a person. I cover the topics around your stay here: hiking and the mountain lifts, events, getting here and parking, the weather, food, things to do with children, winter, places to stay and the tourist information itself.",
+      "Just type away, full sentences are fine. If I do not have something, I will say so.",
+    ],
+    chips: CHIPS_ALLGEMEIN,
+  },
+  "qr-hinweis": {
+    messages: [
+      "For places where it helps, I show a QR code. Scan it with your phone camera and the route is on your own device. Tell me where you want to go and I will bring up the code.",
+    ],
+    chips: {
+      "wandern-leicht": `Route to the ${WANDERN.foerchensee}`,
+      "events-biathlon": `Route to the ${EVENTS.chiemgauArena}`,
+      "anreise-parken": "Route to the car park",
+      menu: "Something else",
+    },
+  },
+  bergbahnen: {
+    messages: [
+      `There are two: the ${BERGBAHNEN.rauschbergBahnEn} up the ${BERGBAHNEN.rauschbergName} and the ${BERGBAHNEN.unternbergBahnEn} up the ${BERGBAHNEN.unternbergName}. Both start in the village and run daily in summer from ${BERGBAHNEN.betriebSommerVon} to ${BERGBAHNEN.betriebSommerBis}, last ride up at ${BERGBAHNEN.letzteBergfahrt}.`,
+      `It is {naehe:rauschberg} from here to the ${BERGBAHNEN.rauschbergName} valley station.`,
+    ],
+    chips: {
+      "bergbahn-preise": "Lift prices",
+      "wandern-schwer": "Demanding mountain tour",
+      menu: "Something else",
+    },
+  },
   wandern: {
     messages: [
       [
@@ -99,9 +184,9 @@ const EN: Record<string, Uebersetzung> = {
       `In summer the mountain lifts run daily from ${BERGBAHNEN.betriebSommerVon} to ${BERGBAHNEN.betriebSommerBis}, last ride up at ${BERGBAHNEN.letzteBergfahrt}. From here it is {naehe:rauschberg} to the ${BERGBAHNEN.rauschbergName} valley station.`,
     ],
     chips: {
+      bergbahnen: "Which mountain lifts are there?",
       "wandern-leicht": "Easy walk with a pushchair",
       "wandern-schwer": "Demanding mountain tour",
-      "bergbahn-preise": "Lift prices",
       menu: "Something else",
     },
   },
@@ -121,7 +206,19 @@ const EN: Record<string, Uebersetzung> = {
       `By train there is an ${ANREISE.bahnTaktEn} service from ${ANREISE.bahnAbfahrtsort} to Ruhpolding, taking ${ANREISE.bahnFahrzeitEn}. The station is ${ANREISE.bahnhofZumZentrumEn} from the centre, and {naehe:bahnhof} from here.`,
     ],
     chips: {
+      "fahrplan:traunstein": "Train to Traunstein",
       "anreise-parken": "Parking in the village",
+      "anreise-bus": "Local bus & guest card",
+      menu: "Something else",
+    },
+  },
+  busnetz: {
+    messages: [
+      `Two village bus lines run here, plus the ${ANREISE.rufbusName} on-demand bus. These are the routes.`,
+      `${ANREISE.rufbusHinweis} It runs on weekdays ${ANREISE.rufbusWerktags}, at weekends and on public holidays ${ANREISE.rufbusWochenende}. Both village lines are free with the ${ANREISE.gaestekarteName}.`,
+    ],
+    chips: {
+      "fahrplan:traunstein": "Train to Traunstein",
       "anreise-bus": "Local bus & guest card",
       menu: "Something else",
     },

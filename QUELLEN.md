@@ -12,6 +12,11 @@ Angaben über Ruhpolding, sondern Hinweise auf den Stand der Daten.
 
 Belegt: 45. Offen geblieben: 55.
 
+Nachgetragen am 3. September 2026: die Fahrplandaten in `src/lib/fahrplan.ts`
+und die Buslinien in `ANREISE`. Sie stehen in einer eigenen Tabelle am Ende
+dieser Datei, weil sie anders als die übrigen Werte zur Laufzeit gerechnet
+werden und ein Ablaufdatum haben.
+
 | Block | Wert | Angabe | Quelle | Abgerufen |
 |---|---|---|---|---|
 | TOURIST_INFO | adresse | Bahnhofstraße 8, 83324 Ruhpolding | https://www.ruhpolding.de/kontakt | 2026-09-03 |
@@ -122,3 +127,43 @@ dort mit `@ungeprueft` markiert.
 | UNTERKUNFT | hoefeAnzahl | Keine Gesamtzahl der Höfe genannt, die Liste führt sie einzeln auf. Steht am Satzanfang, deshalb groß geschrieben. |
 | UNTERKUNFT | zertifizierung | "Reisen für Alle" wird auf der Gastgeberseite nicht erwähnt |
 | UNTERKUNFT | barrierefreiHaeuser | Keine Aufstellung barrierefreier Häuser gefunden. Als barrierefrei ausgewiesen ist dort die Ferienwohnung "Berg & Wiese". |
+
+
+## Fahrpläne und Buslinien
+
+Nachgetragen am 3. September 2026.
+
+| Block | Wert | Angabe | Quelle | Abgerufen |
+|---|---|---|---|---|
+| fahrplan.ts | NACH_TRAUNSTEIN | 18 Abfahrten Ruhpolding–Traunstein, Fahrzeit 24 Min. | https://download.transdev.de/transdev/uploads/bb/schedule/2124/fahrplan-traunstein-ruhpolding-14-12-2025-12-12-2026.pdf | 2026-09-03 |
+| fahrplan.ts | RE5_SALZBURG | 17 Anschlusszeiten ab Traunstein Richtung Salzburg/Freilassing | dieselbe Quelle | 2026-09-03 |
+| fahrplan.ts | RE5_MUENCHEN | 17 Anschlusszeiten ab Traunstein Richtung Rosenheim/München | dieselbe Quelle | 2026-09-03 |
+| fahrplan.ts | Linie | RB 53, gültig 14.12.2025 bis 12.12.2026 | dieselbe Quelle | 2026-09-03 |
+| ANREISE | dorflinie9532 | Westernberg – … – Edeka | https://www.ruhpolding.de/mobilitaet-vor-ort | 2026-09-03 |
+| ANREISE | dorflinie9533 | Bahnhof Ruhpolding – … – Chiemgau Arena | https://www.ruhpolding.de/mobilitaet-vor-ort | 2026-09-03 |
+| ANREISE | rufbusName | DORLI | https://www.ruhpolding.de/mobilitaet-vor-ort | 2026-09-03 |
+| ANREISE | rufbusWerktags | 07:00 bis 22:00 Uhr | https://www.ruhpolding.de/mobilitaet-vor-ort | 2026-09-03 |
+| ANREISE | rufbusWochenende | 08:00 bis 22:00 Uhr | https://www.ruhpolding.de/mobilitaet-vor-ort | 2026-09-03 |
+| ANREISE | regionalZiele | Reit im Winkl, Inzell, Bad Reichenhall, Berchtesgaden | https://www.ruhpolding.de/mobilitaet-vor-ort | 2026-09-03 |
+
+### Was an diesen Daten nicht belegt ist
+
+**Verkehrstage.** Der gedruckte Fahrplan unterscheidet Montag bis Freitag,
+Samstag sowie Sonn- und Feiertage, gibt die Zuordnung aber über Spaltenbreiten
+an, die sich aus dem PDF nicht verlässlich zurücklesen lassen. Aufgenommen ist
+deshalb der Grundtakt, den alle Verkehrstage teilen; Fahrten mit Sondervermerk
+sind ausgelassen. Jede Fahrplanausgabe des Prototyps weist das in ihrer
+Fußnote aus und verweist auf brb.de.
+
+**Takt der Dorflinien.** Ruhpolding Tourismus veröffentlicht die Strecken der
+Linien 9532 und 9533, aber keine Abfahrtszeiten. Der Prototyp erfindet keine,
+sondern nennt die Strecken und verweist auf den Aushang an den Haltestellen.
+
+**Öffnungszeiten der Gastronomie.** Für die einzelnen Gasthäuser ist keine
+offizielle Angabe zu finden. Sie tragen deshalb kein `oeffnung`-Feld, und der
+Prototyp sagt zu ihnen nichts über Offen oder Zu. Belegt sind nur die
+Betriebszeiten der Bergbahnen, die Öffnung des Freizeitparks und die der
+Tourist-Information.
+
+**Beliebtheit.** Die Hervorhebung eines Vorschlags als beliebtester steht fest
+in `GRUPPEN` und ist nicht erhoben. Im Code als SIMULIERT gekennzeichnet.

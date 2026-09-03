@@ -11,7 +11,10 @@ import {
   BedDouble,
 } from "lucide-react"
 
-import { leitbegriff, type Sprache } from "@/lib/sprache"
+import { type Sprache } from "@/lib/sprache"
+import { type Folge } from "@/lib/verstehen"
+import { empfehlungsKnoten, fahrplanKnoten, zielKnoten } from "@/lib/empfehlung"
+import { mapsSuche } from "@/lib/ziele"
 import {
   ANREISE,
   BERGBAHNEN,
@@ -40,21 +43,28 @@ export type InfoCard = {
   note?: string
 }
 
+/**
+ * Eine Tabelle, etwa mit den nächsten Abfahrten.
+ *
+ * Fahrplanzeiten in Fließtext zu setzen ist die Art von Auskunft, die man
+ * zweimal lesen muss: "der nächste um 15:47, dann um 16:51, dann um 17:50"
+ * lässt sich nicht überfliegen. In Spalten steht die Abfahrt neben der
+ * Ankunft, und die Zeile, die gerade zählt, ist die oberste.
+ */
+export type DataTable = {
+  title: string
+  columns: string[]
+  rows: string[][]
+  /** Hervorgehobene Zeile, üblicherweise die nächste Abfahrt. */
+  highlight?: number
+  note?: string
+}
+
 /** Ein QR-Code zum Mitnehmen auf das eigene Gerät. */
 export type QrPayload = {
   title: string
   hint: string
   url: string
-}
-
-/**
- * Google-Maps-Suchabfrage für ein Ziel in Ruhpolding. Das ist keine erfundene
- * Tatsache, sondern eine Abfrage, die die Karte selbst beantwortet.
- */
-function mapsSuche(ziel: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${ziel} Ruhpolding`,
-  )}`
 }
 
 /** Ein Knoten im vordefinierten Gesprächsbaum. */
@@ -71,6 +81,7 @@ export type FlowNode = {
    */
   messages: (string | string[])[]
   card?: InfoCard
+  table?: DataTable
   chips?: Chip[]
   /**
    * Erzwingt eine Überbrückung vor der Antwort. Knoten mit Karte bekommen
@@ -91,6 +102,28 @@ export type FlowNode = {
    * Dieselbe Textwand zweimal zu lesen fällt im Test sofort auf.
    */
   kurz?: (string | string[])[]
+  /**
+   * Ziele, die dieser Knoten zur Auswahl stellt.
+   *
+   * Sie sind der Bezugspunkt für die nächste Eingabe: wer "ich würde gern auf
+   * den Rauschberg" schreibt, wählt aus dieser Liste, ohne eine Schaltfläche
+   * anzufassen.
+   */
+  angebot?: string[]
+  /** Aus welcher Vorschlagsgruppe das Angebot stammt, und ab welcher Stelle. */
+  gruppe?: { id: string; ab: number }
+  /**
+   * Das Ziel, um das es in diesem Knoten geht.
+   *
+   * Damit lässt sich "navigiere mich da hin" beantworten, ohne dass das Ziel
+   * noch einmal genannt werden muss.
+   */
+  ziel?: string
+  /**
+   * Der Knoten ist bereits in der Dialogsprache gebaut und braucht keine
+   * Übersetzung mehr. Gilt für alles, was zur Laufzeit entsteht.
+   */
+  fertig?: boolean
 }
 
 /** Thema für die Startauswahl und das Menü. */
@@ -213,7 +246,7 @@ export function waehleVariante(varianten: readonly string[]): string {
 /** Löst die Variantenlisten einer Nachrichtenfolge zu festen Texten auf. */
 export function ausformulieren(messages: (string | string[])[]): string[] {
   return messages.map((eintrag) =>
-    Array.isArray(eintrag) ? waehleVariante(eintrag) : eintrag,
+    Array.isArray(eintrag) ? waehleVariante(eintrag) : eintrag
   )
 }
 
@@ -253,6 +286,73 @@ export const FLOW: Record<string, FlowNode> = {
     chips: menuChips,
   },
 
+  /*
+   * Fragen an das Gerät statt an den Ort.
+   *
+   * Im Testlauf vom 03.09. blieben "wo bin ich", "was kann ich hier machen"
+   * und "gib mir einen QR-Code aus" allesamt ohne Treffer. Für eine
+   * Testperson sind das keine Randfälle: sie stehen vor einem Bildschirm an
+   * einem fremden Ort und fragen zuerst nach der Lage, dann nach dem Gerät.
+   * Ein Sprachmodell würde beides beantworten, ohne dass jemand es dafür
+   * vorbereitet hätte.
+   */
+
+  standort: {
+    id: "standort",
+    messages: [
+      [
+        "Du stehst gerade {standort:kurz}, hier in Ruhpolding im Chiemgau. Zur Tourist-Information sind es von hier {naehe:touristinfo}, zur Talstation ${BERGBAHNEN.rauschbergName} {naehe:rauschberg}.",
+        "Dieses Gerät steht {standort:kurz} in Ruhpolding. Von hier aus sind es {naehe:touristinfo} zur Tourist-Information und {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.",
+        "Der Standort ist {standort:kurz}, mitten in Ruhpolding. {naehe:touristinfo} zur Tourist-Information, {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.",
+      ],
+    ],
+    chips: [
+      { label: "Was kann ich hier machen?", to: "empfehlung:hier:0" },
+      { label: "Anreise & Parken", to: "anreise" },
+      { label: "Andere Frage", to: "menu" },
+    ],
+  },
+
+  /*
+   * "Was kann ich hier machen" führt jetzt in die Vorschlagsliste.
+   *
+   * Vorher stand hier ein Satz über die Umgebung und darunter das Themenmenü.
+   * Das beantwortet die Frage nicht: wer so fragt, will nicht in eine
+   * Themenauswahl geschickt werden, sondern etwas vorgeschlagen bekommen, aus
+   * dem er wählen kann.
+   */
+
+  "ueber-mich": {
+    id: "ueber-mich",
+    messages: [
+      [
+        "Ich bin der digitale Assistent der Tourist-Information Ruhpolding, kein Mensch. Ich kenne die Themen rund um den Aufenthalt hier: Wandern und die Bergbahnen, Veranstaltungen, Anreise und Parken, Wetter, Essen, Angebote für Familien, den Winter, Unterkünfte und die Tourist-Info selbst.",
+        "Ich bin ein digitaler Assistent, kein Mitarbeiter aus Fleisch und Blut. Auskunft gebe ich zu Wandern und Bergbahnen, Veranstaltungen, Anreise und Parken, Wetter, Essen, Familienangeboten, Winter, Unterkünften und der Tourist-Information.",
+      ],
+      [
+        "Du kannst frei tippen, ganze Sätze sind kein Problem. Was ich nicht weiß, sage ich dir auch.",
+        "Schreib einfach los, gern in ganzen Sätzen. Wenn ich etwas nicht hinterlegt habe, sage ich es dir offen.",
+      ],
+    ],
+    chips: menuChips,
+  },
+
+  "qr-hinweis": {
+    id: "qr-hinweis",
+    messages: [
+      [
+        `Zu Zielen, bei denen sich das lohnt, blende ich einen QR-Code ein. Du scannst ihn mit der Handykamera und hast die Route auf dem eigenen Gerät. Sag mir, wohin du willst, dann gebe ich den Code dazu aus.`,
+        `Für Ziele im Ort gebe ich einen QR-Code mit aus: einmal mit der Handykamera scannen und die Route ist auf deinem Gerät. Nenn mir das Ziel, dann bekommst du den passenden Code.`,
+      ],
+    ],
+    chips: [
+      { label: `Weg zum ${BERGBAHNEN.rauschbergName}`, to: "ziel:rauschberg" },
+      { label: `Weg zum ${WANDERN.foerchensee}`, to: "ziel:foerchensee" },
+      { label: "Weg zum Parkplatz", to: "ziel:rathausgarage" },
+      { label: "Andere Frage", to: "menu" },
+    ],
+  },
+
   wandern: {
     id: "wandern",
     topic: "wandern",
@@ -271,9 +371,9 @@ export const FLOW: Record<string, FlowNode> = {
       ],
     ],
     chips: [
+      { label: "Welche Bergbahnen gibt es?", to: "bergbahnen" },
       { label: "Leichte Tour mit Kinderwagen", to: "wandern-leicht" },
       { label: "Anspruchsvolle Bergtour", to: "wandern-schwer" },
-      { label: "Preise Bergbahnen", to: "bergbahn-preise" },
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -282,6 +382,7 @@ export const FLOW: Record<string, FlowNode> = {
     messages: [
       `Für den Kinderwagen eignet sich der Rundweg am ${WANDERN.foerchensee} (${WANDERN.foerchenseeRunde}) oder der ${WANDERN.uferwegTraun}. Beide sind ganzjährig begehbar und brauchen keine Bergausrüstung.`,
     ],
+    ziel: "foerchensee",
     qr: {
       title: `Weg zum ${WANDERN.foerchensee}`,
       hint: "Scanne den Code, um die Route mitzunehmen.",
@@ -295,6 +396,7 @@ export const FLOW: Record<string, FlowNode> = {
     messages: [
       `Anspruchsvoll ist der Aufstieg auf das ${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe}), den höchsten Berg der Chiemgauer Alpen. Gehzeit ${WANDERN.sonntagshornGehzeit} ab dem ${WANDERN.sonntagshornStart}, festes Schuhwerk und Trittsicherheit vorausgesetzt.`,
     ],
+    ziel: "sonntagshorn",
     qr: {
       title: `Weg zum ${WANDERN.sonntagshornStart}`,
       hint: "Scanne den Code, um den Startpunkt mitzunehmen.",
@@ -303,6 +405,35 @@ export const FLOW: Record<string, FlowNode> = {
     topic: "wandern",
     chips: backChips("wandern"),
   },
+  /*
+   * Eigener Knoten für die Frage, welche Bahnen es gibt.
+   *
+   * Bisher landete "welche Bergbahnen gibt es" auf dem Themeneinstieg, und
+   * die Nachfrage "ja welche genau" fand nichts mehr, weil die Antwort schon
+   * gefallen war. Der Einstieg nennt die Bahnen im Nebensatz, hier stehen sie
+   * mit dem, was man vor Ort wissen will.
+   */
+  bergbahnen: {
+    id: "bergbahnen",
+    messages: [
+      [
+        `Es sind zwei: die ${BERGBAHNEN.rauschbergBahn} auf den ${BERGBAHNEN.rauschbergName} und die ${BERGBAHNEN.unternbergBahn} auf den ${BERGBAHNEN.unternbergName}. Beide starten im Ort, im Sommer fahren sie täglich von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt} Uhr.`,
+        `Zwei Bahnen gibt es: die ${BERGBAHNEN.rauschbergBahn} zum ${BERGBAHNEN.rauschbergName} und die ${BERGBAHNEN.unternbergBahn} zum ${BERGBAHNEN.unternbergName}, beide ab dem Ort. Betrieb im Sommer täglich ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr, die letzte Bergfahrt geht um ${BERGBAHNEN.letzteBergfahrt} Uhr.`,
+      ],
+      [
+        `Zur Talstation ${BERGBAHNEN.rauschbergName} sind es von hier {naehe:rauschberg}.`,
+        `Die Talstation ${BERGBAHNEN.rauschbergName} erreichst du von hier in {naehe:rauschberg}.`,
+      ],
+    ],
+    topic: "wandern",
+    ziel: "rauschberg",
+    chips: [
+      { label: "Weg zur Talstation", to: "ziel:rauschberg" },
+      { label: "Preise Bergbahnen", to: "bergbahn-preise" },
+      { label: "Andere Frage", to: "menu" },
+    ],
+  },
+
   "bergbahn-preise": {
     id: "bergbahn-preise",
     messages: ["Hier die Sommerpreise der beiden Bergbahnen."],
@@ -354,6 +485,7 @@ export const FLOW: Record<string, FlowNode> = {
     messages: [
       `Der ${EVENTS.biathlonName} findet ${EVENTS.biathlonTermin} in der ${EVENTS.chiemgauArena} statt. Tickets gibt es online und an der Tageskasse. Vom Ortszentrum fährt ein kostenloser Skibus im ${EVENTS.skibusTakt} zur Arena, von hier sind es {naehe:arena}.`,
     ],
+    ziel: "arena",
     qr: {
       title: `Weg zur ${EVENTS.chiemgauArena}`,
       hint: "Scanne den Code, um die Route mitzunehmen.",
@@ -390,6 +522,7 @@ export const FLOW: Record<string, FlowNode> = {
       ],
     ],
     chips: [
+      { label: "Bahn nach Traunstein", to: "fahrplan:traunstein" },
       { label: "Parken im Ort", to: "anreise-parken" },
       { label: "Ortsbus & Gästekarte", to: "anreise-bus" },
       { label: "Andere Frage", to: "menu" },
@@ -408,6 +541,7 @@ export const FLOW: Record<string, FlowNode> = {
       ],
       note: PARKEN.gaestekarteHinweis,
     },
+    ziel: "rathausgarage",
     qr: {
       title: `Weg zum ${PARKEN.rathaus}`,
       hint: "Scanne den Code, um dich hinführen zu lassen.",
@@ -416,13 +550,57 @@ export const FLOW: Record<string, FlowNode> = {
     topic: "anreise",
     chips: backChips("anreise"),
   },
+  /*
+   * Das Busnetz als Tabelle.
+   *
+   * Im Testlauf um 12:30 blieb "wie ist der Fahrplan dieser Linien" ohne
+   * Antwort. Ehrlich beantworten lässt sich die Frage nur halb: die Strecken
+   * der beiden Dorflinien sind belegt, ein Takt ist es nicht. Genau das steht
+   * hier, statt entweder zu schweigen oder Zeiten zu erfinden.
+   */
+  busnetz: {
+    id: "busnetz",
+    topic: "anreise",
+    messages: [
+      [
+        `Im Ort fahren zwei Dorflinien, dazu der Rufbus ${ANREISE.rufbusName}. Hier die Strecken.`,
+        `Es gibt zwei Dorflinien und den Rufbus ${ANREISE.rufbusName}. Die Strecken im Überblick.`,
+      ],
+      [
+        `${ANREISE.rufbusHinweis} Er fährt werktags ${ANREISE.rufbusWerktags}, am Wochenende und an Feiertagen ${ANREISE.rufbusWochenende}. Mit der ${ANREISE.gaestekarteName} sind beide Dorflinien kostenlos.`,
+      ],
+    ],
+    table: {
+      title: "Busse in Ruhpolding",
+      columns: ["Linie", "Strecke"],
+      rows: [
+        ["9532", ANREISE.dorflinie9532],
+        ["9533", ANREISE.dorflinie9533],
+        [ANREISE.rufbusName, ANREISE.rufbusHinweis],
+        ["RVO", `Regionalbusse nach ${ANREISE.regionalZiele}`],
+      ],
+      // SIMULIERT wäre hier ein Takt. Die Quelle nennt keinen, deshalb steht
+      // an seiner Stelle der Verweis auf die Auskunft vor Ort.
+      note: "Für die Dorflinien ist bei Ruhpolding Tourismus kein Takt veröffentlicht. Abfahrtszeiten hängen an den Haltestellen aus und liegen in der Tourist-Information aus.",
+    },
+    chips: [
+      { label: "Bahn nach Traunstein", to: "fahrplan:traunstein" },
+      { label: "Ortsbus & Gästekarte", to: "anreise-bus" },
+      { label: "Andere Frage", to: "menu" },
+    ],
+  },
+
   "anreise-bus": {
     id: "anreise-bus",
     messages: [
       `Der Ortsbus (${ANREISE.ortsbusLinie}) fährt ${ANREISE.ortsbusTakt} zwischen Bahnhof, Zentrum und den Talstationen. Mit der Gästekarte ${ANREISE.gaestekarteName} ist die Fahrt im gesamten Chiemgau kostenlos, inklusive der Regionalzüge bis ${ANREISE.gaestekarteBahnBis}.`,
     ],
     topic: "anreise",
-    chips: backChips("anreise"),
+    chips: [
+      { label: "Welche Linien gibt es?", to: "busnetz" },
+      { label: "Bahn nach Traunstein", to: "fahrplan:traunstein" },
+      { label: "Andere Frage", to: "menu" },
+    ],
   },
 
   wetter: {
@@ -565,7 +743,10 @@ export const FLOW: Record<string, FlowNode> = {
     card: {
       title: "Langlauf in Ruhpolding",
       rows: [
-        { label: "Loipennetz", value: `ca. ${LOIPEN.netz}, ${LOIPEN.spurarten}` },
+        {
+          label: "Loipennetz",
+          value: `ca. ${LOIPEN.netz}, ${LOIPEN.spurarten}`,
+        },
         { label: "Loipenpass Tag", value: LOIPEN.passTag },
         { label: "Loipenpass Woche", value: LOIPEN.passWoche },
         { label: "mit Gästekarte", value: LOIPEN.gaestekarte },
@@ -645,119 +826,61 @@ export const FLOW: Record<string, FlowNode> = {
   },
 }
 
-type Intent = { test: RegExp; to: string; topic: string }
-
 /**
- * Begrüßung und Dank sind kein Thema im Sinne der Themenauswahl. Treffen sie
- * zusammen mit einem echten Thema, entscheidet das echte Thema, sonst würde
- * "Danke, wo kann ich parken?" zur Rückfrage.
+ * Wohin ein Rückbezug innerhalb eines Themas führt.
+ *
+ * "Was kostet das", "welche genau", "wie komme ich hin" tragen kein eigenes
+ * Thema. Der Verstehens-Kern erkennt die Art der Nachfrage, das Ziel steht
+ * hier, weil nur dieser Baum weiß, welcher Knoten die Antwort hält.
+ *
+ * Fehlt eine Art, gibt es dazu im Thema nichts zu vertiefen. Die Eingabe
+ * landet dann im weichen Fallback und wird zur Rückfrage, statt auf einen
+ * Knoten zu zeigen, der die Frage nicht beantwortet.
  */
-const SMALLTALK = "smalltalk"
-
-/** Reihenfolge zählt: spezielle Muster vor allgemeinen. */
-const INTENTS: Intent[] = [
-  { test: /danke|vielen dank|passt|super|klasse|top\b|thanks|thank you|perfect/i, to: "danke", topic: SMALLTALK },
-  { test: /biathlon|weltcup|world cup|arena/i, to: "events-biathlon", topic: "events" },
-  { test: /webcam|kamera|camera/i, to: "wetter-webcam", topic: "wetter" },
-  { test: /park(en|platz|haus|ing)?|wohnmobil|stellplatz|camper|motorhome/i, to: "anreise-parken", topic: "anreise" },
-  { test: /\bbus\b|ortsbus|öpnv|gästekarte|gastkarte|guest card|public transport/i, to: "anreise-bus", topic: "anreise" },
-  { test: /loipe|loipenpass|cross.?country|trail pass/i, to: "winter-loipe", topic: "winter" },
-  { test: /verleih|ausleih|mieten|\brental\b|\bhire\b|\brent\b/i, to: "winter-verleih", topic: "winter" },
-  // Wortgrenze auch vorn, sonst gilt jeder Bahnhof als Bauernhof.
-  { test: /bauernhof|\bhof\b|\bfarm\b/i, to: "unterkunft-hof", topic: "unterkunft" },
-  { test: /barrierefrei|rollstuhl|reisen für alle|accessible|wheelchair/i, to: "unterkunft-barrierefrei", topic: "unterkunft" },
-  { test: /wickel|stillen|baby|nappy|nappies|changing table|breastfeed/i, to: "familie-baby", topic: "familie" },
-  { test: /spielplatz|playground/i, to: "essen-huette", topic: "essen" },
-  { test: /ruhetag|geschlossen|closing day|closed/i, to: "essen-ruhetag", topic: "essen" },
-  {
-    test: /wander|tour\b|wandern|gipfel|rauschberg|unternberg|sonntagshorn|bergbahn|gondel|seilbahn|sessel(bahn|lift)|hütte|hüttenwanderung|hik(e|ing)|\btrail|summit|cable car|mountain lift/i,
-    to: "wandern",
-    topic: "wandern",
+export const FOLGEN: Record<string, Folge> = {
+  wandern: {
+    vertiefung: "bergbahnen",
+    preis: "bergbahn-preise",
+    zeit: "bergbahnen",
+    weg: "bergbahnen",
   },
-  {
-    test: /event|veranstalt|konzert|markt|programm|was ist los|heute abend|concert|festival|what.s on/i,
-    to: "events",
-    topic: "events",
+  events: {
+    vertiefung: "events-biathlon",
+    zeit: "events-woche",
+    weg: "events-biathlon",
   },
-  {
-    // "bahn" mit Wortgrenze, sonst zieht jede Bergbahn, Seilbahn und
-    // Sesselbahn das Thema Anreise in die Frage hinein.
-    test: /anreise|anfahrt|autobahn|\ba8\b|\bzug\b|bahnhof|\bbahn\b|münchen|route|navigation|wie komme ich|how do i get|get(ting)? (here|there)|\btrain\b|\bstation\b|motorway/i,
-    to: "anreise",
-    topic: "anreise",
+  anreise: {
+    vertiefung: "busnetz",
+    preis: "anreise-parken",
+    weg: "anreise-parken",
+    // "Wie ist der Fahrplan dieser Linien" blieb im Testlauf ohne Antwort.
+    zeit: "busnetz",
   },
-  {
-    test: /wetter|regen|sonne|temperatur|gewitter|prognose|vorhersage|schnee(lage)?|weather|\brain|forecast|temperature|thunderstorm/i,
-    to: "wetter",
-    topic: "wetter",
+  wetter: {
+    vertiefung: "wetter-3tage",
+    zeit: "wetter-3tage",
   },
-  {
-    test: /essen|restaurant|gasthaus|einkehr|hunger|pizzeria|wirt|frühstück|kulinar|\beat\b|\bfood\b|dinner|lunch|breakfast|hungry/i,
-    to: "essen",
-    topic: "essen",
+  essen: {
+    vertiefung: "essen-huette",
+    zeit: "essen-ruhetag",
   },
-  {
-    // Wortgrenze hinter der Endung, sonst zieht "Kinderwagen" das Thema
-    // Familie in eine Wanderfrage hinein und macht sie künstlich mehrdeutig.
-    test: /kind(er|ern)?\b|familie|freizeitpark|vitalwelt|schwimmbad|child(ren)?\b|\bkids?\b|family|swimming/i,
-    to: "familie",
-    topic: "familie",
+  familie: {
+    vertiefung: "familie-regen",
+    weg: "familie",
   },
-  {
-    test: /winter|langlauf|ski\b|skifahren|rodel|schlitten|eislauf|skiing|sledg(e|ing)|toboggan|skating/i,
-    to: "winter",
-    topic: "winter",
+  winter: {
+    vertiefung: "winter-loipe",
+    preis: "winter-loipe",
   },
-  {
-    test: /übernacht|unterkunft|hotel|ferienwohnung|zimmer|pension|schlafen|apartment|\bstay\b|accommodation|\broom\b|guest house|\bsleep\b/i,
-    to: "unterkunft",
-    topic: "unterkunft",
+  unterkunft: {
+    vertiefung: "unterkunft-hof",
   },
-  {
-    test: /öffnungszeit|kontakt|telefon|adresse|erreichen|tourist.?info|e-?mail|anschrift|opening hours|contact|phone|address|tourist information/i,
-    to: "info",
-    topic: "info",
+  info: {
+    vertiefung: "info",
+    zeit: "info",
+    weg: "info",
+    preis: "info",
   },
-  {
-    test: /hallo|grüß|servus|\bhi\b|\bhey\b|guten (tag|morgen|abend)|moin|hello|good (morning|afternoon|evening)/i,
-    to: "menu",
-    topic: SMALLTALK,
-  },
-]
-
-export type MatchResult =
-  | { kind: "hit"; to: string }
-  | { kind: "ambiguous"; candidates: Chip[]; term: string | null }
-  | { kind: "miss"; term: string | null }
-
-/**
- * Ordnet freien Text zu. Anders als früher bricht die Suche nicht beim ersten
- * Treffer ab: greifen Muster aus mehreren Themen, ist die Eingabe mehrdeutig
- * und wird zur Rückfrage, statt stillschweigend das erste Thema zu nehmen.
- */
-export function matchIntent(text: string): MatchResult {
-  const treffer = INTENTS.filter((intent) => intent.test.test(text))
-  const term = leitbegriff(text)
-
-  const inhaltlich = treffer.filter((intent) => intent.topic !== SMALLTALK)
-  const relevant = inhaltlich.length > 0 ? inhaltlich : treffer
-
-  if (relevant.length === 0) return { kind: "miss", term }
-
-  // Set erhält die Reihenfolge des ersten Auftretens, also die des
-  // spezifischsten Musters.
-  const themen = [...new Set(relevant.map((intent) => intent.topic))]
-  if (themen.length === 1) return { kind: "hit", to: relevant[0].to }
-
-  const candidates: Chip[] = themen.slice(0, 3).map((thema) => ({
-    // Deutsches Label; rueckfrageKnoten tauscht es für Englisch aus.
-    label: TOPICS.find((topic) => topic.id === thema)?.label ?? thema,
-    // Ziel ist der spezifischste Knoten dieses Themas, nicht der
-    // Themeneinstieg. So landet die Testperson direkt bei ihrer Frage.
-    to: relevant.find((intent) => intent.topic === thema)!.to,
-  }))
-
-  return { kind: "ambiguous", candidates, term }
 }
 
 /* Rückfrage bei Mehrdeutigkeit. */
@@ -788,14 +911,16 @@ function aufzaehlung(teile: string[], sprache: Sprache): string {
   if (teile.length <= 1) return teile[0] ?? ""
   const letztes = teile[teile.length - 1]
   const davor = teile.slice(0, -1).join(", ")
-  return sprache === "en" ? `${davor} or ${letztes}` : `${davor} oder ${letztes}`
+  return sprache === "en"
+    ? `${davor} or ${letztes}`
+    : `${davor} oder ${letztes}`
 }
 
 /** Die Rückfrage als fertiger Knoten, mit den Kandidaten als Chips. */
 export function rueckfrageKnoten(
   candidates: Chip[],
   term: string | null,
-  sprache: Sprache = "de",
+  sprache: Sprache = "de"
 ): FlowNode {
   const themen = aufzaehlung(
     candidates.map((chip) => {
@@ -803,14 +928,14 @@ export function rueckfrageKnoten(
       if (!topic) return chip.label
       return sprache === "en" ? topic.satzEn : topic.satz
     }),
-    sprache,
+    sprache
   )
 
   const vorlage =
     sprache === "en"
       ? waehleVariante(RUECKFRAGEN_EN)
       : waehleVariante(
-          term ? [...RUECKFRAGEN, ...RUECKFRAGEN_MIT_BEGRIFF] : RUECKFRAGEN,
+          term ? [...RUECKFRAGEN, ...RUECKFRAGEN_MIT_BEGRIFF] : RUECKFRAGEN
         )
 
   return {
@@ -824,7 +949,10 @@ export function rueckfrageKnoten(
         if (!topic || sprache !== "en") return chip
         return { ...chip, label: topic.labelEn }
       }),
-      { label: sprache === "en" ? "Something else" : "Andere Frage", to: "menu" },
+      {
+        label: sprache === "en" ? "Something else" : "Andere Frage",
+        to: "menu",
+      },
     ],
   }
 }
@@ -840,6 +968,53 @@ const NOTKNOTEN: FlowNode = {
   chips: menuChips,
 }
 
-export function getNode(id: string): FlowNode {
-  return FLOW[id] ?? NOTKNOTEN
+/**
+ * Löst eine Knoten-ID auf, auch die zur Laufzeit gebauten.
+ *
+ * Zwei Formen tragen ihre Daten in der ID:
+ *
+ *   ziel:<id>                  ein Ort mit Beschreibung und QR-Code
+ *   empfehlung:<gruppe>:<ab>   drei Vorschläge ab der genannten Stelle
+ *   fahrplan:<id>              die nächsten Abfahrten als Tabelle
+ *
+ * Der Zustand steckt damit in der ID und nicht in einer Variablen zwischen
+ * den Aufrufen: derselbe Aufruf ergibt denselben Knoten, unabhängig davon,
+ * was vorher im Gespräch passiert ist. Für die Vergleichbarkeit zweier
+ * Testläufe ist das dieselbe Bedingung, die auch für die Zuordnung gilt.
+ *
+ * Die Sprache muss hier hinein, weil diese Knoten fertig gebaut werden und
+ * nicht mehr durch uebersetze() laufen.
+ */
+export function getNode(
+  id: string,
+  sprache: Sprache = "de",
+  jetzt: Date = new Date()
+): FlowNode {
+  const bekannt = FLOW[id]
+  if (bekannt) return bekannt
+
+  if (id.startsWith("ziel:")) {
+    return zielKnoten(id.slice(5), sprache, waehleVariante, jetzt) ?? NOTKNOTEN
+  }
+
+  if (id.startsWith("fahrplan:")) {
+    return (
+      fahrplanKnoten(id.slice(9), sprache, waehleVariante, jetzt) ?? NOTKNOTEN
+    )
+  }
+
+  if (id.startsWith("empfehlung:")) {
+    const [, gruppe, ab] = id.split(":")
+    return (
+      empfehlungsKnoten(
+        gruppe,
+        Number(ab) || 0,
+        sprache,
+        waehleVariante,
+        jetzt
+      ) ?? NOTKNOTEN
+    )
+  }
+
+  return NOTKNOTEN
 }

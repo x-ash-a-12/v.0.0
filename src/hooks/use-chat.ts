@@ -3,23 +3,20 @@ import * as React from "react"
 import {
   ausformulieren,
   getNode,
-  matchIntent,
   rueckfrageKnoten,
   ueberbrueckung,
   type Chip,
+  type DataTable,
   type FlowNode,
   type InfoCard,
   type QrPayload,
 } from "@/lib/chat-flow"
+import { neuerKontext, verstehe, type Kontext } from "@/lib/verstehen"
 import { fallbackKnoten } from "@/lib/fallback"
 import { aufloesen, useStandort } from "@/lib/location"
 import { type Sprache } from "@/lib/sprache"
 import { protokolliere } from "@/lib/telemetry"
-import {
-  erkenneSprache,
-  uebersetze,
-  WECHSELHINWEIS,
-} from "@/lib/i18n"
+import { erkenneSprache, uebersetze, WECHSELHINWEIS } from "@/lib/i18n"
 import {
   istWiederholung,
   merken,
@@ -31,12 +28,28 @@ export type ChatMessage =
   | { id: string; role: "user"; kind: "text"; text: string }
   | { id: string; role: "bot"; kind: "text"; text: string }
   | { id: string; role: "bot"; kind: "card"; card: InfoCard }
+  | { id: string; role: "bot"; kind: "table"; table: DataTable }
   | { id: string; role: "bot"; kind: "qr"; qr: QrPayload }
 
 let counter = 0
 function uid() {
   counter += 1
   return `m${counter}`
+}
+
+/**
+ * Bleibt das zuletzt behandelte Ziel für die nächste Frage stehen?
+ *
+ * Es soll die einzelne Antwort überleben: wer nach der Gondelbahn fragt und
+ * dann "navigiere mich da hin" schreibt, meint immer noch sie. Es darf aber
+ * nicht das Thema überleben. Im Testlauf um 12:30 hing das Ziel "Rathaus
+ * Tiefgarage" noch am Gespräch, als längst über Essen geredet wurde, und
+ * beantwortete dann "wie komme ich nach Traunstein" mit dem Weg zur Garage.
+ */
+function uebernommenesZiel(vorher: Kontext, node: FlowNode): string | null {
+  if (node.id === "menu" || node.id === "start") return null
+  if (node.topic && vorher.topic && node.topic !== vorher.topic) return null
+  return vorher.ziel
 }
 
 function sleep(ms: number) {
@@ -85,6 +98,15 @@ export function useChat() {
   /** Was in diesem Gespräch schon gezeigt wurde. */
   const verlaufRef = React.useRef(neuerVerlauf())
 
+  /**
+   * Der Zustand, auf den sich die nächste freie Eingabe beziehen kann: der
+   * zuletzt gezeigte Knoten, sein Thema und die Schaltflächen darunter.
+   *
+   * Als Ref, nicht als State: er wird nicht gerendert, und eine Neuzeichnung
+   * mitten im Ausrollen einer Antwort würde die Animation abbrechen.
+   */
+  const kontextRef = React.useRef(neuerKontext())
+
   /** Dialogsprache. Sie folgt der Eingabe und wird beim Reset zurückgesetzt. */
   const [sprache, setSprache] = React.useState<Sprache>("de")
   const spracheRef = React.useRef<Sprache>("de")
@@ -97,8 +119,14 @@ export function useChat() {
     runIdRef.current = myRun
     const aktiv = () => runIdRef.current === myRun
 
-    const roh = typeof ziel === "string" ? getNode(ziel) : ziel
-    const node = uebersetze(roh, spracheRef.current)
+    // Die Uhrzeit einmal je Antwort feststellen und durchreichen, statt sie
+    // in jedem Knotenbauer neu abzufragen. Sonst könnten zwei Teile derselben
+    // Antwort von unterschiedlichen Minuten ausgehen.
+    const roh =
+      typeof ziel === "string"
+        ? getNode(ziel, spracheRef.current, new Date())
+        : ziel
+    const node = roh.fertig ? roh : uebersetze(roh, spracheRef.current)
 
     setActiveChips([])
     setStreaming(null)
@@ -118,6 +146,24 @@ export function useChat() {
       standort: standortRef.current.id,
     })
 
+    // Sobald feststeht, was geantwortet wird, gilt es als Bezugspunkt für die
+    // nächste Eingabe: nicht erst, wenn der Text zu Ende ausgerollt ist.
+    //
+    // Der Unterschied ist im Test der Normalfall, nicht die Ausnahme. Wer
+    // liest, tippt weiter, sobald er genug gesehen hat, und bricht damit die
+    // laufende Antwort ab. Stünde der Bezugspunkt erst am Ende, verlöre gerade
+    // die schnelle Nachfrage ihren Bezug, also genau die, die ihn braucht.
+    const vorher = kontextRef.current
+    kontextRef.current = {
+      knoten: node.id,
+      topic: node.topic ?? null,
+      chips: node.chips ?? [],
+      istRueckfrage: node.id.startsWith("rueckfrage"),
+      angebot: node.angebot ?? [],
+      gruppe: node.gruppe ?? null,
+      ziel: node.ziel ?? uebernommenesZiel(vorher, node),
+    }
+
     const verlauf = verlaufRef.current
     // Beim zweiten Mal die kurze Fassung, statt dieselbe Textwand noch
     // einmal auszurollen.
@@ -134,7 +180,7 @@ export function useChat() {
     const nachrichten = [
       ...(wechsel ? [wechsel] : []),
       ...(bezug ? [bezug] : []),
-      ...(node.bridge || node.card ? [ueberbrueckung()] : []),
+      ...(node.bridge || node.card || node.table ? [ueberbrueckung()] : []),
       ...ausformulieren(inhalt),
     ].map((text) => aufloesen(text, standortRef.current, spracheRef.current))
 
@@ -170,7 +216,7 @@ export function useChat() {
         { id: uid(), role: "bot", kind: "text", text },
       ])
 
-      if (i < nachrichten.length - 1 || node.card || node.qr) {
+      if (i < nachrichten.length - 1 || node.card || node.table || node.qr) {
         setIsTyping(true)
       }
     }
@@ -182,6 +228,16 @@ export function useChat() {
       setMessages((prev) => [
         ...prev,
         { id: uid(), role: "bot", kind: "card", card: node.card! },
+      ])
+    }
+
+    if (node.table) {
+      setIsTyping(true)
+      await sleep(zufall(600, 1000))
+      if (!aktiv()) return
+      setMessages((prev) => [
+        ...prev,
+        { id: uid(), role: "bot", kind: "table", table: node.table! },
       ])
     }
 
@@ -210,7 +266,7 @@ export function useChat() {
       ])
       void runNode(chip.to)
     },
-    [runNode],
+    [runNode]
   )
 
   const sendText = React.useCallback(
@@ -230,8 +286,15 @@ export function useChat() {
         wechselRef.current = WECHSELHINWEIS[erkannt]
       }
 
-      const ergebnis = matchIntent(text)
-      protokolliere({ art: "eingabe", text, treffer: ergebnis.kind })
+      const ergebnis = verstehe(text, kontextRef.current)
+      protokolliere({
+        art: "eingabe",
+        text,
+        treffer: ergebnis.kind,
+        // Bei einem Treffer hält der Grund fest, welche Stufe gegriffen hat.
+        // Ohne ihn steht in der Auswertung nur, dass es geklappt hat.
+        grund: ergebnis.kind === "hit" ? ergebnis.grund : undefined,
+      })
 
       if (ergebnis.kind === "hit") {
         void runNode(ergebnis.to)
@@ -240,20 +303,21 @@ export function useChat() {
           rueckfrageKnoten(
             ergebnis.candidates,
             ergebnis.term,
-            spracheRef.current,
-          ),
+            spracheRef.current
+          )
         )
       } else {
         void runNode(fallbackKnoten(text, spracheRef.current))
       }
     },
-    [runNode],
+    [runNode]
   )
 
   const reset = React.useCallback(() => {
     protokolliere({ art: "reset" })
     runIdRef.current += 1
     verlaufRef.current = neuerVerlauf()
+    kontextRef.current = neuerKontext()
     spracheRef.current = "de"
     wechselRef.current = null
     setSprache("de")

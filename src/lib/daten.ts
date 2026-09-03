@@ -201,6 +201,25 @@ export const ANREISE = {
   /** Die Karte heißt "Chiemgau Karte", siehe Bericht zur Satzstellung. */
   gaestekarteName: "Chiemgau Karte",
   gaestekarteBahnBis: "Traunstein",
+  /**
+   * Die beiden Dorflinien mit ihren Strecken, wörtlich von der Quelle.
+   * Geprüft: https://www.ruhpolding.de/mobilitaet-vor-ort, abgerufen 2026-09-03
+   *
+   * Zu einem Takt oder zu Abfahrtszeiten steht dort nichts. Deshalb steht
+   * hier auch keiner: die Strecke ist belegt, die Uhrzeit nicht.
+   */
+  dorflinie9532:
+    "Westernberg – Chiemgau Coaster – Maiergschwendt – Unternberg – Freizeitpark – Brand – Urschlau – Vita Alpina – Edeka",
+  dorflinie9533:
+    "Bahnhof Ruhpolding – Häusler – Zell – Fischerwirt – Grashof – Ortnerhof – Fritz am Sand – Laubau – Chiemgau Arena",
+  /** Der Rufbus, der ohne Fahrplan fährt. */
+  rufbusName: "DORLI",
+  rufbusWerktags: "07:00 bis 22:00 Uhr",
+  rufbusWochenende: "08:00 bis 22:00 Uhr",
+  rufbusHinweis:
+    "Der Rufbus fährt ohne festen Fahrplan und verbindet über 100 Haltestellen im Ort.",
+  /** Regionalbusse, die Ruhpolding mit den Nachbarorten verbinden. */
+  regionalZiele: "Reit im Winkl, Inzell, Bad Reichenhall und Berchtesgaden",
 } as const
 
 /**

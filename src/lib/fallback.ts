@@ -4,12 +4,8 @@ import {
   type Chip,
   type FlowNode,
 } from "@/lib/chat-flow"
-import {
-  leitbegriff,
-  STOPWOERTER,
-  zerlege,
-  type Sprache,
-} from "@/lib/sprache"
+import { leitbegriff, type Sprache } from "@/lib/sprache"
+import { themenRangfolge } from "@/lib/verstehen"
 
 /**
  * Weicher zweiter Durchgang, wenn kein INTENTS-Muster gegriffen hat.
@@ -23,77 +19,19 @@ import {
 export type WeicherTreffer = { topic: string; label: string; score: number }
 
 /**
- * Stichwörter je Thema, als Wortstämme. Sie werden als Teilstring geprüft,
- * damit "Schwimmbad" auf "schwimm" trifft.
+ * Themen nach Stärke des Hinweises, höchstens die besten zwei.
+ *
+ * Die Bewertung kommt aus demselben Lexikon, das auch die Zuordnung
+ * entscheidet. Früher standen hier eigene Stichwortlisten, die mit der Zeit
+ * auseinanderliefen: eine Eingabe konnte im Hauptdurchlauf einem Thema
+ * zugeordnet werden und in der Rückfrage ein anderes vorgeschlagen bekommen.
+ * Der Unterschied liegt jetzt nur noch in der Schwelle. Hier gibt es keine:
+ * auch ein schwacher Hinweis darf noch zu einem Vorschlag werden.
  */
-const STICHWOERTER: Record<string, string[]> = {
-  wandern: [
-    "wander", "berg", "gipfel", "tour", "rauschberg", "unternberg",
-    "sonntagshorn", "gondel", "seilbahn", "sessel", "hütte", "alm", "steig",
-    "aussicht", "panorama", "klettern", "rundweg", "spazier", "höhenmeter",
-  ],
-  events: [
-    "event", "veranstalt", "konzert", "markt", "fest", "programm", "biathlon",
-    "weltcup", "arena", "musik", "tracht", "brauchtum", "termin", "bühne",
-  ],
-  anreise: [
-    "anreise", "anfahrt", "autobahn", "zug", "bahn", "bus", "park", "auto",
-    "route", "navigation", "haltestelle", "bahnhof", "taxi", "gästekarte",
-    "wohnmobil", "stellplatz", "fahrplan", "ticket",
-  ],
-  wetter: [
-    "wetter", "regen", "sonne", "temperatur", "gewitter", "prognose",
-    "vorhersage", "wind", "webcam", "kalt", "warm", "nebel", "grad",
-  ],
-  essen: [
-    "essen", "restaurant", "gasthaus", "einkehr", "hunger", "pizza", "wirt",
-    "frühstück", "kaffee", "café", "bier", "mittag", "abendessen", "trinken",
-    "vegan", "vegetarisch", "speise", "küche",
-  ],
-  familie: [
-    "kind", "familie", "freizeitpark", "vitalwelt", "schwimm", "bad",
-    "spielplatz", "baby", "wickel", "kinderwagen", "spiel", "rutsche",
-    "märchen", "museum",
-  ],
-  winter: [
-    "winter", "langlauf", "ski", "rodel", "schlitten", "eis", "loipe",
-    "schnee", "verleih", "snowboard", "piste", "lift", "skating",
-  ],
-  unterkunft: [
-    "übernacht", "unterkunft", "hotel", "ferienwohnung", "zimmer", "pension",
-    "schlafen", "apartment", "bauernhof", "camping", "gastgeber", "buchen",
-    "barrierefrei", "rollstuhl",
-  ],
-  info: [
-    "öffnungszeit", "kontakt", "telefon", "adresse", "erreichen", "tourist",
-    "mail", "anschrift", "information", "büro", "beratung",
-  ],
-}
-
-/** Themen nach Stichworttreffern sortiert, höchstens die besten zwei. */
 export function weicheSuche(text: string): WeicherTreffer[] {
-  const woerter = zerlege(text).filter((wort) => !STOPWOERTER.has(wort))
-  const punkte = new Map<string, number>()
-
-  for (const wort of woerter) {
-    for (const [topic, stichwoerter] of Object.entries(STICHWOERTER)) {
-      const trifft = stichwoerter.some(
-        (stich) =>
-          wort.includes(stich) || (wort.length >= 4 && stich.includes(wort)),
-      )
-      // Ein Wort zählt je Thema nur einmal, sonst gewinnt die längste Liste.
-      if (trifft) punkte.set(topic, (punkte.get(topic) ?? 0) + 1)
-    }
-  }
-
-  return TOPICS.filter((topic) => punkte.has(topic.id))
-    .map((topic) => ({
-      topic: topic.id,
-      label: topic.label,
-      score: punkte.get(topic.id)!,
-    }))
-    .sort((a, b) => b.score - a.score)
+  return themenRangfolge(text)
     .slice(0, 2)
+    .map(({ topic, label, punkte }) => ({ topic, label, score: punkte }))
 }
 
 /* Formulierungen. Je Fall mindestens vier, damit sich im selben Gespräch
@@ -189,7 +127,7 @@ function fuelle(
   vorlage: string,
   begriff: string | null,
   treffer: WeicherTreffer[],
-  sprache: Sprache,
+  sprache: Sprache
 ): string {
   return vorlage
     .replace("{begriff}", begriff ?? "")
@@ -203,7 +141,7 @@ function fuelle(
  */
 export function fallbackKnoten(
   text: string,
-  sprache: Sprache = "de",
+  sprache: Sprache = "de"
 ): FlowNode {
   const treffer = weicheSuche(text)
   const begriff = leitbegriff(text)
