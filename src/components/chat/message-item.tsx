@@ -66,7 +66,7 @@ function DataTableView({ table }: { table: DataTable }) {
         <CardTitle className="text-sm">{table.title}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
-        <div className="-mx-1 overflow-x-auto px-1">
+        <div className="-mx-1 overflow-x-auto px-1 scrollbar-hidden">
           <Table className="text-sm">
             <TableHeader>
               <TableRow>

@@ -134,3 +134,15 @@
     margin: 0;
     }
 }
+
+/*
+ * Der Prototyp bildet ein Touch-Terminal nach. Ein klassischer Scrollbalken
+ * gehört dort nicht ins Bild, weil ihn auf dem Zielgerät niemand sieht. Das
+ * Scrollen selbst bleibt vollständig erhalten, nur die Leiste verschwindet.
+ */
+@utility scrollbar-hidden {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
