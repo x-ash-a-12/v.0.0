@@ -325,19 +325,46 @@ export const GASTRONOMIE = {
   ruhetage: "Montag oder Dienstag",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Angebote für Familien.
+ * Quelle Schlechtwetter: https://www.ruhpolding.de/bei-regen
+ * Quelle Freizeitpark: https://www.freizeitpark.by/ (Betreiber)
+ * Abgerufen: 2026-09-03
+ *
+ * Das Bad heißt "Vita Alpina", nicht "Vitalwelt". Ruhpolding Tourismus führt
+ * es als Erlebnis- und Wellnessbad. Die Museen des Orts sind laut derselben
+ * Seite Holzknechtmuseum, Heimatmuseum und Glockenschmiede.
+ */
 export const FAMILIE = {
-  /** @demo */ freizeitpark: "Freizeitpark Ruhpolding",
-  /** @demo */ freizeitparkOeffnung: "ab 9:30 Uhr",
-  /** @demo */ freizeitparkOeffnungEn: "from 9.30 am",
-  /** @demo */ vitalwelt: "Vitalwelt",
-  /** @demo */ barfussweg: "Barfußweg",
-  /** @demo */ barfusswegEn: "barefoot trail",
-  /** @demo */ bergbahnMuseum: "Bergbahn-Museum",
-  /** @demo */ bergbahnMuseumEn: "mountain lift museum",
-  /** @demo */ kletterhalle: "Kletterhalle in Inzell",
-  /** @demo */ kletterhalleFahrzeit: "15 Minuten",
-  /** @demo */ heimatmuseum: "Heimatmuseum",
+  /** Der Betreiber nennt ihn auch "Märchenpark Ruhpolding". */
+  freizeitpark: "Freizeitpark Ruhpolding",
+  /**
+   * @ungeprueft Die Betreiberseite verlinkt "Preise & Öffnungszeiten", die
+   * Unterseite war nicht erreichbar.
+   */
+  freizeitparkOeffnung: "ab 9:30 Uhr",
+  /** @ungeprueft siehe freizeitparkOeffnung */
+  freizeitparkOeffnungEn: "from 9.30 am",
+  vitalwelt: "Vita Alpina",
+  /** @ungeprueft kein Barfußweg auf den geprüften Seiten belegt */
+  barfussweg: "Barfußweg",
+  /** @ungeprueft siehe barfussweg */
+  barfusswegEn: "barefoot trail",
+  /**
+   * @ungeprueft Kein Bergbahn-Museum in der Museumsliste. Belegt sind
+   * Holzknechtmuseum, Heimatmuseum und Glockenschmiede.
+   */
+  bergbahnMuseum: "Bergbahn-Museum",
+  /** @ungeprueft siehe bergbahnMuseum */
+  bergbahnMuseumEn: "mountain lift museum",
+  /**
+   * @ungeprueft Die Schlechtwetterseite nennt keine Kletterhalle. Als
+   * Indoor-Ziel der Umgebung führt sie den Babalu Funpark Traunstein.
+   */
+  kletterhalle: "Kletterhalle in Inzell",
+  /** @ungeprueft siehe kletterhalle */
+  kletterhalleFahrzeit: "15 Minuten",
+  heimatmuseum: "Heimatmuseum Ruhpolding",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
