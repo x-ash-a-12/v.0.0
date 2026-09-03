@@ -289,17 +289,40 @@ export const EVENTS = {
   wochenmarktZeitEn: "every Friday from 8 am to 12 noon",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Gastronomie.
+ * Quelle: https://www.ruhpolding.de/gaststaetten-und-restaurants
+ * Abgerufen: 2026-09-03
+ *
+ * Die Seite führt alle Betriebe namentlich auf. Namen, die dort nicht
+ * vorkommen, sind unten als ungeprüft markiert.
+ */
 export const GASTRONOMIE = {
-  /** @demo */ gipfelalm: "Gipfelalm",
-  /** @demo */ gasthausPost: "Gasthaus zur Post",
-  /** @demo */ pizzeria: "Pizzeria am Dorfplatz",
-  /** @demo Ohne "Hotel", der Antworttext beugt das Wort selbst. */
+  /**
+   * @ungeprueft Keine "Gipfelalm" in der Betriebsliste. Der Antworttext
+   * verortet sie zudem auf dem Rauschberg, dessen Bahn nicht fährt.
+   */
+  gipfelalm: "Gipfelalm",
+  /** In der Liste als "Hotel zur Post Restaurant" geführt. */
+  gasthausPost: "Hotel zur Post Restaurant",
+  /** Die einzige in der Liste geführte Pizzeria dieses Namens. */
+  pizzeria: "Pizzeria Eiscafé „Made in Italy“",
+  /**
+   * Offiziell "Steinbach-Hotel". Ohne "Hotel", der Antworttext beugt das
+   * Wort selbst. Die Einstufung als gehobenes Haus ist nicht belegt.
+   */
   hotelGehoben: "Steinbach",
-  /** @demo */ almstueberl: "Unternberg-Almstüberl",
-  /** @demo */ weitseealm: "Weitseealm",
-  /** @demo */ laubaualm: "Laubaualm",
-  /** @demo */ ruhetage: "Montag oder Dienstag",
+  /**
+   * In der Liste als "Unternberg Alm" geführt. Achtung: der Antworttext
+   * sagt "das", die Alm ist weiblich. Siehe Bericht.
+   */
+  almstueberl: "Unternberg Alm",
+  /** @ungeprueft keine "Weitseealm" in der Betriebsliste */
+  weitseealm: "Weitseealm",
+  /** @ungeprueft keine "Laubaualm" in der Betriebsliste */
+  laubaualm: "Laubaualm",
+  /** @ungeprueft die Seite weist keine festen Ruhetage aus */
+  ruhetage: "Montag oder Dienstag",
 } as const
 
 /** Quelle: noch offen. Stand: noch offen. */
