@@ -1,9 +1,13 @@
 /**
  * Alle Fakten über Ruhpolding an einer Stelle.
  *
- * Werte mit @demo sind noch fiktiv und müssen vor der Evaluation durch
- * öffentlich zugängliche Angaben ersetzt werden. Suchen mit:
- *   grep -n "@demo" src/lib/daten.ts
+ * Jeder Block nennt im Kopf seine Quelle und das Abrufdatum. Werte ohne
+ * eigene Markierung stammen von dort und wurden im Volltext der Seite
+ * nachgelesen.
+ *
+ * Werte mit @ungeprueft sind weiterhin fiktiv: für sie war keine offizielle
+ * Angabe zu finden. Der Grund steht jeweils daneben. Suchen mit:
+ *   grep -n "@ungeprueft" src/lib/daten.ts
  *
  * Felder mit der Endung En sind die englische Fassung derselben Angabe,
  * für die Sprachumschaltung. Ändert sich der Wert, ändern sich beide.
@@ -367,12 +371,33 @@ export const FAMILIE = {
   heimatmuseum: "Heimatmuseum Ruhpolding",
 } as const
 
-/** Quelle: noch offen. Stand: noch offen. */
+/**
+ * Übernachten.
+ * Geprüft: https://www.ruhpolding.de/alle-ruhpoldinger-gastgeber
+ * Abgerufen: 2026-09-03
+ *
+ * Die Gastgeberübersicht listet die Häuser einzeln auf, ohne Summen oder
+ * Zertifikate zu nennen. Kein Wert dieses Blocks ließ sich belegen.
+ */
 export const UNTERKUNFT = {
-  /** @demo */ hoechsteKategorie: "4-Sterne-Hotel",
-  /** @demo */ hoechsteKategorieEn: "four star hotel",
-  /** @demo Steht am Satzanfang, deshalb groß geschrieben. */
+  /**
+   * @ungeprueft Die höchste in der Gastgeberliste ausgewiesene Kategorie
+   * sind drei Sterne, etwa "Hotel Alp Inn***S". Ein Haus mit vier Sternen
+   * kommt dort nicht vor.
+   */
+  hoechsteKategorie: "4-Sterne-Hotel",
+  /** @ungeprueft siehe hoechsteKategorie */
+  hoechsteKategorieEn: "four star hotel",
+  /**
+   * @ungeprueft Keine Gesamtzahl der Höfe genannt, die Liste führt sie
+   * einzeln auf. Steht am Satzanfang, deshalb groß geschrieben.
+   */
   hoefeAnzahl: "Rund 20",
-  /** @demo */ zertifizierung: "Reisen für Alle",
-  /** @demo */ barrierefreiHaeuser: "zwei Hotels im Zentrum und ein Gästehaus am Kurpark",
+  /** @ungeprueft "Reisen für Alle" wird auf der Gastgeberseite nicht erwähnt */
+  zertifizierung: "Reisen für Alle",
+  /**
+   * @ungeprueft Keine Aufstellung barrierefreier Häuser gefunden. Als
+   * barrierefrei ausgewiesen ist dort die Ferienwohnung "Berg & Wiese".
+   */
+  barrierefreiHaeuser: "zwei Hotels im Zentrum und ein Gästehaus am Kurpark",
 } as const
