@@ -1,7 +1,18 @@
+import * as React from "react"
+
 import { BotAvatar } from "@/components/chat/bot-avatar"
+import { QrCard } from "@/components/chat/qr-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import type { ChatMessage } from "@/hooks/use-chat"
-import type { InfoCard } from "@/lib/chat-flow"
+import type { DataTable, InfoCard } from "@/lib/chat-flow"
 import { cn } from "@/lib/utils"
 
 const bubbleBase =
@@ -28,8 +39,73 @@ function InfoCardView({ card }: { card: InfoCard }) {
           </div>
         ))}
         {card.note ? (
-          <p className="pt-1 text-xs text-muted-foreground [overflow-wrap:anywhere]">
+          <p className="pt-1 text-xs [overflow-wrap:anywhere] text-muted-foreground">
             {card.note}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * Eine Tabelle in der Sprechblasenspalte.
+ *
+ * Die erste Zeile ist hervorgehoben, denn bei einem Fahrplan ist sie die
+ * eigentliche Antwort: die nächste Abfahrt. Die übrigen stehen dabei, damit
+ * sichtbar wird, wie viel Zeit bis zur übernächsten bleibt.
+ *
+ * Der eigene Scrollbereich ist nicht optional: das Chatfenster wird im Test
+ * auf Mobilbreite gestellt, und eine Tabelle, die den Rahmen sprengt, würde
+ * die ganze Seite seitlich verschieben.
+ */
+function DataTableView({ table }: { table: DataTable }) {
+  return (
+    <Card size="sm" className="w-full max-w-full">
+      <CardHeader>
+        <CardTitle className="text-sm">{table.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-2">
+        <div className="-mx-1 overflow-x-auto px-1">
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow>
+                {table.columns.map((spalte) => (
+                  <TableHead
+                    key={spalte}
+                    className="h-8 px-2 text-xs whitespace-nowrap"
+                  >
+                    {spalte}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {table.rows.map((zeile, index) => (
+                <TableRow
+                  key={zeile.join("|")}
+                  className={cn(index === table.highlight && "bg-muted/60")}
+                >
+                  {zeile.map((zelle, spalte) => (
+                    <TableCell
+                      key={`${spalte}-${zelle}`}
+                      className={cn(
+                        "px-2 py-1.5 whitespace-nowrap",
+                        spalte === 0 && "font-medium tabular-nums",
+                        index === table.highlight && "font-medium"
+                      )}
+                    >
+                      {zelle}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        {table.note ? (
+          <p className="text-xs [overflow-wrap:anywhere] text-muted-foreground">
+            {table.note}
           </p>
         ) : null}
       </CardContent>
@@ -42,14 +118,21 @@ type MessageItemProps = {
   showAvatar: boolean
 }
 
-export function MessageItem({ message, showAvatar }: MessageItemProps) {
+/**
+ * Memoisiert, damit die gestaffelte Ausgabe einer neuen Nachricht nicht bei
+ * jedem Häppchen die gesamte bisherige Liste neu rendert.
+ */
+export const MessageItem = React.memo(function MessageItem({
+  message,
+  showAvatar,
+}: MessageItemProps) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
         <div
           className={cn(
             bubbleBase,
-            "max-w-[85%] rounded-br-sm bg-primary text-primary-foreground @sm:max-w-[80%]",
+            "max-w-[85%] rounded-br-sm bg-primary text-primary-foreground @sm:max-w-[80%]"
           )}
         >
           {message.text}
@@ -65,15 +148,21 @@ export function MessageItem({ message, showAvatar }: MessageItemProps) {
       ) : (
         <div className="size-8 shrink-0" aria-hidden="true" />
       )}
-      <div className="flex min-w-0 max-w-[calc(100%-2.5rem)] flex-col @sm:max-w-[80%]">
+      <div className="flex max-w-[calc(100%-2.5rem)] min-w-0 flex-col @sm:max-w-[80%]">
         {message.kind === "text" ? (
-          <div className={cn(bubbleBase, "rounded-bl-sm bg-muted text-foreground")}>
+          <div
+            className={cn(bubbleBase, "rounded-bl-sm bg-muted text-foreground")}
+          >
             {message.text}
           </div>
-        ) : (
+        ) : message.kind === "card" ? (
           <InfoCardView card={message.card} />
+        ) : message.kind === "table" ? (
+          <DataTableView table={message.table} />
+        ) : (
+          <QrCard qr={message.qr} />
         )}
       </div>
     </div>
   )
-}
+})
