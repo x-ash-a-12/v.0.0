@@ -38,7 +38,7 @@ export function ChatView() {
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-hidden"
       >
         <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-3 px-3 py-4 @sm:px-4">
           {messages.map((message, index) => (
