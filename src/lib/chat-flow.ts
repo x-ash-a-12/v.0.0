@@ -34,6 +34,15 @@ export type Chip = {
   label: string
   /** Ziel-Knoten im Antwortpfad. */
   to: string
+  /**
+   * Thema, aus dem der Vorschlag stammt.
+   *
+   * Nur die Kandidaten einer Rückfrage tragen es. Dort führt das Ziel oft auf
+   * einen Unterknoten ("bergbahn-preise"), aus dessen ID sich das Thema nicht
+   * ablesen lässt. Ohne diese Angabe blieb die englische Rückfrage bei den
+   * deutschen Themennamen stehen.
+   */
+  topic?: string
 }
 
 /** Strukturierte Info als Karte (Preise, Kontaktdaten, Fahrpläne). */
@@ -258,8 +267,22 @@ const UEBERBRUECKUNGEN = [
   "Moment, ich hole die Zahlen.",
 ] as const
 
-export function ueberbrueckung(): string {
-  return waehleVariante(UEBERBRUECKUNGEN)
+const UEBERBRUECKUNGEN_EN = [
+  "One moment, I will look that up.",
+  "Let me check.",
+  "I have that in a moment.",
+  "One moment, I will fetch the figures.",
+] as const
+
+/**
+ * Sie steht vor jeder Karte und jeder Tabelle und war bis zum Testlauf vom
+ * 17.09. auch auf Englisch deutsch. Gerade dort fällt es auf: die
+ * Überbrückung ist die erste Zeile, die nach dem Antippen erscheint.
+ */
+export function ueberbrueckung(sprache: Sprache = "de"): string {
+  return waehleVariante(
+    sprache === "en" ? UEBERBRUECKUNGEN_EN : UEBERBRUECKUNGEN
+  )
 }
 
 export const FLOW: Record<string, FlowNode> = {
@@ -301,9 +324,9 @@ export const FLOW: Record<string, FlowNode> = {
     id: "standort",
     messages: [
       [
-        "Du stehst gerade {standort:kurz}, hier in Ruhpolding im Chiemgau. Zur Tourist-Information sind es von hier {naehe:touristinfo}, zur Talstation ${BERGBAHNEN.rauschbergName} {naehe:rauschberg}.",
-        "Dieses Gerät steht {standort:kurz} in Ruhpolding. Von hier aus sind es {naehe:touristinfo} zur Tourist-Information und {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.",
-        "Der Standort ist {standort:kurz}, mitten in Ruhpolding. {naehe:touristinfo} zur Tourist-Information, {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.",
+        `Du stehst gerade {standort:kurz}, hier in Ruhpolding im Chiemgau. Zur Tourist-Information sind es von hier {naehe:touristinfo}, zur Talstation ${BERGBAHNEN.rauschbergName} {naehe:rauschberg}.`,
+        `Dieses Gerät steht {standort:kurz} in Ruhpolding. Von hier aus sind es {naehe:touristinfo} zur Tourist-Information und {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
+        `Der Standort ist {standort:kurz}, mitten in Ruhpolding. {naehe:touristinfo} zur Tourist-Information, {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
       ],
     ],
     chips: [
@@ -922,9 +945,14 @@ export function rueckfrageKnoten(
   term: string | null,
   sprache: Sprache = "de"
 ): FlowNode {
+  const themaVon = (chip: Chip) =>
+    TOPICS.find(
+      (eintrag) => eintrag.id === chip.topic || chip.to.startsWith(eintrag.id)
+    )
+
   const themen = aufzaehlung(
     candidates.map((chip) => {
-      const topic = TOPICS.find((eintrag) => chip.to.startsWith(eintrag.id))
+      const topic = themaVon(chip)
       if (!topic) return chip.label
       return sprache === "en" ? topic.satzEn : topic.satz
     }),
@@ -940,12 +968,17 @@ export function rueckfrageKnoten(
 
   return {
     id: "rueckfrage-mehrdeutig",
+    // Der Knoten baut seinen Text in beiden Sprachen selbst. Ohne diese
+    // Kennzeichnung liefe er durch uebersetze(), fände dort keine Fassung
+    // und bekäme den Hinweis vorangestellt, die Auskunft liege nur auf
+    // Deutsch vor, obwohl er gerade auf Englisch fragt.
+    fertig: true,
     messages: [
       vorlage.replace("{themen}", themen).replace("{begriff}", term ?? ""),
     ],
     chips: [
       ...candidates.map((chip) => {
-        const topic = TOPICS.find((eintrag) => chip.to.startsWith(eintrag.id))
+        const topic = themaVon(chip)
         if (!topic || sprache !== "en") return chip
         return { ...chip, label: topic.labelEn }
       }),

@@ -1,18 +1,19 @@
 import { RotateCcw } from "lucide-react"
 
 import { BotAvatar } from "@/components/chat/bot-avatar"
+import { LanguageToggle } from "@/components/chat/language-toggle"
 import { ThemeToggle } from "@/components/chat/theme-toggle"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { type Sprache } from "@/lib/sprache"
 
 type ChatHeaderProps = {
   onReset: () => void
-  /** Aktive Dialogsprache, sichtbar als Kürzel im Kopf. */
+  /** Aktive Dialogsprache. */
   sprache: Sprache
+  onSprache: (sprache: Sprache) => void
 }
 
-export function ChatHeader({ onReset, sprache }: ChatHeaderProps) {
+export function ChatHeader({ onReset, sprache, onSprache }: ChatHeaderProps) {
   return (
     <header className="flex items-center gap-3 border-b bg-background/95 px-3 py-2.5 backdrop-blur @sm:px-4">
       <BotAvatar className="size-9" />
@@ -23,15 +24,7 @@ export function ChatHeader({ onReset, sprache }: ChatHeaderProps) {
           Digitaler Assistent
         </p>
       </div>
-      <Badge
-        variant="secondary"
-        className="shrink-0 font-mono text-[10px] tracking-wider uppercase"
-        aria-label={
-          sprache === "en" ? "Dialogue language English" : "Dialogsprache Deutsch"
-        }
-      >
-        {sprache}
-      </Badge>
+      <LanguageToggle sprache={sprache} onWechsel={onSprache} />
       <Button
         type="button"
         variant="ghost"

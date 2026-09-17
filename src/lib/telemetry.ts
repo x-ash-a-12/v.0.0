@@ -12,8 +12,11 @@
 export type LogEintrag = {
   /** Millisekunden seit Sitzungsbeginn. */
   t: number
-  art: "eingabe" | "chip" | "antwort" | "reset"
-  /** Roheingabe bei "eingabe", Beschriftung bei "chip". */
+  art: "eingabe" | "chip" | "antwort" | "reset" | "sprache"
+  /**
+   * Roheingabe bei "eingabe", Beschriftung bei "chip", das eingestellte
+   * Kürzel bei "sprache".
+   */
   text?: string
   treffer?: "hit" | "ambiguous" | "miss"
   /**

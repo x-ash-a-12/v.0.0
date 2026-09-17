@@ -1,6 +1,22 @@
 import { describe, expect, test } from "bun:test"
 
-import { getNode } from "@/lib/chat-flow"
+import { FLOW, getNode, rueckfrageKnoten } from "@/lib/chat-flow"
+import { fallbackKnoten } from "@/lib/fallback"
+import {
+  ANREISE,
+  BERGBAHNEN,
+  EVENTS,
+  FAMILIE,
+  GASTRONOMIE,
+  LOIPEN,
+  PARKEN,
+  TOURIST_INFO,
+  UNTERKUNFT,
+  WANDERN,
+  WINTER,
+} from "@/lib/daten"
+import { NUR_DEUTSCH, uebersetze } from "@/lib/i18n"
+import { GRUPPEN, ZIELE } from "@/lib/ziele"
 import {
   minuten,
   naechsteAbfahrten,
@@ -41,9 +57,20 @@ function existiert(id: string): boolean {
   return getNode(id).id !== "notknoten"
 }
 
+/**
+ * Mittag am 03.09.2026, der Vorgabezeitpunkt für alle Tests.
+ *
+ * Empfehlungen sortieren nach Eignung zur aktuellen Uhrzeit: was gerade zu
+ * hat, rutscht nach hinten. Ohne festen Zeitpunkt hinge die Reihenfolge an
+ * der Systemuhr, und dieselben Tests wären morgens grün und abends rot.
+ * Mittags sind alle Ziele offen, die Reihenfolge entspricht also der in
+ * GRUPPEN hinterlegten.
+ */
+const MITTAGS = zeitpunkt(12, 0)
+
 /** Kontext, wie er nach einer Antwort auf diesem Knoten aussieht. */
-function nach(knotenId: string): Kontext {
-  const node = getNode(knotenId)
+function nach(knotenId: string, jetzt: Date = MITTAGS): Kontext {
+  const node = getNode(knotenId, "de", jetzt)
   if (node.id === "notknoten") {
     throw new Error(`Knoten ${knotenId} gibt es nicht`)
   }
@@ -128,6 +155,16 @@ describe("Meta-Fragen an das Gerät", () => {
     expect(ziel("was gibt es hier zu sehen")).toBe("empfehlung:hier:0")
     expect(ziel("was kann man hier unternehmen")).toBe("empfehlung:hier:0")
     expect(ziel("was gibts hier")).toBe("empfehlung:hier:0")
+  })
+
+  test("die Frage nach dem Ort auch im Konjunktiv", () => {
+    expect(ziel("was könnte ich hier machen?")).toBe("empfehlung:hier:0")
+    expect(ziel("was könnte man hier unternehmen")).toBe("empfehlung:hier:0")
+    expect(ziel("was würde sich hier lohnen zu sehen")).toBe(
+      "empfehlung:hier:0"
+    )
+    expect(ziel("was macht man hier so")).toBe("empfehlung:hier:0")
+    expect(ziel("what could i do here")).toBe("empfehlung:hier:0")
   })
 
   test("„nochmal“ wiederholt die letzte Antwort", () => {
@@ -461,7 +498,7 @@ describe("Vorschlagen, auswählen, hinführen", () => {
   })
 
   test("der Vorschlag nennt drei Ziele und hebt eines hervor", () => {
-    const node = getNode("empfehlung:wandern:0")
+    const node = getNode("empfehlung:wandern:0", "de", MITTAGS)
     expect(node.angebot).toHaveLength(3)
     // Einleitung, drei Vorschläge, Abschluss.
     expect(node.messages).toHaveLength(5)
@@ -490,6 +527,48 @@ describe("Vorschlagen, auswählen, hinführen", () => {
     )
   })
 
+  test("die zweite Seite zählt mit ihren gedruckten Nummern weiter", () => {
+    // Dort steht "4 ·" ganz oben. Im Testlauf vom 17.09. blieben "4" und "3"
+    // ohne Treffer, obwohl eine Liste auf dem Schirm stand.
+    const seite2 = nach("empfehlung:hier:3")
+    expect(seite2.angebot).toEqual(["vitalwelt", "gipfelalm", "arena"])
+    expect(ziel("4", seite2)).toBe("ziel:vitalwelt")
+    expect(ziel("nummer 5", seite2)).toBe("ziel:gipfelalm")
+    expect(ziel("ich nehme die 6", seite2)).toBe("ziel:arena")
+    // Ein Ordnungswort zählt dagegen ab dem obersten Vorschlag.
+    expect(ziel("die erste", seite2)).toBe("ziel:vitalwelt")
+  })
+
+  test("eine Nummer, die nicht dasteht, wird nicht geraten", () => {
+    const seite2 = nach("empfehlung:hier:3")
+    // Die Liste zeigt 4, 5, 6. Eine "3" gibt es dort nicht mehr.
+    expect(ziel("3", seite2)).toBeNull()
+    expect(ziel("7", nach("empfehlung:hier:0"))).toBeNull()
+  })
+
+  test("Zahlen ohne Liste und Zahlen im Satz wählen nichts aus", () => {
+    // Die Schaltflächen im Menü tragen keine Nummern, dort wäre jede Zahl
+    // geraten. Und wer die Gruppengröße nennt, wählt nicht aus.
+    expect(ziel("3", nach("menu"))).toBeNull()
+    expect(ziel("wir sind 4 personen", nach("empfehlung:hier:0"))).toBeNull()
+  })
+
+  test("„was sonst“ rückt die Liste weiter", () => {
+    // Blieb im Testlauf vom 17.09. ohne Treffer.
+    expect(ziel("was sonst", nach("empfehlung:hier:0"))).toBe(
+      "empfehlung:hier:3"
+    )
+    expect(ziel("sonst noch was", nach("empfehlung:hier:0"))).toBe(
+      "empfehlung:hier:3"
+    )
+    expect(ziel("zeig mir mehr", nach("empfehlung:hier:0"))).toBe(
+      "empfehlung:hier:3"
+    )
+    expect(ziel("what else", nach("empfehlung:hier:0"))).toBe(
+      "empfehlung:hier:3"
+    )
+  })
+
   test("„gibt es auch andere“ rückt die Liste weiter", () => {
     expect(ziel("gibt es auch andere", nach("empfehlung:wandern:0"))).toBe(
       "empfehlung:wandern:3"
@@ -501,16 +580,16 @@ describe("Vorschlagen, auswählen, hinführen", () => {
 
   test("sind die Vorschläge erschöpft, wird das gesagt", () => {
     // Nicht eine leere Liste ausgeben, sondern eine Absage.
-    const node = getNode("empfehlung:winter:3")
+    const node = getNode("empfehlung:winter:3", "de", MITTAGS)
     expect(node.messages.length).toBeGreaterThan(0)
     expect(node.angebot?.length).toBeGreaterThan(0)
   })
 
   test("die Auswahl führt zu einem Ziel mit QR-Code", () => {
     for (const gruppe of ["wandern", "familie", "essen", "winter", "hier"]) {
-      const node = getNode(`empfehlung:${gruppe}:0`)
+      const node = getNode(`empfehlung:${gruppe}:0`, "de", MITTAGS)
       for (const id of node.angebot ?? []) {
-        const zielNode = getNode(`ziel:${id}`)
+        const zielNode = getNode(`ziel:${id}`, "de", MITTAGS)
         expect(zielNode.id).toBe(`ziel:${id}`)
         expect(zielNode.qr?.url).toContain("google.com/maps")
       }
@@ -520,7 +599,8 @@ describe("Vorschlagen, auswählen, hinführen", () => {
   test("ein Vorschlag wiederholt sich innerhalb einer Gruppe nicht", () => {
     const gesehen = new Set<string>()
     for (let ab = 0; ab < 9; ab += 3) {
-      for (const id of getNode(`empfehlung:wandern:${ab}`).angebot ?? []) {
+      for (const id of getNode(`empfehlung:wandern:${ab}`, "de", MITTAGS)
+        .angebot ?? []) {
         if (ab > 0 && gesehen.has(id)) continue
         gesehen.add(id)
       }
@@ -528,7 +608,7 @@ describe("Vorschlagen, auswählen, hinführen", () => {
     // Die erste Runde darf in der Absage am Ende noch einmal auftauchen,
     // neue Ziele erfindet sie aber keine.
     expect(gesehen.size).toBeLessThanOrEqual(
-      getNode("empfehlung:wandern:0").angebot!.length + 2
+      getNode("empfehlung:wandern:0", "de", MITTAGS).angebot!.length + 2
     )
   })
 })
@@ -757,5 +837,269 @@ describe("Elliptische Nachfragen zum Fahrplan", () => {
 
   test("ein starkes Thema schlägt die bloße Ortsnennung", () => {
     expect(ziel("biathlon")).toBe("events-biathlon")
+  })
+})
+
+/**
+ * Vollständigkeit der englischen Fassung.
+ *
+ * Anlass ist der Testlauf vom 17.09.2026: nach dem Umschalten auf Englisch
+ * standen deutsche Schaltflächen unter englischen Antworten, und jeder
+ * Unterknoten eines Themas antwortete mit dem Hinweis, die Auskunft liege
+ * nur auf Deutsch vor. Ein englischsprachiger Gast bekam damit ein anderes
+ * Gerät als ein deutschsprachiger.
+ *
+ * Diese Tests laufen über den ganzen Baum statt über einzelne Beispiele.
+ * Ein neuer Knoten ohne englische Fassung fällt dadurch beim Anlegen auf und
+ * nicht erst im nächsten Testlauf mit einer Person davor.
+ */
+describe("Die englische Fassung ist vollständig", () => {
+  const MITTAG = zeitpunkt(12, 0)
+
+  /**
+   * Namen, die auch im englischen Text deutsch bleiben, weil sie so heißen.
+   *
+   * Sie werden vor der Prüfung aus dem Text geschnitten. Den Wortfilter
+   * stattdessen zu lockern hieße, "zur" und "für" ganz zu erlauben, und
+   * genau die stecken in den Sätzen, um die es geht.
+   */
+  const EIGENNAMEN = [
+    GASTRONOMIE.gasthausPost,
+    GASTRONOMIE.pizzeria,
+    GASTRONOMIE.gipfelalm,
+    UNTERKUNFT.zertifizierung,
+    ANREISE.gaestekarteName,
+    ANREISE.dorflinie9532,
+    ANREISE.dorflinie9533,
+    WANDERN.sonntagshornStart,
+    EVENTS.biathlonName,
+    "Grüß Gott",
+  ]
+
+  const ohneNamen = (text: string) =>
+    EIGENNAMEN.reduce((rest, name) => rest.split(name).join(" "), text)
+
+  /**
+   * Deutsche Funktionswörter. Nach dem Abzug der Eigennamen hat keines von
+   * ihnen mehr einen legitimen Platz in einem englischen Satz.
+   */
+  const DEUTSCHE_WOERTER =
+    /\b(und|oder|der|die|das|den|dem|des|mit|von|zur|zum|für|ist|sind|nicht|hier|gibt|kann|kannst|auch|noch|ein|eine|einen|einem|täglich|geöffnet|geschlossen|Uhr|Stunden|Minuten|Gehminuten|Zurück|Thema|Andere|Frage|Welche|Übernachten|Hütten|Talstation|Kinderwagen|Bergbahnen|Parkplatz|Wanderparkplatz)\b/
+
+  /** Deutsch im Text, nachdem die Eigennamen abgezogen sind? */
+  const istDeutsch = (text: string) => DEUTSCHE_WOERTER.test(ohneNamen(text))
+
+  /** Jede Knoten-ID, die im Gespräch erreichbar ist. */
+  function alleKnoten(): string[] {
+    return [
+      ...Object.keys(FLOW),
+      ...ZIELE.map((ziel) => `ziel:${ziel.id}`),
+      ...Object.keys(GRUPPEN).flatMap((gruppe) =>
+        [0, 3, 6].map((ab) => `empfehlung:${gruppe}:${ab}`)
+      ),
+      "fahrplan:traunstein",
+      "fahrplan:salzburg",
+    ]
+  }
+
+  /** Den Knoten so holen, wie der Hook ihn ausgibt. */
+  function englisch(id: string) {
+    const roh = getNode(id, "en", MITTAG)
+    return roh.fertig ? roh : uebersetze(roh, "en")
+  }
+
+  test("jeder Knoten hat eine englische Fassung", () => {
+    const ohne = alleKnoten().filter((id) => {
+      const node = englisch(id)
+      if (node.id === "notknoten") return false
+      return node.messages.flat().join(" ").includes(NUR_DEUTSCH)
+    })
+    expect(ohne).toEqual([])
+  })
+
+  test("keine Schaltfläche bleibt deutsch", () => {
+    const deutsch: string[] = []
+    for (const id of alleKnoten()) {
+      const node = englisch(id)
+      for (const chip of node.chips ?? []) {
+        if (istDeutsch(chip.label)) {
+          deutsch.push(`${id}: "${chip.label}"`)
+        }
+      }
+    }
+    expect(deutsch).toEqual([])
+  })
+
+  test("kein Antworttext bleibt deutsch", () => {
+    const deutsch: string[] = []
+    for (const id of alleKnoten()) {
+      const node = englisch(id)
+      for (const text of [
+        ...node.messages.flat(),
+        ...(node.kurz?.flat() ?? []),
+      ])
+        if (istDeutsch(text)) deutsch.push(`${id}: ${text}`)
+    }
+    expect(deutsch).toEqual([])
+  })
+
+  test("Karten und Tabellen tragen englische Beschriftungen", () => {
+    const deutsch: string[] = []
+    for (const id of alleKnoten()) {
+      const node = englisch(id)
+      if (node.card) {
+        const text = [
+          node.card.title,
+          ...node.card.rows.map((zeile) => zeile.label),
+          node.card.note ?? "",
+        ].join(" | ")
+        if (istDeutsch(text)) deutsch.push(`${id} card: ${text}`)
+      }
+      if (node.table) {
+        const text = [...node.table.columns, node.table.note ?? ""].join(" | ")
+        if (istDeutsch(text)) deutsch.push(`${id} table: ${text}`)
+      }
+    }
+    expect(deutsch).toEqual([])
+  })
+
+  test("die zur Laufzeit gebauten Knoten antworten englisch", () => {
+    // Rückfrage und Fallback bauen ihren Text selbst in beiden Sprachen und
+    // dürfen deshalb nicht durch uebersetze() laufen. Fehlte ihnen das
+    // Kennzeichen "fertig", stellte die Übersetzung ihnen den Hinweis voran,
+    // die Auskunft liege nur auf Deutsch vor, mitten in einer englischen
+    // Nachfrage. Genau das trat im Testlauf vom 17.09. auf.
+    const gebaut = [
+      fallbackKnoten("hund", "en"),
+      fallbackKnoten("xyzabc", "en"),
+      rueckfrageKnoten(
+        [
+          {
+            label: "Wandern & Bergbahnen",
+            to: "bergbahn-preise",
+            topic: "wandern",
+          },
+          { label: "Winter & Langlauf", to: "winter-loipe", topic: "winter" },
+        ],
+        "prices",
+        "en"
+      ),
+    ]
+
+    for (const node of gebaut) {
+      expect(node.fertig).toBe(true)
+      const text = node.messages.flat().join(" ")
+      expect(text).not.toContain(NUR_DEUTSCH)
+      expect(istDeutsch(text)).toBe(false)
+      for (const chip of node.chips ?? []) {
+        expect(istDeutsch(chip.label)).toBe(false)
+      }
+    }
+  })
+
+  test("die Rückfrage nennt die Themen auf Englisch", () => {
+    // Das Ziel eines Kandidaten führt oft auf einen Unterknoten, aus dessen
+    // ID sich das Thema nicht ablesen lässt. Vorher blieb die Rückfrage
+    // deshalb bei den deutschen Themennamen stehen.
+    const node = rueckfrageKnoten(
+      [
+        {
+          label: "Wandern & Bergbahnen",
+          to: "bergbahn-preise",
+          topic: "wandern",
+        },
+        { label: "Winter & Langlauf", to: "winter-loipe", topic: "winter" },
+      ],
+      "prices",
+      "en"
+    )
+    const text = node.messages.flat().join(" ")
+    expect(text).toContain("hiking and the mountain lifts")
+    expect(text).toContain("winter and cross-country skiing")
+    expect(node.chips?.map((chip) => chip.label)).toEqual([
+      "Hiking & mountain lifts",
+      "Winter & cross-country",
+      "Something else",
+    ])
+  })
+
+  test("beide Sprachen bieten dieselben Wege an", () => {
+    // Nicht der Wortlaut zählt, sondern die Struktur: gleich viele Antworten
+    // und dieselben Schaltflächen mit denselben Zielen. Fiele auf Englisch
+    // eine Schaltfläche weg, käme ein englischsprachiger Gast an eine Stelle
+    // im Baum nicht heran, an die ein deutschsprachiger kommt.
+    const abweichungen: string[] = []
+    for (const id of alleKnoten()) {
+      const de = getNode(id, "de", MITTAG)
+      const en = englisch(id)
+      if (de.id === "notknoten") continue
+
+      if (de.messages.length !== en.messages.length) {
+        abweichungen.push(
+          `${id}: ${de.messages.length} Antworten de, ${en.messages.length} en`
+        )
+      }
+      const ziele = (node: typeof de) => (node.chips ?? []).map((c) => c.to)
+      if (ziele(de).join(",") !== ziele(en).join(",")) {
+        abweichungen.push(
+          `${id}: Schaltflächen de [${ziele(de)}] vs en [${ziele(en)}]`
+        )
+      }
+      if (Boolean(de.card) !== Boolean(en.card)) {
+        abweichungen.push(`${id}: Karte nur in einer Sprache`)
+      }
+      if (Boolean(de.table) !== Boolean(en.table)) {
+        abweichungen.push(`${id}: Tabelle nur in einer Sprache`)
+      }
+      if (Boolean(de.qr) !== Boolean(en.qr)) {
+        abweichungen.push(`${id}: QR-Code nur in einer Sprache`)
+      }
+    }
+    expect(abweichungen).toEqual([])
+  })
+
+  test("die englischen Datenfelder nennen dieselben Zahlen wie die deutschen", () => {
+    // Der Kern der Sache: eine Preisangabe darf nicht in einer Sprache
+    // veralten und in der anderen stehenbleiben.
+    //
+    // Geprüft wird die Datenschicht, nicht der fertige Satz: die Antworten
+    // ziehen aus Variantenlisten, zwei Aufrufe ergeben also nicht zwingend
+    // denselben Text. Die Zahl dagegen steht fest, und jedes Feld "xEn" ist
+    // die Übersetzung genau des Feldes "x" daneben.
+    //
+    // Uhrzeiten sind ausgenommen: "9:30 Uhr" und "9.30 am" sind dieselbe
+    // Zeit in der jeweils üblichen Schreibweise.
+    const bloecke: Record<string, Record<string, string>> = {
+      TOURIST_INFO,
+      BERGBAHNEN,
+      WANDERN,
+      PARKEN,
+      ANREISE,
+      LOIPEN,
+      WINTER,
+      EVENTS,
+      GASTRONOMIE,
+      FAMILIE,
+      UNTERKUNFT,
+    }
+    const zahlen = (text: string) =>
+      (text.match(/\d+(?:[.,]\d+)?\s*(?:€|km|m\b|%)/g) ?? [])
+        .map((treffer) => treffer.replace(/\s+/g, " "))
+        .sort()
+
+    const abweichungen: string[] = []
+    for (const [name, block] of Object.entries(bloecke)) {
+      for (const [feld, wert] of Object.entries(block)) {
+        if (!feld.endsWith("En")) continue
+        const deutsch = block[feld.slice(0, -2)]
+        if (typeof deutsch !== "string" || typeof wert !== "string") continue
+        const a = zahlen(deutsch)
+        const b = zahlen(wert)
+        if (a.join(",") !== b.join(",")) {
+          abweichungen.push(`${name}.${feld}: de [${a}] vs en [${b}]`)
+        }
+      }
+    }
+    expect(abweichungen).toEqual([])
   })
 })

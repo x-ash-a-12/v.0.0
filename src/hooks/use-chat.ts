@@ -169,7 +169,7 @@ export function useChat() {
     // einmal auszurollen.
     const inhalt =
       istWiederholung(verlauf, node) && node.kurz ? node.kurz : node.messages
-    const bezug = zieheRueckbezug(verlauf, node)
+    const bezug = zieheRueckbezug(verlauf, node, spracheRef.current)
     merken(verlauf, node)
 
     // Karten brauchen Vorlauf, sonst pulsieren nur die Punkte. Eine kurze
@@ -180,7 +180,9 @@ export function useChat() {
     const nachrichten = [
       ...(wechsel ? [wechsel] : []),
       ...(bezug ? [bezug] : []),
-      ...(node.bridge || node.card || node.table ? [ueberbrueckung()] : []),
+      ...(node.bridge || node.card || node.table
+        ? [ueberbrueckung(spracheRef.current)]
+        : []),
       ...ausformulieren(inhalt),
     ].map((text) => aufloesen(text, standortRef.current, spracheRef.current))
 
@@ -313,6 +315,41 @@ export function useChat() {
     [runNode]
   )
 
+  /**
+   * Sprache umstellen und die letzte Antwort in der neuen Sprache wiederholen.
+   *
+   * Ohne die Wiederholung bliebe nach dem Druck alles stehen, was auf dem
+   * Schirm steht, und die Umstellung wirkte folgenlos, bis jemand die nächste
+   * Frage stellt. Der Verlauf wird dabei geleert: die Kurzfassung für eine
+   * Wiederholung wäre hier falsch, denn in der neuen Sprache ist der Text
+   * noch gar nicht dagewesen.
+   *
+   * Die Erkennung an der Eingabe bleibt daneben bestehen. Am Gerät im Ort
+   * löst sie den Fall, dass der nächste Gast eine andere Sprache spricht als
+   * der vorige und den Schalter nicht sieht.
+   */
+  const wechsleSprache = React.useCallback(
+    (ziel: Sprache) => {
+      if (ziel === spracheRef.current) return
+
+      protokolliere({ art: "sprache", text: ziel })
+      spracheRef.current = ziel
+      setSprache(ziel)
+      wechselRef.current = WECHSELHINWEIS[ziel]
+      verlaufRef.current = neuerVerlauf()
+
+      // Zur Laufzeit gebaute Knoten (Rückfrage, Fallback) tragen keine ID,
+      // unter der sie sich neu bauen ließen. Dann bleibt der Einstieg: eine
+      // unverstandene Eingabe in der neuen Sprache noch einmal vorzuhalten,
+      // führt ohnehin nicht weiter.
+      const aktuell = kontextRef.current.knoten
+      const erneut =
+        aktuell && getNode(aktuell, ziel).id === aktuell ? aktuell : "menu"
+      void runNode(erneut)
+    },
+    [runNode]
+  )
+
   const reset = React.useCallback(() => {
     protokolliere({ art: "reset" })
     runIdRef.current += 1
@@ -344,6 +381,7 @@ export function useChat() {
     sprache,
     selectChip,
     sendText,
+    wechsleSprache,
     reset,
   }
 }

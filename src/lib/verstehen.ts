@@ -180,7 +180,7 @@ const META: {
   {
     name: "umgebung",
     weichtThema: true,
-    test: /\bwas (kann|koennen|gibt|gibts|soll|laesst)\b[^]*\b(hier|umgebung|naehe|ruhpolding|machen|unternehmen|tun|erleben|anschauen|ansehen|sehen|los)\b|\bwas ist hier\b|\bwas gibt es hier\b|\bwas gibts hier\b|\bwas kann man hier\b|\blohnt sich hier\b|\bwhat (can i|is there)\b[^]*\b(do|here|see)\b|\bthings to do\b/,
+    test: /\bwas (kann\w*|koenn\w*|gib\w*|gaeb\w*|soll\w*|laesst|liess\w*|mach\w*|wuerde\w*)\b[^]*\b(hier|umgebung|naehe|ruhpolding|machen|unternehmen|tun|erleben|anschauen|ansehen|sehen|los)\b|\bwas ist hier\b|\blohnt sich hier\b|\bwhat (can|could|should|would)( i| we| one)?\b[^]*\b(do|here|see)\b|\bwhat is there\b[^]*\b(do|here|see)\b|\bthings to do\b/,
     to: "empfehlung:hier:0",
   },
   {
@@ -215,12 +215,38 @@ const JA =
   /^(ja|jo|jep|joa|genau|richtig|stimmt|passt|gerne|gern|klar|okay|ok|sicher|bitte|yes|yeah|yep|sure|exactly)\b/
 const NEIN = /^(nein|ne|nee|noe|nope|no|nicht ganz|eher nicht|falsch)\b/
 
-/** Zahlwörter für die Auswahl per Position: "das zweite" oder "nummer 2". */
+/**
+ * Ordnungswörter für die Auswahl per Position: "das zweite", "die vierte".
+ *
+ * Sie zählen ab dem, was gerade auf dem Schirm steht: "das erste" ist der
+ * oberste Vorschlag, auch wenn er in der Liste als "4 ·" geführt wird.
+ */
 const ORDINAL: [RegExp, number][] = [
-  [/\b(erste[rsn]?|erstes|1|eins|first)\b/, 0],
-  [/\b(zweite[rsn]?|zweites|2|zwei|second)\b/, 1],
-  [/\b(dritte[rsn]?|drittes|3|drei|third)\b/, 2],
+  [/\b(erste[rsn]?|erstes|first)\b/, 1],
+  [/\b(zweite[rsn]?|zweites|zwei|second)\b/, 2],
+  [/\b(dritte[rsn]?|drittes|drei|third)\b/, 3],
+  [/\b(vierte[rsn]?|viertes|vier|fourth)\b/, 4],
+  [/\b(fuenfte[rsn]?|fuenftes|fuenf|fifth)\b/, 5],
+  [/\b(sechste[rsn]?|sechstes|sechs|sixth)\b/, 6],
 ]
+
+/**
+ * Eine blanke Zahl, mit oder ohne "nummer" davor.
+ *
+ * Sie meint die gedruckte Nummer im Vorschlag, nicht die Stelle auf dem
+ * Schirm. Das ist der Unterschied zu den Ordnungswörtern oben und der Grund,
+ * warum beide getrennt gelesen werden: auf der zweiten Seite einer
+ * Vorschlagsliste steht "4 · Vita Alpina" ganz oben, und wer "4" tippt,
+ * meint dieses Ziel. Im Testlauf vom 17.09. blieb genau das ohne Treffer.
+ *
+ * Bewusst auf die ganze Eingabe verankert: "wir sind 4 Personen" nennt eine
+ * Zahl, wählt aber nichts aus. Gelesen wird sie ausserdem nur, wo etwas zur
+ * Auswahl steht: in einer Vorschlagsliste oder nach einer Rückfrage. Die
+ * Kacheln eines Themenmenues sind Wegweiser und tragen keine Nummern, dort
+ * wäre jede Zahl geraten.
+ */
+const ZIFFER =
+  /^(?:(?:ich )?(?:nehme|nimm|moechte|will|waehle|haette gern)\s+)?(?:die\s|das\s|der\s|den\s|nr\.?\s*|nummer\s*)?([1-9])$/
 
 /* ------------------------------------------------------------------ *
  * Ziele: Wegführung und Auswahl
@@ -248,7 +274,7 @@ const NUR_QR =
 
 /** Die Bitte um andere Vorschläge, wenn keiner der drei gepasst hat. */
 const ANDERE =
-  /\b(andere|weitere|mehr)\b[^]*\b(vorschlaeg\w*|optionen|moeglichkeit\w*|ziele|touren|ideen|tipps)\b|\bgibt es (noch |auch )?(was |etwas )?(andere|anderes|weitere)\b|\bhast du (noch |auch )?(was |etwas )?(andere|anderes|weitere)\b|\bnichts dabei\b|\bgefaellt mir nicht\b|\bnichts fuer mich\b|\bwas anderes\b|\bnoch mehr\b|\bandere vorschlaege\b|\bother (suggestions|options)\b|\banything else\b|\bnone of (them|these)\b/
+  /\b(andere|weitere|mehr)\b[^]*\b(vorschlaeg\w*|optionen|moeglichkeit\w*|ziele|touren|ideen|tipps)\b|\bgibt es (noch |auch )?(was |etwas )?(andere|anderes|weitere)\b|\bhast du (noch |auch )?(was |etwas )?(andere|anderes|weitere)\b|\bnichts dabei\b|\bgefaellt mir nicht\b|\bnichts fuer mich\b|\bwas anderes\b|\bnoch mehr\b|\bandere vorschlaege\b|\bwas sonst\b|\bsonst was\b|\bsonst noch\b|\bund sonst\b|\bwas noch\b|\bwas gibt es noch\b|\bzeig mir mehr\b|\bgib mir mehr\b|\bother (suggestions|options)\b|\banything else\b|\bwhat else\b|\bnone of (them|these)\b/
 
 /**
  * Eine Frage, die nach Auswahl verlangt statt nach Auskunft.
@@ -1465,6 +1491,10 @@ function alsChips(staende: Themenstand[]): Chip[] {
     label:
       TOPICS.find((topic) => topic.id === stand.topic)?.label ?? stand.topic,
     to: stand.bestesZiel,
+    // Das Ziel führt oft auf einen Unterknoten, dessen ID das Thema nicht
+    // nennt. Die Rückfrage braucht es aber, um auf Englisch den englischen
+    // Themennamen einzusetzen.
+    topic: stand.topic,
   }))
 }
 
@@ -1475,6 +1505,21 @@ function alsChips(staende: Themenstand[]): Chip[] {
  * Drei Wege führen dorthin: Zustimmung nach einer Rückfrage, eine Position
  * ("das zweite") und die Beschriftung selbst, auch nur teilweise getippt.
  */
+/**
+ * Die Schaltfläche an dieser Stelle, sofern es sie gibt.
+ *
+ * Steht eine Vorschlagsliste, endet die Zählung bei deren letztem Ziel.
+ * Sonst würde eine zu hohe Zahl auf "Andere Frage" zeigen und die Auswahl
+ * hätte scheinbar geklappt, nur eben die falsche.
+ */
+function chipAnStelle(kontext: Kontext, index: number): string | null {
+  if (index < 0) return null
+  const grenze =
+    kontext.angebot.length > 0 ? kontext.angebot.length : kontext.chips.length
+  if (index >= grenze) return null
+  return kontext.chips[index]?.to ?? null
+}
+
 function waehleAusChips(roh: string, kontext: Kontext): string | null {
   if (kontext.chips.length === 0) return null
 
@@ -1484,8 +1529,23 @@ function waehleAusChips(roh: string, kontext: Kontext): string | null {
   if (kontext.istRueckfrage && JA.test(roh)) return kontext.chips[0].to
   if (kontext.istRueckfrage && NEIN.test(roh)) return "menu"
 
-  for (const [muster, index] of ORDINAL) {
-    if (muster.test(roh) && kontext.chips[index]) return kontext.chips[index].to
+  // Ein Ordnungswort zählt ab dem obersten Vorschlag, eine blanke Zahl meint
+  // die gedruckte Nummer. Auf der ersten Seite fällt beides zusammen, ab der
+  // zweiten nicht mehr: dort steht "4 ·" oben.
+  const versatz = kontext.gruppe?.ab ?? 0
+  for (const [muster, stelle] of ORDINAL) {
+    if (!muster.test(roh)) continue
+    const gewaehlt = chipAnStelle(kontext, stelle - 1)
+    if (gewaehlt) return gewaehlt
+  }
+  // Gezählt wird nur, wo etwas zur Auswahl steht: eine Vorschlagsliste oder
+  // eine Rückfrage. Die Kacheln eines Themenmenues sind Wegweiser, keine
+  // Auswahl, und tragen keine Nummern.
+  const zaehlbar = kontext.angebot.length > 0 || kontext.istRueckfrage
+  const ziffer = zaehlbar ? ZIFFER.exec(roh) : null
+  if (ziffer) {
+    const gewaehlt = chipAnStelle(kontext, Number(ziffer[1]) - 1 - versatz)
+    if (gewaehlt) return gewaehlt
   }
 
   // Deckt sich die Eingabe weitgehend mit einer Beschriftung, ist sie als

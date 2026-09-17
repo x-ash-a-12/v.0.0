@@ -17,6 +17,7 @@ export function ChatView() {
     sprache,
     selectChip,
     sendText,
+    wechsleSprache,
     reset,
   } = useChat()
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -34,11 +35,15 @@ export function ChatView() {
 
   return (
     <div className="@container flex h-full min-h-0 w-full flex-col overflow-hidden bg-background text-foreground">
-      <ChatHeader onReset={reset} sprache={sprache} />
+      <ChatHeader
+        onReset={reset}
+        sprache={sprache}
+        onSprache={wechsleSprache}
+      />
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-hidden"
+        className="scrollbar-hidden min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
       >
         <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-3 px-3 py-4 @sm:px-4">
           {messages.map((message, index) => (

@@ -1,4 +1,5 @@
 import { TOPICS, waehleVariante, type FlowNode } from "@/lib/chat-flow"
+import { type Sprache } from "@/lib/sprache"
 
 /**
  * Gesprächsgedächtnis.
@@ -39,6 +40,13 @@ const RUECKBEZUEGE = [
   "Vorhin ging es dir um {thema}, jetzt schauen wir hier weiter.",
 ] as const
 
+const RUECKBEZUEGE_EN = [
+  "You asked about {thema} earlier, this goes well with it.",
+  "You had already asked about {thema}, and this adds to it.",
+  "This follows on from {thema}, which you asked about earlier.",
+  "Earlier you were after {thema}, so let us carry on from here.",
+] as const
+
 /** Mindestabstand zwischen zwei Rückbezügen, in Antworten. */
 const ABSTAND = 3
 
@@ -52,7 +60,8 @@ const ABSTAND = 3
  */
 export function zieheRueckbezug(
   verlauf: Verlauf,
-  node: FlowNode
+  node: FlowNode,
+  sprache: Sprache = "de"
 ): string | null {
   const thema = node.topic
   if (!thema) return null
@@ -69,9 +78,12 @@ export function zieheRueckbezug(
 
   if (Math.random() < 0.5) return null
 
-  const satz = TOPICS.find((topic) => topic.id === vorheriges)?.satz
+  const thema_vorher = TOPICS.find((topic) => topic.id === vorheriges)
+  const satz = sprache === "en" ? thema_vorher?.satzEn : thema_vorher?.satz
   if (!satz) return null
 
   verlauf.letzterRueckbezug = verlauf.besuche.length
-  return waehleVariante(RUECKBEZUEGE).replace("{thema}", satz)
+  return waehleVariante(
+    sprache === "en" ? RUECKBEZUEGE_EN : RUECKBEZUEGE
+  ).replace("{thema}", satz)
 }
