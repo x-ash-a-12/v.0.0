@@ -63,7 +63,7 @@ function DeviceStage({
       const next = Math.min(
         1,
         (rect.width - 24) / size.w,
-        (rect.height - 24) / size.h,
+        (rect.height - 24) / size.h
       )
       setScale(next > 0 ? next : 1)
     }
@@ -79,14 +79,14 @@ function DeviceStage({
       ref={ref}
       className={cn(
         "flex min-h-0 flex-1 items-center justify-center overflow-hidden",
-        size && "p-3",
+        size && "p-3"
       )}
     >
       <div
         className={cn(
           size
             ? "shrink-0 overflow-hidden rounded-[2rem] border-[6px] border-neutral-800 bg-background shadow-2xl dark:border-neutral-600"
-            : "h-full w-full",
+            : "h-full w-full"
         )}
         style={
           size
@@ -132,7 +132,10 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
               variant={active ? "default" : "ghost"}
               onClick={() => setActiveId(entry.id)}
               aria-pressed={active}
-              className={cn("shrink-0 gap-1.5", !active && "text-muted-foreground")}
+              className={cn(
+                "shrink-0 gap-1.5",
+                !active && "text-muted-foreground"
+              )}
             >
               <Icon className="size-3.5" />
               <span className="hidden sm:inline">{entry.label}</span>
@@ -149,7 +152,17 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
           // braucht immer einen Aufstellort, deshalb bleibt der bisherige.
           onValueChange={(wert) => setStandortId(wert ?? standortId)}
         >
-          <SelectTrigger size="sm" className="w-64" aria-label="Aufstellort">
+          {/*
+           * Die Breite fasst die längste Beschriftung ("Talstation
+           * Rauschberg") mit Luft zum Pfeil. min-w-0 auf dem Wert sorgt
+           * dafür, dass eine längere Beschriftung abgeschnitten wird,
+           * statt unter den Pfeil zu laufen.
+           */}
+          <SelectTrigger
+            size="sm"
+            className="w-52 *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:truncate"
+            aria-label="Aufstellort"
+          >
             {/* Base UI kennt nur den Wert, das Label steht in STANDORTE. */}
             <SelectValue>
               {(wert) =>

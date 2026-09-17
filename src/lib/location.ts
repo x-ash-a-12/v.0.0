@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { BERGBAHNEN, TOURIST_INFO } from "@/lib/daten"
+import { BERGBAHNEN } from "@/lib/daten"
 import { type Sprache } from "@/lib/sprache"
 
 /**
@@ -43,7 +43,10 @@ export type Standort = {
 export const STANDORTE: Standort[] = [
   {
     id: "info",
-    label: `Tourist-Information, ${TOURIST_INFO.adresse.split(",")[0]}`,
+    // Ohne Straße: mit ihr lief der Name im Umschalter unter den Pfeil.
+    // Welche Adresse die Tourist-Information hat, steht ohnehin auf ihrer
+    // Kontaktkarte, und hier ist nur der Aufstellort zu unterscheiden.
+    label: "Tourist-Information",
     kurz: "an der Tourist-Information",
     kurzEn: "the tourist information",
     // DATEN: vom Autor zu ersetzen
