@@ -30,8 +30,10 @@ export const TOURIST_INFO = {
   telefon: "+49 (0) 8663 88060",
   email: "tourismus@ruhpolding.de",
   oeffnungszeiten: "Mo bis Fr 9 bis 17 Uhr, Sa 9 bis 12 Uhr",
+  oeffnungszeitenEn: "Mon to Fri 9 to 17, Sat 9 to 12",
   /** Fußnote der Kontaktkarte, nennt jetzt den Stand statt des Demo-Status. */
   kartenhinweis: "Stand: 3. September 2026, Angaben ohne Gewähr.",
+  kartenhinweisEn: "As of 3 September 2026, no guarantee is given.",
 } as const
 
 /**
@@ -66,6 +68,7 @@ export const BERGBAHNEN = {
   unternbergErwachsen: "19,50 €",
   /** Die Quelle fasst Kinder und Jugendliche zusammen. */
   kinderAlter: "5 bis 17 Jahre",
+  kinderAlterEn: "5 to 17 years",
   /** Eigener Preis statt Prozentsatz: Berg- und Talfahrt 13,00 €. */
   ermaessigungKinder: "13,00 €",
   /**
@@ -73,6 +76,7 @@ export const BERGBAHNEN = {
    * keine Ermäßigung auf die Gästekarte. Siehe Bericht.
    */
   ermaessigungGaestekarte: "20 % Ermäßigung",
+  ermaessigungGaestekarteEn: "20 % discount",
   /*
    * Zeiten ohne Sprachbestandteil, damit die deutsche und die englische
    * Fassung sie gleichermaßen einsetzen können.
@@ -84,6 +88,8 @@ export const BERGBAHNEN = {
   /** Fußnote der Preiskarte. */
   kartenhinweis:
     "Unternberg, Stand 3. September 2026. Für den Rauschberg gibt es wegen des Bahnneubaus derzeit keinen Fahrbetrieb.",
+  kartenhinweisEn:
+    "Unternberg, as of 3 September 2026. The Rauschberg lift is not running at present because it is being rebuilt.",
 } as const
 
 /**
@@ -106,16 +112,21 @@ export const WANDERN = {
   foerchensee: "Förchensee",
   /** @ungeprueft kein Rundweg am Förchensee mit Längenangabe gefunden */
   foerchenseeRunde: "etwa 3 km, eben",
+  foerchenseeRundeEn: "about 3 km, level",
   /**
    * @ungeprueft Ein reiner Uferweg ist nicht belegt. Die Wegeliste führt
    * "Traunauen und Taubensee" mit 8,6 km und 02:15 h, was nicht dasselbe ist.
    */
   uferwegTraun: "Uferweg entlang der Traun",
+  uferwegTraunEn: "riverside path along the Traun",
   sonntagshorn: "Sonntagshorn",
   sonntagshornHoehe: "1.961 m",
   /** Die Quelle gibt "09:00 Stunden" für die Tour ab Laubau an. */
   sonntagshornGehzeit: "9 Stunden",
+  sonntagshornGehzeitEn: "9 hours",
   sonntagshornStart: "Wanderparkplatz Holzknechtmuseum / Laubau",
+  /** Derselbe Ort, für die englische Fassung als Gattung benannt. */
+  sonntagshornStartEn: "Holzknechtmuseum / Laubau hikers' car park",
 } as const
 
 /**
@@ -130,27 +141,36 @@ export const WANDERN = {
  */
 export const PARKEN = {
   rathaus: "Rathaus Tiefgarage",
+  rathausEn: "town hall underground car park",
   /** Zeitlich unbegrenzt, nur PKW. Eine Tageskarte gibt es nicht. */
   rathausTarif: "1,00 € pro Stunde",
+  rathausTarifEn: "1,00 € per hour",
   laubau: "Wanderparkplatz Laubau",
+  laubauEn: "Laubau hikers' car park",
   /** Gebührenpflichtig täglich 8 bis 18 Uhr, Tagesticket 9,00 €. */
   laubauTarif: "Tagesticket 9,00 €",
+  laubauTarifEn: "day ticket 9,00 €",
   /**
    * @ungeprueft Ein Parkhaus an der Vitalwelt steht weder in der Liste der
    * Zentrumsparkplätze noch bei den Wanderparkplätzen. Der Wohnmobilplatz P1
    * liegt laut Gemeinde "Richtung Schwimmbad".
    */
   vitalwelt: "Parkhaus Vitalwelt",
+  vitalweltEn: "Vitalwelt multi-storey car park",
   /** @ungeprueft siehe vitalwelt */
   vitalweltTarif: "1,50 €/Std.",
+  vitalweltTarifEn: "1,50 € per hour",
   /** Platz P1 an der Hauptstraße 75, bis 48 h 20,00 €. */
   wohnmobile: "Hauptstraße 75, bis 24 h 10,00 €",
+  wohnmobileEn: "Hauptstraße 75, up to 24 h 10,00 €",
   /**
    * @ungeprueft Die Gemeindeseiten sagen nichts über kostenloses Parken mit
    * Gästekarte. Ermäßigt wird nur mit der Ruhpoldinger Bürgerkarte, und die
    * ist für Einheimische. Siehe Bericht.
    */
   gaestekarteHinweis: "Mit der Gästekarte sind die Ortsparkplätze frei.",
+  gaestekarteHinweisEn:
+    "With the guest card the car parks in the village are free.",
 } as const
 
 /**
@@ -193,11 +213,13 @@ export const ANREISE = {
   bahnhofZumZentrumEn: "a ten minute walk",
   /** Die Ruhpoldinger Dorflinie. Daneben fährt der Rufbus DORLI. */
   ortsbusLinie: "Linien 9532 und 9533",
+  ortsbusLinieEn: "lines 9532 and 9533",
   /**
    * @ungeprueft Für die Dorflinie ist kein Takt belegt. Der Rufbus DORLI
    * fährt laut Quelle "ohne festen Fahrplan", Mo bis Fr 07:00 bis 22:00 Uhr.
    */
   ortsbusTakt: "werktags im Stundentakt",
+  ortsbusTaktEn: "hourly on weekdays",
   /** Die Karte heißt "Chiemgau Karte", siehe Bericht zur Satzstellung. */
   gaestekarteName: "Chiemgau Karte",
   gaestekarteBahnBis: "Traunstein",
@@ -215,11 +237,16 @@ export const ANREISE = {
   /** Der Rufbus, der ohne Fahrplan fährt. */
   rufbusName: "DORLI",
   rufbusWerktags: "07:00 bis 22:00 Uhr",
+  rufbusWerktagsEn: "07:00 to 22:00",
   rufbusWochenende: "08:00 bis 22:00 Uhr",
+  rufbusWochenendeEn: "08:00 to 22:00",
   rufbusHinweis:
     "Der Rufbus fährt ohne festen Fahrplan und verbindet über 100 Haltestellen im Ort.",
+  rufbusHinweisEn:
+    "The on-demand bus runs without a fixed timetable and connects more than 100 stops in the village.",
   /** Regionalbusse, die Ruhpolding mit den Nachbarorten verbinden. */
   regionalZiele: "Reit im Winkl, Inzell, Bad Reichenhall und Berchtesgaden",
+  regionalZieleEn: "Reit im Winkl, Inzell, Bad Reichenhall and Berchtesgaden",
 } as const
 
 /**
@@ -236,12 +263,14 @@ export const LOIPEN = {
   netz: "75 km",
   /** @ungeprueft Spurarten auf der Langlaufseite nicht ausgewiesen */
   spurarten: "klassisch und Skating",
+  spurartenEn: "classic and skating",
   /** @ungeprueft kein Preis für einen Loipenpass gefunden */
   passTag: "5,00 €",
   /** @ungeprueft siehe passTag */
   passWoche: "20,00 €",
   /** @ungeprueft keine Angabe, ob die Chiemgau Karte die Loipen einschließt */
   gaestekarte: "Loipen kostenlos",
+  gaestekarteEn: "trails free of charge",
 } as const
 
 /**
@@ -262,6 +291,7 @@ export const WINTER = {
   sportgeschaeft: "Sport Amort",
   /** @ungeprueft siehe sportgeschaeft */
   langlaufShop: "Langlauf-Shop",
+  langlaufShopEn: "cross-country shop",
 } as const
 
 /**
@@ -292,8 +322,10 @@ export const EVENTS = {
   biathlonMonatEn: "in January",
   /** Nächste Ausgabe laut IBU-Kalender. */
   biathlonTermin: "vom 4. bis 10. Januar 2027",
+  biathlonTerminEn: "from 4 to 10 January 2027",
   /** @ungeprueft kein Skibus zur Arena und kein Takt belegt */
   skibusTakt: "15-Minuten-Takt",
+  skibusTaktEn: "every 15 minutes",
   /** @ungeprueft Veranstaltung auf den geprüften Seiten nicht belegt */
   sommerkonzerte: "Ruhpoldinger Sommerkonzerte",
   /** @ungeprueft siehe sommerkonzerte */
@@ -346,6 +378,7 @@ export const GASTRONOMIE = {
   laubaualm: "Laubaualm",
   /** @ungeprueft die Seite weist keine festen Ruhetage aus */
   ruhetage: "Montag oder Dienstag",
+  ruhetageEn: "Monday or Tuesday",
 } as const
 
 /**
@@ -385,8 +418,10 @@ export const FAMILIE = {
    * Indoor-Ziel der Umgebung führt sie den Babalu Funpark Traunstein.
    */
   kletterhalle: "Kletterhalle in Inzell",
+  kletterhalleEn: "climbing hall in Inzell",
   /** @ungeprueft siehe kletterhalle */
   kletterhalleFahrzeit: "15 Minuten",
+  kletterhalleFahrzeitEn: "15 minutes",
   heimatmuseum: "Heimatmuseum Ruhpolding",
 } as const
 
@@ -412,6 +447,7 @@ export const UNTERKUNFT = {
    * einzeln auf. Steht am Satzanfang, deshalb groß geschrieben.
    */
   hoefeAnzahl: "Rund 20",
+  hoefeAnzahlEn: "About 20",
   /** @ungeprueft "Reisen für Alle" wird auf der Gastgeberseite nicht erwähnt */
   zertifizierung: "Reisen für Alle",
   /**
@@ -419,4 +455,6 @@ export const UNTERKUNFT = {
    * barrierefrei ausgewiesen ist dort die Ferienwohnung "Berg & Wiese".
    */
   barrierefreiHaeuser: "zwei Hotels im Zentrum und ein Gästehaus am Kurpark",
+  barrierefreiHaeuserEn:
+    "two hotels in the centre and a guest house by the Kurpark",
 } as const

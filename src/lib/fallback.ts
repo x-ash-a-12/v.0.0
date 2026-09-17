@@ -172,6 +172,11 @@ export function fallbackKnoten(
 
   return {
     id: "rueckfrage",
+    // Der Knoten wählt seine Sprache oben selbst. Ohne diese Kennzeichnung
+    // liefe er durch uebersetze(), fände dort keine Fassung und bekäme den
+    // Hinweis vorangestellt, die Auskunft liege nur auf Deutsch vor, obwohl
+    // er gerade auf Englisch nachfragt.
+    fertig: true,
     messages: [fuelle(waehleVariante(varianten), begriff, treffer, sprache)],
     chips,
   }
