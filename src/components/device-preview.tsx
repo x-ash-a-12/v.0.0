@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { BuehneContext } from "@/lib/buehne"
 import { StandortContext, STANDORTE } from "@/lib/location"
 import { exportiere } from "@/lib/telemetry"
 import { cn } from "@/lib/utils"
@@ -74,6 +75,10 @@ function DeviceStage({
     return () => observer.disconnect()
   }, [size])
 
+  // Der Rahmen dient als Portalziel, deshalb liegt er im State und nicht
+  // nur in einem Ref: ein Ref allein löst kein erneutes Rendern aus.
+  const [rahmen, setRahmen] = React.useState<HTMLDivElement | null>(null)
+
   return (
     <div
       ref={ref}
@@ -83,7 +88,9 @@ function DeviceStage({
       )}
     >
       <div
+        ref={setRahmen}
         className={cn(
+          "relative",
           size
             ? "shrink-0 overflow-hidden rounded-[2rem] border-[6px] border-neutral-800 bg-background shadow-2xl dark:border-neutral-600"
             : "h-full w-full"
@@ -99,7 +106,9 @@ function DeviceStage({
             : undefined
         }
       >
-        {children}
+        <BuehneContext.Provider value={rahmen}>
+          {children}
+        </BuehneContext.Provider>
       </div>
     </div>
   )

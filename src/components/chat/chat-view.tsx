@@ -77,8 +77,8 @@ export function ChatView() {
         <div className="mx-auto w-full max-w-[46rem]">
           <ChatComposer onSend={sendText} />
           <p className="mt-2 text-center text-[11px] leading-snug text-muted-foreground">
-            Prototyp für Forschungszwecke. Die Antworten sind vordefiniert und
-            können von der Realität abweichen.
+            Prototyp für Forschungszwecke, nicht von Ruhpolding Tourismus. Die
+            Antworten sind vordefiniert und können von der Realität abweichen.
           </p>
         </div>
       </div>
