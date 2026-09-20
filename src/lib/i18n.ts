@@ -294,7 +294,7 @@ const EN: Record<string, Uebersetzung> = {
       `As said: the ${FAMILIE.freizeitpark}, the ${FAMILIE.vitalwelt} and the ${FAMILIE.barfusswegEn} at the ${WANDERN.foerchensee}.`,
     ],
     messages: [
-      `With children, three places are worth it: the ${FAMILIE.freizeitpark} with its fairytale wood and rides, open ${FAMILIE.freizeitparkOeffnungEn}, the ${FAMILIE.vitalwelt} with a children's pool and slide, and the ${FAMILIE.barfusswegEn} at the ${WANDERN.foerchensee}. If it rains, the ${FAMILIE.bergbahnMuseumEn} is an option.`,
+      `With children, three places are worth it: the ${FAMILIE.freizeitpark} with its fairytale wood and rides, open ${FAMILIE.freizeitparkOeffnungEn}, the ${FAMILIE.vitalwelt} with a children's pool and slide, and the ${FAMILIE.barfusswegEn} at the ${WANDERN.foerchensee}. If it rains, the ${FAMILIE.heimatmuseum} is an option.`,
       `The ${FAMILIE.vitalwelt} is {naehe:vitalwelt} from here.`,
     ],
   },

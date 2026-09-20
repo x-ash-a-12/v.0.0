@@ -711,8 +711,8 @@ export const FLOW: Record<string, FlowNode> = {
     ],
     messages: [
       [
-        `Für Familien lohnen sich der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften (${FAMILIE.freizeitparkOeffnung}), die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Bei Regen ist das ${FAMILIE.bergbahnMuseum} eine Option.`,
-        `Mit Kindern lohnen sich vor allem drei Ziele: der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften, geöffnet ${FAMILIE.freizeitparkOeffnung}, die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Regnet es, bietet sich das ${FAMILIE.bergbahnMuseum} an.`,
+        `Für Familien lohnen sich der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften (${FAMILIE.freizeitparkOeffnung}), die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Bei Regen ist das ${FAMILIE.heimatmuseum} eine Option.`,
+        `Mit Kindern lohnen sich vor allem drei Ziele: der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften, geöffnet ${FAMILIE.freizeitparkOeffnung}, die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Regnet es, bietet sich das ${FAMILIE.heimatmuseum} an.`,
       ],
       [
         `Zur ${FAMILIE.vitalwelt} sind es von hier {naehe:vitalwelt}.`,

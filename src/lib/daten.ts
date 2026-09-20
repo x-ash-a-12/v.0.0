@@ -407,13 +407,6 @@ export const FAMILIE = {
   /** @ungeprueft siehe barfussweg */
   barfusswegEn: "barefoot trail",
   /**
-   * @ungeprueft Kein Bergbahn-Museum in der Museumsliste. Belegt sind
-   * Holzknechtmuseum, Heimatmuseum und Glockenschmiede.
-   */
-  bergbahnMuseum: "Bergbahn-Museum",
-  /** @ungeprueft siehe bergbahnMuseum */
-  bergbahnMuseumEn: "mountain lift museum",
-  /**
    * @ungeprueft Die Schlechtwetterseite nennt keine Kletterhalle. Als
    * Indoor-Ziel der Umgebung führt sie den Babalu Funpark Traunstein.
    */
