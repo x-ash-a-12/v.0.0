@@ -128,8 +128,8 @@ export function flyerKnoten(
       fertig: true,
       messages: [
         en
-          ? "Here is the flyer as a PDF. Scan the code with your phone camera."
-          : "Hier ist der Flyer als PDF. Scannen Sie den Code mit der Handykamera.",
+          ? "Here you go, the flyer as a PDF. Just scan the code with your phone camera."
+          : "Bitte schön, hier ist der Flyer als PDF. Einfach den Code mit der Handykamera scannen.",
       ],
       qr: {
         art: "flyer",
@@ -194,8 +194,8 @@ export function flyerNeinKnoten(sprache: Sprache): FlowNode {
     fertig: true,
     messages: [
       en
-        ? "Of course. If you would like to know anything else, just ask."
-        : "Gern. Wenn Sie noch etwas wissen möchten, fragen Sie einfach.",
+        ? "No problem at all. If you would like to know anything else, just ask me."
+        : "Gar kein Problem. Wenn Sie noch etwas wissen möchten, fragen Sie mich einfach.",
     ],
     chips: [
       { label: en ? "Something else" : "Andere Frage", to: "menu" },

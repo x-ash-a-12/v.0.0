@@ -6,6 +6,7 @@ import {
   rueckfrageKnoten,
   ueberbrueckung,
   type Chip,
+  type BildAnzeige,
   type DataTable,
   type FlowNode,
   type InfoCard,
@@ -49,6 +50,7 @@ export type ChatMessage =
   | { id: string; role: "bot"; kind: "qr"; qr: QrPayload }
   | { id: string; role: "bot"; kind: "hinweis"; hinweis: HinweisKarte }
   | { id: string; role: "bot"; kind: "zettel"; zettel: ZettelAnsicht }
+  | { id: string; role: "bot"; kind: "bild"; bild: BildAnzeige }
 
 /** Was unter die Textnachrichten einer Antwort gehängt wird. */
 type Anhang =
@@ -57,6 +59,7 @@ type Anhang =
   | { kind: "qr"; qr: QrPayload }
   | { kind: "hinweis"; hinweis: HinweisKarte }
   | { kind: "zettel"; zettel: ZettelAnsicht }
+  | { kind: "bild"; bild: BildAnzeige }
 
 /** Knoten, nach denen eine unverstandene Eingabe im Faden bleiben soll. */
 const IM_ABLAUF =
@@ -363,6 +366,13 @@ export function useChat() {
           if (!aktiv()) return
         }
         if (!(await ausrollen(nachrichten[i]))) return
+        // Das Bild steht direkt unter dem ersten Satz ("Sehr gern. Minigolf
+        // am Kurhaus:"), vor der Beschreibung. So sieht der Gast zuerst, was
+        // gemeint ist.
+        if (i === 0 && node.bild) {
+          if (!(await anhaengen({ kind: "bild", bild: node.bild }, zufall(300, 500))))
+            return
+        }
       }
 
       // Aktuelle Hinweise: die ausdrücklich verlangten und die, die zum Thema

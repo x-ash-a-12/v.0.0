@@ -6,7 +6,26 @@ import { MessageItem } from "@/components/chat/message-item"
 import { QuickReplies } from "@/components/chat/quick-replies"
 import { StreamingBubble } from "@/components/chat/streaming-bubble"
 import { TypingIndicator } from "@/components/chat/typing-indicator"
-import { useChat } from "@/hooks/use-chat"
+import { useChat, type ChatMessage } from "@/hooks/use-chat"
+
+/**
+ * Wo der Avatar steht: an der letzten Blase einer Folge des Assistenten.
+ *
+ * "lebt" heißt, die Folge ist die laufende Antwort und nichts folgt mehr.
+ * Dann blinzelt der Avatar. Ältere Folgen behalten ihren Avatar, aber still.
+ * Läuft schon die nächste Blase an oder tippt der Assistent, sitzt der Avatar
+ * dort, und die Folge darüber gibt ihn ab.
+ */
+function avatarAn(
+  messages: ChatMessage[],
+  index: number,
+  folgtNoch: boolean
+): "lebt" | "still" | null {
+  if (messages[index].role !== "bot") return null
+  const naechste = messages[index + 1]
+  if (!naechste) return folgtNoch ? null : "lebt"
+  return naechste.role === "user" ? "still" : null
+}
 
 export function ChatView() {
   const {
@@ -54,23 +73,16 @@ export function ChatView() {
             <MessageItem
               key={message.id}
               message={message}
-              showAvatar={
-                message.role === "bot" && messages[index - 1]?.role !== "bot"
-              }
+              avatar={avatarAn(messages, index, isTyping || streaming !== null)}
             />
           ))}
 
-          {streaming !== null ? (
-            <StreamingBubble
-              text={streaming}
-              showAvatar={messages[messages.length - 1]?.role !== "bot"}
-            />
-          ) : null}
+          {streaming !== null ? <StreamingBubble text={streaming} /> : null}
 
           {isTyping ? <TypingIndicator /> : null}
 
           {!isTyping && streaming === null && activeChips.length > 0 ? (
-            <div className="pl-10">
+            <div className="pl-12">
               <QuickReplies chips={activeChips} onSelect={selectChip} />
             </div>
           ) : null}

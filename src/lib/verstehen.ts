@@ -14,6 +14,7 @@ import {
 } from "@/lib/bedarf"
 import { erkenneDienst, erkenneFernziel } from "@/lib/service"
 import { zettelbar } from "@/lib/zettel"
+import { THEMA_WEB } from "@/lib/web"
 
 /**
  * Der Verstehens-Kern: er ordnet freien Text einem Knoten des Antwortpfads zu.
@@ -404,6 +405,27 @@ type Eintrag = {
 }
 
 const LEXIKON: Eintrag[] = [
+  /* Sport, seit dem 23.09.2026 */
+  {
+    to: "sport",
+    topic: "sport",
+    gewicht: 3,
+    woerter: [
+      "sport",
+      "sportart",
+      "sportangebot",
+      "aktivitaet",
+      "bewegung",
+      "auspowern",
+      "fitness",
+      "training",
+      "sports",
+      "activity",
+      "workout",
+    ],
+    phrasen: ["was sportliches", "etwas sportliches", "sportlich betaetigen", "sport machen"],
+  },
+
   /* Wandern und Bergbahnen */
   {
     to: "wandern",
@@ -1400,6 +1422,11 @@ export function verstehe(
     }
   }
 
+  /* Stufe 0: die angebotene Seite auf ruhpolding.de. Vor dem Flyer, denn
+     "online" heißt dort "digital". */
+  const website = zurWebsite(roh, kontext)
+  if (website) return { kind: "hit", to: website, grund: "auswahl" }
+
   /* Stufe 0: alles rund um den Flyer. */
   const flyer = zumFlyer(roh, kontext)
   if (flyer) return { kind: "hit", to: flyer, grund: "auswahl" }
@@ -1894,6 +1921,25 @@ function zumFlyer(roh: string, kontext: Kontext): string | null {
   if (id && erwaehnt) return `flyer:${id}`
   if (erwaehnt) return "flyer-liste"
   return null
+}
+
+/**
+ * Die Seite auf ruhpolding.de, auch getippt: "die Website bitte", "lieber
+ * online". Steht eine Web-Schaltfläche zur Auswahl, gilt sie. Sonst nur bei
+ * einem eindeutigen Wort wie "Website", und dann die Seite zum laufenden
+ * Thema, soweit es eine gibt.
+ */
+const WEBWORT =
+  /\bweb\w*\b|\binternet\w*\b|\bonline\b|\bhomepage\b|\bruhpolding de\b|\blink\w*\b|\bseite\b/
+const WEBWORT_EINDEUTIG =
+  /\bwebsite\b|\bwebseite\w*\b|\binternetseite\w*\b|\bhomepage\b|\bruhpolding de\b/
+
+function zurWebsite(roh: string, kontext: Kontext): string | null {
+  const angeboten = kontext.chips.find((chip) => chip.to.startsWith("web:"))
+  if (angeboten && WEBWORT.test(roh)) return angeboten.to
+  if (!WEBWORT_EINDEUTIG.test(roh)) return null
+  const seite = kontext.topic ? THEMA_WEB[kontext.topic] : undefined
+  return seite ? `web:${seite}` : null
 }
 
 /** Die Bitte um eine Auswahl statt um den gemerkten Flyer. */

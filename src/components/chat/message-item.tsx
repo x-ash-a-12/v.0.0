@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Info, NotebookPen } from "lucide-react"
 
-import { BotAvatar } from "@/components/chat/bot-avatar"
 import { QrCard } from "@/components/chat/qr-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -16,6 +15,9 @@ import type { ChatMessage } from "@/hooks/use-chat"
 import type { DataTable, InfoCard } from "@/lib/chat-flow"
 import type { HinweisKarte } from "@/lib/meldungen"
 import type { ZettelAnsicht } from "@/lib/zettel"
+import { AgentAvatar } from "@/components/chat/agent-avatar"
+import { BildCard } from "@/components/chat/bild-card"
+import { zipfel } from "@/components/chat/zipfel"
 import { cn } from "@/lib/utils"
 
 const bubbleBase =
@@ -69,7 +71,7 @@ function DataTableView({ table }: { table: DataTable }) {
         <CardTitle className="text-sm">{table.title}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
-        <div className="-mx-1 overflow-x-auto px-1 scrollbar-hidden">
+        <div className="-mx-1 scrollbar-hidden overflow-x-auto px-1">
           <Table className="text-sm">
             <TableHeader>
               <TableRow>
@@ -185,7 +187,11 @@ function ZettelView({ zettel }: { zettel: ZettelAnsicht }) {
 
 type MessageItemProps = {
   message: ChatMessage
-  showAvatar: boolean
+  /**
+   * Avatar neben dieser Nachricht: "lebt" an der laufenden Antwort, "still"
+   * an einer älteren, null ohne. Eine Textblase mit Avatar trägt den Zipfel.
+   */
+  avatar?: "lebt" | "still" | null
 }
 
 /**
@@ -194,7 +200,7 @@ type MessageItemProps = {
  */
 export const MessageItem = React.memo(function MessageItem({
   message,
-  showAvatar,
+  avatar = null,
 }: MessageItemProps) {
   if (message.role === "user") {
     return (
@@ -213,15 +219,19 @@ export const MessageItem = React.memo(function MessageItem({
 
   return (
     <div className="flex items-end gap-2">
-      {showAvatar ? (
-        <BotAvatar />
+      {avatar ? (
+        <AgentAvatar zustand={avatar === "lebt" ? "wartet" : "still"} />
       ) : (
-        <div className="size-8 shrink-0" aria-hidden="true" />
+        <div className="size-10 shrink-0" aria-hidden="true" />
       )}
-      <div className="flex max-w-[calc(100%-2.5rem)] min-w-0 flex-col @sm:max-w-[80%]">
+      <div className="flex max-w-[calc(100%-3rem)] min-w-0 flex-col @sm:max-w-[80%]">
         {message.kind === "text" ? (
           <div
-            className={cn(bubbleBase, "rounded-bl-sm bg-muted text-foreground")}
+            className={cn(
+              bubbleBase,
+              "rounded-bl-sm bg-muted text-foreground",
+              avatar && zipfel
+            )}
           >
             {message.text}
           </div>
@@ -233,6 +243,8 @@ export const MessageItem = React.memo(function MessageItem({
           <HinweisView hinweis={message.hinweis} />
         ) : message.kind === "zettel" ? (
           <ZettelView zettel={message.zettel} />
+        ) : message.kind === "bild" ? (
+          <BildCard bild={message.bild} />
         ) : (
           <QrCard qr={message.qr} />
         )}

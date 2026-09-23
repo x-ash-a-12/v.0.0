@@ -126,6 +126,9 @@ export function bedarfAusText(roh: string): Profil {
     profil.a ??= "gemuetlich"
   } else if (/\bberg\w*\b|\bwander\w*\b|\bgipfel\w*\b|\bhike\w*\b|\bhiking\b|\bmountain\w*\b|\btour\w*\b/.test(roh)) {
     profil.i = "berge"
+  } else if (/\bsport\w*\b|\baktiv\w*\b|\bbewegung\b|\bgolf\w*\b|\bminigolf\b|\bgleitschirm\w*\b|\bparaglid\w*\b|\btandem\w*\b|\bfitness\b|\bauspowern\b|\bactive\b|\bsports?\b/.test(roh)) {
+    // Nach den Bergen: "eine sportliche Wanderung" bleibt eine Wanderung.
+    profil.i = "sport"
   } else if (/\bkultur\w*\b|\bmuseum\w*\b|\bmuseen\b|\bkirche\w*\b|\bgeschichte\b|\bculture\b|\bmuseums?\b|\bchurch\b|\bhistory\b/.test(roh)) {
     profil.i = "kultur"
   } else if (/\bentspann\w*\b|\bgemuetlich\w*\b|\bruhig\w*\b|\bbaden\b|\bschwimm\w*\b|\bwellness\b|\bsauna\b|\brelax\w*\b|\bswim\w*\b/.test(roh)) {
@@ -161,8 +164,8 @@ export function naechsteFrage(profil: Profil): Frage | null {
   return null
 }
 
-const QUITTUNG = ["Verstanden.", "Gut.", "Alles klar.", "Danke."]
-const QUITTUNG_EN = ["Understood.", "Good.", "All right.", "Thanks."]
+const QUITTUNG = ["Danke, das hilft mir.", "Gut, verstanden.", "Alles klar, danke.", "Prima."]
+const QUITTUNG_EN = ["Thanks, that helps.", "Good, got it.", "All right, thanks.", "Great."]
 
 type Zieher = (varianten: readonly string[]) => string
 
@@ -170,14 +173,14 @@ function frageText(frage: Frage, en: boolean): string {
   switch (frage) {
     case "i":
       return en
-        ? "Gladly. So that I do not suggest things at random: what are you interested in?"
-        : "Gern. Damit ich Ihnen nicht ins Blaue etwas vorschlage: Was interessiert Sie?"
+        ? "Gladly! So that I do not suggest things at random: what do you feel like doing?"
+        : "Sehr gern! Damit ich Ihnen nicht irgendetwas vorschlage: Worauf haben Sie Lust?"
     case "d":
       return en
-        ? "How long are you staying in Ruhpolding?"
-        : "Wie lange sind Sie noch in Ruhpolding?"
+        ? "And how long are you staying in Ruhpolding?"
+        : "Wie lange sind Sie denn noch in Ruhpolding?"
     case "b":
-      return en ? "Who is coming along?" : "Wer ist mit dabei?"
+      return en ? "And who is coming along?" : "Und wer ist mit dabei?"
     case "a":
       return en
         ? "Would you like to walk up or take the lift? And have you walked in the mountains before?"
@@ -192,6 +195,7 @@ function frageChips(frage: Frage, profil: Profil, en: boolean): Chip[] {
       ["Berge & Wandern", "Mountains & hiking", { i: "berge" }],
       ["Radfahren", "Cycling", { i: "rad" }],
       ["Mit Kindern unterwegs", "Out with children", { i: "familie", b: "kinder" }],
+      ["Sport & Aktiv", "Sport & activities", { i: "sport" }],
       ["Kultur & Museen", "Culture & museums", { i: "kultur" }],
       ["Eher gemütlich", "Something relaxed", { i: "gemuetlich" }],
     ] as [string, string, Profil][],
@@ -273,6 +277,7 @@ const TEXT_INTERESSE: Record<Interesse, [string, string]> = {
   familie: ["etwas mit Kindern", "something with children"],
   kultur: ["Kultur", "culture"],
   gemuetlich: ["etwas Gemütliches", "something relaxed"],
+  sport: ["etwas Sportliches", "something sporty"],
 }
 const TEXT_DAUER: Record<Dauer, [string, string]> = {
   heute: ["nur heute", "just today"],
@@ -345,6 +350,16 @@ export function passendeZiele(
     : GRUPPEN.hier.ziele
         .map(findeZiel)
         .filter((eintrag): eintrag is Ziel => Boolean(eintrag))
+  // Beim Sport gibt die Sportgruppe die Reihenfolge vor. Sonst stünde die
+  // Vita Alpina vorn, nur weil sie im Register weiter oben steht, und sie
+  // ist die Wahl für Regen, nicht für einen Sonnentag.
+  if (interesse === "sport") {
+    const rang = (id: string) => {
+      const stelle = GRUPPEN.sport.ziele.indexOf(id)
+      return stelle === -1 ? Number.MAX_SAFE_INTEGER : stelle
+    }
+    basis.sort((a, b) => rang(a.id) - rang(b.id))
+  }
 
   return basis
     .filter(vorschlagbar)
@@ -387,12 +402,12 @@ export function passendeZiele(
 }
 
 const ABSCHLUSS = [
-  "Welcher Vorschlag interessiert Sie? Dann sage ich Ihnen, für wen er sich eignet und worauf Sie achten sollten.",
-  "Sagen Sie mir, was davon Sie anspricht. Dann erzähle ich Ihnen mehr dazu, auch worauf Sie achten sollten.",
+  "Ist etwas für Sie dabei? Sagen Sie mir einfach, was Sie anspricht, dann erzähle ich Ihnen mehr, auch worauf Sie achten sollten.",
+  "Was davon gefällt Ihnen? Dann sage ich Ihnen gern, für wen es sich eignet und worauf Sie achten sollten.",
 ]
 const ABSCHLUSS_EN = [
-  "Which suggestion interests you? Then I will tell you who it suits and what to watch out for.",
-  "Tell me which of these appeals, and I will tell you more about it, including what to watch out for.",
+  "Anything for you? Just tell me what appeals and I will tell you more, including what to watch out for.",
+  "Which of these do you like? Then I am happy to tell you who it suits and what to watch out for.",
 ]
 
 /** Was es am Schalter gibt, wenn nichts Gesichertes passt. */

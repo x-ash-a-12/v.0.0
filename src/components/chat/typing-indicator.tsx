@@ -1,11 +1,16 @@
-import { BotAvatar } from "@/components/chat/bot-avatar"
+import { AgentAvatar } from "@/components/chat/agent-avatar"
+import { zipfel } from "@/components/chat/zipfel"
+import { cn } from "@/lib/utils"
 
 export function TypingIndicator() {
   return (
     <div className="flex items-end gap-2">
-      <BotAvatar />
+      <AgentAvatar zustand="denkt" />
       <div
-        className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-muted px-3.5 py-3"
+        className={cn(
+          "flex items-center gap-1 rounded-2xl rounded-bl-sm bg-muted px-3.5 py-3",
+          zipfel
+        )}
         role="status"
         aria-label="Assistent schreibt"
       >

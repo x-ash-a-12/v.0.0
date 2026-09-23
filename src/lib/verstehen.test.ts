@@ -8,10 +8,8 @@ import {
   EVENTS,
   FAMILIE,
   GASTRONOMIE,
-  LOIPEN,
   PARKEN,
   TOURIST_INFO,
-  UNTERKUNFT,
   WANDERN,
   WINTER,
 } from "@/lib/daten"
@@ -470,7 +468,7 @@ describe("Die Eingaben aus dem Testlauf vom 03.09., 11:57", () => {
     const node = getNode("ziel:rauschberg")
     expect(node.qr).toBeDefined()
     expect(node.qr!.url).toContain("google.com/maps")
-    expect(node.qr!.url).toContain("Rauschbergbahn")
+    expect(node.qr!.title).toContain("Rauschbergbahn")
   })
 
   test("die Anreise bleibt die Anreise", () => {
@@ -855,8 +853,6 @@ describe("Die englische Fassung ist vollständig", () => {
   const EIGENNAMEN = [
     GASTRONOMIE.gasthausPost,
     GASTRONOMIE.pizzeria,
-    GASTRONOMIE.gipfelalm,
-    UNTERKUNFT.zertifizierung,
     ANREISE.gaestekarteName,
     ANREISE.dorflinie9532,
     ANREISE.dorflinie9533,
@@ -1064,12 +1060,10 @@ describe("Die englische Fassung ist vollständig", () => {
       WANDERN,
       PARKEN,
       ANREISE,
-      LOIPEN,
       WINTER,
       EVENTS,
       GASTRONOMIE,
       FAMILIE,
-      UNTERKUNFT,
     }
     const zahlen = (text: string) =>
       (text.match(/\d+(?:[.,]\d+)?\s*(?:€|km|m\b|%)/g) ?? [])

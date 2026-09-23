@@ -81,6 +81,7 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+    --agent-grund: oklch(0.9 0.035 235);
 }
 
 .dark {
@@ -115,6 +116,7 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    --agent-grund: oklch(0.36 0.04 235);
 }
 
 @layer base {
@@ -145,4 +147,62 @@
     &::-webkit-scrollbar {
         display: none;
     }
+}
+
+/*
+ * Bewegung der Figur, siehe components/chat/agent-figur.tsx. Kurz und
+ * zügig: Mori beschreibt, wie ein auf halbe Geschwindigkeit gebremstes
+ * Lächeln unheimlich wirkt (Mori 2012, S. 100). Blinzeln dauert deshalb wie beim Menschen rund eine
+ * Zehntelsekunde, und die Übergänge beim Nachdenken bleiben unter 0,2 s.
+ */
+.avatar-kopf,
+.avatar-augen,
+.avatar-blick {
+    transform-box: fill-box;
+    transition: transform 160ms ease-out;
+}
+.avatar-kopf {
+    transform-origin: 50% 100%;
+}
+.avatar-augen {
+    transform-origin: center;
+}
+[data-zustand] .avatar-augen {
+    animation: avatar-blinzeln 5.2s infinite;
+}
+[data-zustand="denkt"] .avatar-kopf {
+    transform: rotate(-5deg);
+}
+[data-zustand="denkt"] .avatar-blick {
+    transform: translate(1.4px, -1.6px);
+}
+@keyframes avatar-blinzeln {
+    0%, 95%, 100% {
+        transform: scaleY(1);
+    }
+    97% {
+        transform: scaleY(0.1);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .avatar-kopf,
+    .avatar-augen,
+    .avatar-blick {
+        transition: none;
+        animation: none !important;
+    }
+}
+
+/*
+ * Regenstreifen im Wetterregler (components/wetter-regler.tsx). Schräg und
+ * leicht, damit die Beschriftung lesbar bleibt.
+ */
+.wetter-regen {
+    background-image:
+        repeating-linear-gradient(
+            110deg,
+            transparent 0 7px,
+            rgb(255 255 255 / 0.18) 7px 8px
+        ),
+        linear-gradient(to right, var(--color-slate-600), var(--color-slate-500));
 }

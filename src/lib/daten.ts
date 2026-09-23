@@ -9,6 +9,11 @@
  * Angabe zu finden. Der Grund steht jeweils daneben. Suchen mit:
  *   grep -n "@ungeprueft" src/lib/daten.ts
  *
+ * Am 23.09.2026 wurden alle ungeprüften Werte gelöscht, die in keiner
+ * Antwort mehr vorkamen, darunter Bahntakt, Loipenpreise und Wochenmarkt.
+ * Übrig sind nur die Namen der drei Ziele, die der Prototyp findet, aber
+ * nicht beschreibt (Förchensee, Kurpark, Rathausplatz).
+ *
  * Felder mit der Endung En sind die englische Fassung derselben Angabe,
  * für die Sprachumschaltung. Ändert sich der Wert, ändern sich beide.
  *
@@ -54,16 +59,10 @@ export const TOURIST_INFO = {
  */
 export const BERGBAHNEN = {
   rauschbergName: "Rauschberg",
-  /** @ungeprueft Bauart nicht belegt, die Bahn ist außer Betrieb. */
-  rauschbergBahn: "Gondelbahn",
-  /** @ungeprueft siehe rauschbergBahn */
-  rauschbergBahnEn: "gondola",
   unternbergName: "Unternberg",
   /** Ruhpolding Tourismus führt sie als "Unternberg Sesselbahn". */
   unternbergBahn: "Sesselbahn",
   unternbergBahnEn: "chairlift",
-  /** @ungeprueft kein Fahrbetrieb, es gibt derzeit keinen Preis. */
-  rauschbergErwachsen: "24,00 €",
   /** Berg- und Talfahrt Erwachsene. */
   unternbergErwachsen: "19,50 €",
   /** Die Quelle fasst Kinder und Jugendliche zusammen. */
@@ -71,12 +70,6 @@ export const BERGBAHNEN = {
   kinderAlterEn: "5 to 17 years",
   /** Eigener Preis statt Prozentsatz: Berg- und Talfahrt 13,00 €. */
   ermaessigungKinder: "13,00 €",
-  /**
-   * @ungeprueft Die Quelle nennt nur die Ruhpoldinger Bürgerkarte mit 50 %,
-   * keine Ermäßigung auf die Gästekarte. Siehe Bericht.
-   */
-  ermaessigungGaestekarte: "20 % Ermäßigung",
-  ermaessigungGaestekarteEn: "20 % discount",
   /*
    * Zeiten ohne Sprachbestandteil, damit die deutsche und die englische
    * Fassung sie gleichermaßen einsetzen können.
@@ -110,15 +103,6 @@ export const WANDERN = {
   wegenetzKm: "240 km",
   /** @ungeprueft auf den geprüften Seiten nicht namentlich genannt */
   foerchensee: "Förchensee",
-  /** @ungeprueft kein Rundweg am Förchensee mit Längenangabe gefunden */
-  foerchenseeRunde: "etwa 3 km, eben",
-  foerchenseeRundeEn: "about 3 km, level",
-  /**
-   * @ungeprueft Ein reiner Uferweg ist nicht belegt. Die Wegeliste führt
-   * "Traunauen und Taubensee" mit 8,6 km und 02:15 h, was nicht dasselbe ist.
-   */
-  uferwegTraun: "Uferweg entlang der Traun",
-  uferwegTraunEn: "riverside path along the Traun",
   sonntagshorn: "Sonntagshorn",
   sonntagshornHoehe: "1.961 m",
   /** Die Quelle gibt "09:00 Stunden" für die Tour ab Laubau an. */
@@ -180,27 +164,9 @@ export const PARKEN = {
   /** Gebührenpflichtig täglich 8 bis 18 Uhr, Tagesticket 9,00 €. */
   laubauTarif: "Tagesticket 9,00 €",
   laubauTarifEn: "day ticket 9,00 €",
-  /**
-   * @ungeprueft Ein Parkhaus an der Vitalwelt steht weder in der Liste der
-   * Zentrumsparkplätze noch bei den Wanderparkplätzen. Der Wohnmobilplatz P1
-   * liegt laut Gemeinde "Richtung Schwimmbad".
-   */
-  vitalwelt: "Parkhaus Vitalwelt",
-  vitalweltEn: "Vitalwelt multi-storey car park",
-  /** @ungeprueft siehe vitalwelt */
-  vitalweltTarif: "1,50 €/Std.",
-  vitalweltTarifEn: "1,50 € per hour",
   /** Platz P1 an der Hauptstraße 75, bis 48 h 20,00 €. */
   wohnmobile: "Hauptstraße 75, bis 24 h 10,00 €",
   wohnmobileEn: "Hauptstraße 75, up to 24 h 10,00 €",
-  /**
-   * @ungeprueft Die Gemeindeseiten sagen nichts über kostenloses Parken mit
-   * Gästekarte. Ermäßigt wird nur mit der Ruhpoldinger Bürgerkarte, und die
-   * ist für Einheimische. Siehe Bericht.
-   */
-  gaestekarteHinweis: "Mit der Gästekarte sind die Ortsparkplätze frei.",
-  gaestekarteHinweisEn:
-    "With the guest card the car parks in the village are free.",
 } as const
 
 /**
@@ -216,40 +182,12 @@ export const PARKEN = {
 export const ANREISE = {
   autobahn: "A8",
   ausfahrt: "Siegsdorf Ost / Traunstein",
-  /**
-   * @ungeprueft Die Quelle nennt keine Straßennummer, sondern nur die
-   * Entfernung ab der Ausfahrt.
-   */
-  bundesstrasse: "B306",
   /** Die Quelle gibt eine Entfernung an, keine Fahrzeit: "rund 8 km". */
   fahrzeitAbAusfahrt: "rund 8 km",
   fahrzeitAbAusfahrtEn: "about 8 km",
-  /** @ungeprueft kein Takt belegt */
-  bahnTakt: "stündlich",
-  /** @ungeprueft siehe bahnTakt */
-  bahnTaktEn: "hourly",
-  /**
-   * @ungeprueft Belegt ist nur die Strecke Traunstein–Ruhpolding der
-   * Bayerischen Regiobahn, nicht eine Fahrt ab München.
-   */
-  bahnAbfahrtsort: "München Hauptbahnhof",
-  /** @ungeprueft keine Fahrzeit belegt */
-  bahnFahrzeit: "etwa 1:40 Stunden",
-  /** @ungeprueft siehe bahnFahrzeit */
-  bahnFahrzeitEn: "about one hour and forty minutes",
-  /** @ungeprueft keine Angabe zur Entfernung Bahnhof–Zentrum gefunden */
-  bahnhofZumZentrum: "10 Gehminuten",
-  /** @ungeprueft siehe bahnhofZumZentrum */
-  bahnhofZumZentrumEn: "a ten minute walk",
   /** Die Ruhpoldinger Dorflinie. Daneben fährt der Rufbus DORLI. */
   ortsbusLinie: "Linien 9532 und 9533",
   ortsbusLinieEn: "lines 9532 and 9533",
-  /**
-   * @ungeprueft Für die Dorflinie ist kein Takt belegt. Der Rufbus DORLI
-   * fährt laut Quelle "ohne festen Fahrplan", Mo bis Fr 07:00 bis 22:00 Uhr.
-   */
-  ortsbusTakt: "werktags im Stundentakt",
-  ortsbusTaktEn: "hourly on weekdays",
   /** Die Karte heißt "Chiemgau Karte", siehe Bericht zur Satzstellung. */
   gaestekarteName: "Chiemgau Karte",
   gaestekarteBahnBis: "Traunstein",
@@ -280,30 +218,6 @@ export const ANREISE = {
 } as const
 
 /**
- * Langlauf in Ruhpolding.
- * Geprüft: https://www.ruhpolding.de/langlaufen, abgerufen 2026-09-03
- *
- * Die Seite beschreibt ein "imposantes Loipennetz" und nennt einzelne Loipen
- * mit Längen, etwa die Drei-Seen-Loipe mit 12,3 km, aber weder eine Summe
- * noch Preise für einen Loipenpass. Auch die Wintersuche über die Gemeinde
- * und die Chiemgau Arena hat dazu nichts ergeben.
- */
-export const LOIPEN = {
-  /** @ungeprueft keine offizielle Gesamtlänge des Netzes gefunden */
-  netz: "75 km",
-  /** @ungeprueft Spurarten auf der Langlaufseite nicht ausgewiesen */
-  spurarten: "klassisch und Skating",
-  spurartenEn: "classic and skating",
-  /** @ungeprueft kein Preis für einen Loipenpass gefunden */
-  passTag: "5,00 €",
-  /** @ungeprueft siehe passTag */
-  passWoche: "20,00 €",
-  /** @ungeprueft keine Angabe, ob die Chiemgau Karte die Loipen einschließt */
-  gaestekarte: "Loipen kostenlos",
-  gaestekarteEn: "trails free of charge",
-} as const
-
-/**
  * Alpiner Wintersport.
  * Quelle: https://www.ruhpolding.de/ski-alpin
  * Abgerufen: 2026-09-03
@@ -313,15 +227,6 @@ export const LOIPEN = {
  */
 export const WINTER = {
   skigebiet: "Westernberg",
-  /**
-   * @ungeprueft Die Skiseite nennt keine Verleihbetriebe namentlich. In der
-   * Suche taucht "Sport Plenk" auf, aber nicht im Volltext einer offiziellen
-   * Seite. Siehe Bericht.
-   */
-  sportgeschaeft: "Sport Amort",
-  /** @ungeprueft siehe sportgeschaeft */
-  langlaufShop: "Langlauf-Shop",
-  langlaufShopEn: "cross-country shop",
 } as const
 
 /**
@@ -353,25 +258,6 @@ export const EVENTS = {
   /** Nächste Ausgabe laut IBU-Kalender. */
   biathlonTermin: "vom 4. bis 10. Januar 2027",
   biathlonTerminEn: "from 4 to 10 January 2027",
-  /** @ungeprueft kein Skibus zur Arena und kein Takt belegt */
-  skibusTakt: "15-Minuten-Takt",
-  skibusTaktEn: "every 15 minutes",
-  /** @ungeprueft Veranstaltung auf den geprüften Seiten nicht belegt */
-  sommerkonzerte: "Ruhpoldinger Sommerkonzerte",
-  /** @ungeprueft siehe sommerkonzerte */
-  sommerkonzerteEn: "Ruhpolding summer concerts",
-  /** @ungeprueft kein Zeitraum und keine Uhrzeit belegt */
-  sommerkonzerteZeit: "Mai bis September, mittwochs 20:00 Uhr",
-  /** @ungeprueft siehe sommerkonzerteZeit */
-  sommerkonzerteZeitEn: "May to September, Wednesdays at 8 pm",
-  /** @ungeprueft Wochenmarkt auf den geprüften Seiten nicht belegt */
-  wochenmarkt: "Wochenmarkt",
-  /** @ungeprueft siehe wochenmarkt */
-  wochenmarktEn: "weekly market",
-  /** @ungeprueft kein Wochentag und keine Uhrzeit belegt */
-  wochenmarktZeit: "jeden Freitag von 8:00 bis 12:00 Uhr",
-  /** @ungeprueft siehe wochenmarktZeit */
-  wochenmarktZeitEn: "every Friday from 8 am to 12 noon",
 } as const
 
 /**
@@ -383,11 +269,6 @@ export const EVENTS = {
  * vorkommen, sind unten als ungeprüft markiert.
  */
 export const GASTRONOMIE = {
-  /**
-   * @ungeprueft Keine "Gipfelalm" in der Betriebsliste. Der Antworttext
-   * verortet sie zudem auf dem Rauschberg, dessen Bahn nicht fährt.
-   */
-  gipfelalm: "Gipfelalm",
   /** In der Liste als "Hotel zur Post Restaurant" geführt. */
   gasthausPost: "Hotel zur Post Restaurant",
   /** Die einzige in der Liste geführte Pizzeria dieses Namens. */
@@ -402,13 +283,6 @@ export const GASTRONOMIE = {
    * sagt "das", die Alm ist weiblich. Siehe Bericht.
    */
   almstueberl: "Unternberg Alm",
-  /** @ungeprueft keine "Weitseealm" in der Betriebsliste */
-  weitseealm: "Weitseealm",
-  /** @ungeprueft keine "Laubaualm" in der Betriebsliste */
-  laubaualm: "Laubaualm",
-  /** @ungeprueft die Seite weist keine festen Ruhetage aus */
-  ruhetage: "Montag oder Dienstag",
-  ruhetageEn: "Monday or Tuesday",
 } as const
 
 /**
@@ -424,61 +298,7 @@ export const GASTRONOMIE = {
 export const FAMILIE = {
   /** Der Betreiber nennt ihn auch "Märchenpark Ruhpolding". */
   freizeitpark: "Freizeitpark Ruhpolding",
-  /**
-   * @ungeprueft Die Betreiberseite verlinkt "Preise & Öffnungszeiten", die
-   * Unterseite war nicht erreichbar.
-   */
-  freizeitparkOeffnung: "ab 9:30 Uhr",
-  /** @ungeprueft siehe freizeitparkOeffnung */
-  freizeitparkOeffnungEn: "from 9.30 am",
   vitalwelt: "Vita Alpina",
-  /** @ungeprueft kein Barfußweg auf den geprüften Seiten belegt */
-  barfussweg: "Barfußweg",
-  /** @ungeprueft siehe barfussweg */
-  barfusswegEn: "barefoot trail",
-  /**
-   * @ungeprueft Die Schlechtwetterseite nennt keine Kletterhalle. Als
-   * Indoor-Ziel der Umgebung führt sie den Babalu Funpark Traunstein.
-   */
-  kletterhalle: "Kletterhalle in Inzell",
-  kletterhalleEn: "climbing hall in Inzell",
-  /** @ungeprueft siehe kletterhalle */
-  kletterhalleFahrzeit: "15 Minuten",
-  kletterhalleFahrzeitEn: "15 minutes",
   heimatmuseum: "Heimatmuseum Ruhpolding",
   heimatmuseumEn: "Ruhpolding local history museum",
-} as const
-
-/**
- * Übernachten.
- * Geprüft: https://www.ruhpolding.de/alle-ruhpoldinger-gastgeber
- * Abgerufen: 2026-09-03
- *
- * Die Gastgeberübersicht listet die Häuser einzeln auf, ohne Summen oder
- * Zertifikate zu nennen. Kein Wert dieses Blocks ließ sich belegen.
- */
-export const UNTERKUNFT = {
-  /**
-   * @ungeprueft Die höchste in der Gastgeberliste ausgewiesene Kategorie
-   * sind drei Sterne, etwa "Hotel Alp Inn***S". Ein Haus mit vier Sternen
-   * kommt dort nicht vor.
-   */
-  hoechsteKategorie: "4-Sterne-Hotel",
-  /** @ungeprueft siehe hoechsteKategorie */
-  hoechsteKategorieEn: "four star hotel",
-  /**
-   * @ungeprueft Keine Gesamtzahl der Höfe genannt, die Liste führt sie
-   * einzeln auf. Steht am Satzanfang, deshalb groß geschrieben.
-   */
-  hoefeAnzahl: "Rund 20",
-  hoefeAnzahlEn: "About 20",
-  /** @ungeprueft "Reisen für Alle" wird auf der Gastgeberseite nicht erwähnt */
-  zertifizierung: "Reisen für Alle",
-  /**
-   * @ungeprueft Keine Aufstellung barrierefreier Häuser gefunden. Als
-   * barrierefrei ausgewiesen ist dort die Ferienwohnung "Berg & Wiese".
-   */
-  barrierefreiHaeuser: "zwei Hotels im Zentrum und ein Gästehaus am Kurpark",
-  barrierefreiHaeuserEn:
-    "two hotels in the centre and a guest house by the Kurpark",
 } as const

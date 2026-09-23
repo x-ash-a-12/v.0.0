@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import {
+  Activity,
   Bus,
   CalendarDays,
   CloudSun,
@@ -18,6 +19,7 @@ import { bedarfKnoten, vorschlagKnoten } from "@/lib/bedarf"
 import { meldungenKnoten } from "@/lib/meldungen"
 import { flyerKnoten, flyerListeKnoten, flyerNeinKnoten } from "@/lib/flyer"
 import { dienstKnoten, verweisKnoten } from "@/lib/service"
+import { webChip, webKnoten, type WebId } from "@/lib/web"
 import type { WetterId } from "@/lib/wetter"
 import { mapsSuche } from "@/lib/ziele"
 import {
@@ -79,17 +81,25 @@ export type DataTable = {
   note?: string
 }
 
+/** Ein Bild mit Urheber und Herkunft, fertig in der Dialogsprache. */
+export type BildAnzeige = {
+  url: string
+  alt: string
+  urheber: string
+  seite: string
+}
+
 /** Ein QR-Code zum Mitnehmen auf das eigene Gerät. */
 export type QrPayload = {
   title: string
   hint: string
   url: string
   /**
-   * "flyer" für einen Code auf ein Flyer-PDF. Er bekommt einen anderen
-   * Rahmen als der Code zum Ausgangspunkt, damit der Gast beide
-   * auseinanderhält.
+   * "flyer" für einen Code auf ein Flyer-PDF, "web" für eine Seite auf
+   * ruhpolding.de. Beide bekommen einen anderen Rahmen als der Code zum
+   * Ausgangspunkt, damit der Gast sie auseinanderhält.
    */
-  art?: "flyer"
+  art?: "flyer" | "web"
 }
 
 /** Ein Knoten im vordefinierten Gesprächsbaum. */
@@ -116,6 +126,11 @@ export type FlowNode = {
   bridge?: boolean
   /** Wird als eigene Karte mit QR-Code unter die Antwort gehängt. */
   qr?: QrPayload
+  /**
+   * Ein Bild von ruhpolding.de, direkt nach der ersten Blase. Nur in der
+   * Detailauskunft zu einem gewählten Ziel (bilder.ts).
+   */
+  bild?: BildAnzeige
   /**
    * Zugehöriges Thema aus TOPICS. Das Gedächtnis erkennt daran einen
    * Themenwechsel. Aus der ID allein ginge das nicht, "bergbahn-preise"
@@ -213,6 +228,14 @@ export const TOPICS: Topic[] = [
     icon: Mountain,
   },
   {
+    id: "sport",
+    label: "Sport & Aktiv",
+    satz: "Sport und Bewegung",
+    labelEn: "Sport & activities",
+    satzEn: "sport and activities",
+    icon: Activity,
+  },
+  {
     id: "events",
     label: "Veranstaltungen",
     satz: "Veranstaltungen im Ort",
@@ -300,6 +323,12 @@ const startChips: Chip[] = [
   { label: "Alle Themen", to: "menu" },
 ]
 
+/**
+ * Verweis auf die passende Seite von ruhpolding.de. Der Knotenbaum ist auf
+ * Deutsch gebaut, die englische Aufschrift setzt i18n.ts ein.
+ */
+const web = (id: WebId, label?: string): Chip => webChip(id, "de", label)
+
 const backChips = (topic: string): Chip[] => [
   { label: "Zurück zum Thema", to: topic },
   { label: "Andere Frage", to: "menu" },
@@ -331,10 +360,10 @@ export function ausformulieren(messages: (string | string[])[]): string[] {
 
 /** Überbrückung, solange die eigentliche Antwort noch nicht steht. */
 const UEBERBRUECKUNGEN = [
-  "Einen Moment, ich schaue nach.",
-  "Ich sehe kurz nach.",
-  "Das habe ich gleich.",
-  "Moment, ich hole die Zahlen.",
+  "Einen kleinen Moment, ich schaue für Sie nach.",
+  "Ich sehe kurz für Sie nach.",
+  "Das habe ich gleich für Sie.",
+  "Moment, ich hole Ihnen die Zahlen.",
 ] as const
 
 const UEBERBRUECKUNGEN_EN = [
@@ -359,22 +388,27 @@ export const FLOW: Record<string, FlowNode> = {
   start: {
     id: "start",
     messages: [
-      "Grüß Gott und herzlich willkommen bei der Tourist-Information Ruhpolding. Ich bin der digitale Assistent und helfe Ihnen bei Fragen rund um Ihren Aufenthalt.",
-      "Sie stehen gerade {standort:kurz}. Erzählen Sie mir einfach, was Sie vorhaben, dann suche ich das Passende für Sie heraus. Sie können auch unten wählen.",
+      "Grüß Gott und herzlich willkommen in Ruhpolding! Schön, dass Sie da sind. Ich bin der digitale Assistent der Tourist-Information und helfe Ihnen gern bei allem rund um Ihren Aufenthalt.",
+      "Sie stehen gerade {standort:kurz}. Erzählen Sie mir einfach, was Sie vorhaben, dann suche ich Ihnen das Passende heraus. Oder tippen Sie unten auf ein Thema.",
     ],
     chips: startChips,
   },
 
   menu: {
     id: "menu",
-    messages: ["Gern. Womit kann ich Ihnen sonst noch helfen?"],
+    messages: [
+      [
+        "Sehr gern. Wobei kann ich Ihnen noch helfen?",
+        "Gern. Was darf es sonst noch sein?",
+      ],
+    ],
     chips: menuChips,
   },
 
   danke: {
     id: "danke",
     messages: [
-      "Sehr gern. Einen schönen Aufenthalt in Ruhpolding. Und wenn Ihnen morgen noch etwas einfällt, kommen Sie einfach wieder, Sie stören nicht.",
+      "Sehr gern geschehen! Ich wünsche Ihnen eine schöne Zeit in Ruhpolding. Und wenn Ihnen morgen noch etwas einfällt, kommen Sie einfach wieder vorbei, Sie stören nie.",
     ],
     chips: menuChips,
   },
@@ -472,6 +506,9 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Ja, passende Tour finden", to: "bedarf:i=berge" },
       { label: "Welche Bergbahnen gibt es?", to: "bergbahnen" },
+      // Der Überblick über alle Touren, den der Prototyp nicht hält (Vorgabe
+      // des Autors, 23.09.2026).
+      web("alle-wandertouren", "Alle Touren auf ruhpolding.de"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -490,6 +527,7 @@ export const FLOW: Record<string, FlowNode> = {
       { label: "Ruhpoldinger Sagenweg", to: "ziel:sagenweg" },
       { label: "Traunauen und Taubensee", to: "ziel:taubensee" },
       { label: "Schwarzachen Alm", to: "ziel:schwarzachen" },
+      web("wanderwege"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -507,6 +545,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Mehr zum Sonntagshorn", to: "ziel:sonntagshorn" },
       { label: "Alle Gipfeltouren", to: "empfehlung:gipfel:0" },
+      web("gipfeltouren"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -532,6 +571,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Weg zum Unternberg", to: "ziel:unternberg" },
       { label: "Preise Bergbahnen", to: "bergbahn-preise" },
+      web("bergbahnen"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -556,7 +596,37 @@ export const FLOW: Record<string, FlowNode> = {
       note: BERGBAHNEN.kartenhinweis,
     },
     topic: "wandern",
-    chips: backChips("wandern"),
+    chips: [web("unternberg"), ...backChips("wandern")],
+  },
+
+  /*
+   * Sport, seit dem 23.09.2026. Quelle ruhpolding.de/zeit-fuer-bewegung.
+   * Wie beim Wandern erst die Frage, ob der Prototyp nachfragen darf: die
+   * Auswahl reicht vom Tandemflug bis zum Minigolf, und was passt, hängt an
+   * Begleitung und Wetter.
+   */
+  sport: {
+    id: "sport",
+    topic: "sport",
+    kurz: [
+      "Wie gesagt: vom Tandemflug am Unternberg über Golf bis zum BergFit-Weg ist einiges dabei.",
+    ],
+    messages: [
+      [
+        "Sportlich ist in Ruhpolding einiges geboten: Tandem-Gleitschirmfliegen und die Fly-Line am Unternberg, Golf und Adventure Golf, dazu der BergFit-Weg, der Ihre Kondition für die Berge testet.",
+        "Wer sich bewegen will, hat hier die Wahl: vom Tandemflug am Unternberg über den Golfclub bis zum BergFit-Weg, auf dem Sie Ihre Bergkondition testen können.",
+      ],
+      "Radfahren und Mountainbiken gehören natürlich auch dazu, im Winter Langlauf und Skifahren. Soll ich Ihnen etwas heraussuchen, das zu Ihnen passt?",
+    ],
+    jaNein: true,
+    nein: "vorschlag:i=sport,f=1:0",
+    chips: [
+      { label: "Ja, gern", to: "bedarf:i=sport" },
+      { label: "Radfahren & MTB", to: "bedarf:i=rad" },
+      { label: "Wintersport", to: "winter" },
+      web("sport", "Alle Sportangebote auf ruhpolding.de"),
+      { label: "Andere Frage", to: "menu" },
+    ],
   },
 
   events: {
@@ -577,6 +647,7 @@ export const FLOW: Record<string, FlowNode> = {
       { label: "Biathlon-Weltcup", to: "events-biathlon" },
       { label: "Karten kaufen", to: "dienst:tickets" },
       { label: "Was ist diese Woche los?", to: "events-woche" },
+      web("veranstaltungen"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -608,7 +679,7 @@ export const FLOW: Record<string, FlowNode> = {
       `Die Tourist-Information hat ${TOURIST_INFO.oeffnungszeiten} geöffnet.`,
     ],
     topic: "events",
-    chips: backChips("events"),
+    chips: [web("veranstaltungen"), ...backChips("events")],
   },
 
   anreise: {
@@ -633,6 +704,7 @@ export const FLOW: Record<string, FlowNode> = {
       { label: "Bahn nach Traunstein", to: "fahrplan:traunstein" },
       { label: "Parken im Ort", to: "anreise-parken" },
       { label: "Ortsbus & Gästekarte", to: "anreise-bus" },
+      web("anreise"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -696,6 +768,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Bahn nach Traunstein", to: "fahrplan:traunstein" },
       { label: "Ortsbus & Gästekarte", to: "anreise-bus" },
+      web("mobilitaet"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -710,6 +783,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Welche Linien gibt es?", to: "busnetz" },
       { label: "Bahn nach Traunstein", to: "fahrplan:traunstein" },
+      web("chiemgau-karte"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -736,20 +810,22 @@ export const FLOW: Record<string, FlowNode> = {
     // Vorher eine erfundene Demo-Prognose, die auch der Wettereinstellung
     // widersprechen konnte.
     messages: [
-      "Eine Prognose für die nächsten Tage habe ich nicht hinterlegt.",
+      "Eine Prognose für die nächsten Tage habe ich selbst nicht hinterlegt. Die aktuelle Vorhersage für Ruhpolding steht aber auf ruhpolding.de.",
       "Die Tourenflyer der Tourist-Information raten, Wetterbericht und Strecke vor jeder Tour genau zu prüfen.",
     ],
     topic: "wetter",
-    chips: backChips("wetter"),
+    chips: [web("wetter", "Vorhersage auf ruhpolding.de"), ...backChips("wetter")],
   },
   "wetter-webcam": {
     id: "wetter-webcam",
-    // Die früher genannten Webcam-Standorte waren nicht belegt.
+    // Die früher genannten Webcam-Standorte waren nicht belegt. Seit dem
+    // 23.09.2026 aus ruhpolding.de/webcams: Eggerschneid mit Blick zum
+    // Rauschberg, Rauschberg und dreimal Hochfelln.
     messages: [
-      "Webcam-Bilder kann ich Ihnen hier nicht zeigen, und welche Webcams es im Ort gibt, habe ich nicht verlässlich hinterlegt.",
+      "Webcam-Bilder kann ich Ihnen hier nicht zeigen. Auf ruhpolding.de gibt es aber eine Webcam-Seite, unter anderem mit Blick über Ruhpolding zum Rauschberg und vom Hochfelln Richtung Chiemsee.",
     ],
     topic: "wetter",
-    chips: backChips("wetter"),
+    chips: [web("webcams", "Webcams auf ruhpolding.de"), ...backChips("wetter")],
   },
 
   essen: {
@@ -770,6 +846,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Vorschläge zum Essen", to: "empfehlung:essen:0" },
       { label: "Ruhetage beachten", to: "essen-ruhetag" },
+      web("restaurants"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -781,7 +858,7 @@ export const FLOW: Record<string, FlowNode> = {
       `Am Schalter der Tourist-Information hilft Ihnen jemand persönlich weiter (${TOURIST_INFO.oeffnungszeiten}).`,
     ],
     topic: "essen",
-    chips: backChips("essen"),
+    chips: [web("almen"), ...backChips("essen")],
   },
   "essen-ruhetag": {
     id: "essen-ruhetag",
@@ -792,7 +869,7 @@ export const FLOW: Record<string, FlowNode> = {
       "Einen festen Ruhetag für alle gibt es nicht. Ruhetage und Betriebsruhen sammelt die Tourist-Information in einer Gastronomieliste, die sie laufend nachträgt. Die Liste liegt dort zum Mitnehmen aus.",
     ],
     topic: "essen",
-    chips: backChips("essen"),
+    chips: [web("restaurants"), ...backChips("essen")],
   },
 
   familie: {
@@ -815,6 +892,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Ja, passende Vorschläge", to: "bedarf:i=familie,b=kinder" },
       { label: "Angebote bei Regen", to: "familie-regen" },
+      web("familien"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -828,6 +906,7 @@ export const FLOW: Record<string, FlowNode> = {
     topic: "familie",
     chips: [
       { label: "Vorschläge für drinnen", to: "vorschlag:i=kultur,f=1:0" },
+      web("bei-regen"),
       { label: "Zurück zum Thema", to: "familie" },
       { label: "Andere Frage", to: "menu" },
     ],
@@ -859,6 +938,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Loipen & Loipenpass", to: "winter-loipe" },
       { label: "Skiverleih", to: "winter-verleih" },
+      web("winter"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -871,16 +951,19 @@ export const FLOW: Record<string, FlowNode> = {
       "Einzelne Loipen stehen mit ihrer Länge auf ruhpolding.de, etwa die Drei-Seen-Loipe mit 12,3 km.",
     ],
     topic: "winter",
-    chips: backChips("winter"),
+    chips: [web("langlaufen"), ...backChips("winter")],
   },
   "winter-verleih": {
     id: "winter-verleih",
+    // Bis zum 23.09.2026 stand hier, Ruhpolding Tourismus nenne keine
+    // Verleihbetriebe. Das war falsch: ruhpolding.de/ski-snowboardschulen
+    // führt sie unter "Ski- & Snowboard Verleih".
     messages: [
-      "Verleihbetriebe nennt Ruhpolding Tourismus nicht beim Namen, deshalb habe ich keine hinterlegt.",
-      `Am Schalter der Tourist-Information hilft Ihnen jemand persönlich weiter (${TOURIST_INFO.oeffnungszeiten}).`,
+      "Unter „Ski- & Snowboard Verleih“ nennt Ruhpolding Tourismus Sport Plenk, die Langlaufschule Ruhpolding und die Langlauf- & Wintersportschule. Preise und Zeiten habe ich dazu nicht hinterlegt.",
+      "Die Übersicht mit allen Skischulen und Verleihern gebe ich Ihnen gern mit.",
     ],
     topic: "winter",
-    chips: backChips("winter"),
+    chips: [web("skischulen"), ...backChips("winter")],
   },
 
   unterkunft: {
@@ -898,6 +981,7 @@ export const FLOW: Record<string, FlowNode> = {
     chips: [
       { label: "Urlaub am Bauernhof", to: "unterkunft-hof" },
       { label: "Barrierefrei übernachten", to: "unterkunft-barrierefrei" },
+      web("unterkunft", "Unterkunft suchen auf ruhpolding.de"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
@@ -907,7 +991,7 @@ export const FLOW: Record<string, FlowNode> = {
       "Höfe mit Urlaub am Bauernhof stehen in der Gastgeberliste auf ruhpolding.de einzeln. Eine Gesamtzahl nennt die Liste nicht.",
     ],
     topic: "unterkunft",
-    chips: backChips("unterkunft"),
+    chips: [web("bauernhof"), ...backChips("unterkunft")],
   },
   "unterkunft-barrierefrei": {
     id: "unterkunft-barrierefrei",
@@ -915,7 +999,7 @@ export const FLOW: Record<string, FlowNode> = {
       "Barrierefreie Unterkünfte sind in der Gastgeberliste auf ruhpolding.de einzeln ausgewiesen. Eine Zusammenstellung habe ich nicht, und ich nenne Ihnen lieber keine, die ich nicht prüfen kann.",
     ],
     topic: "unterkunft",
-    chips: backChips("unterkunft"),
+    chips: [web("barrierefrei"), ...backChips("unterkunft")],
   },
 
   info: {
@@ -938,7 +1022,11 @@ export const FLOW: Record<string, FlowNode> = {
       ],
       note: TOURIST_INFO.kartenhinweis,
     },
-    chips: [zettelChip("info", "de"), { label: "Andere Frage", to: "menu" }],
+    chips: [
+      zettelChip("info", "de"),
+      web("kontakt"),
+      { label: "Andere Frage", to: "menu" },
+    ],
   },
 }
 
@@ -959,6 +1047,9 @@ export const FOLGEN: Record<string, Folge> = {
     preis: "bergbahn-preise",
     zeit: "bergbahnen",
     weg: "bergbahnen",
+  },
+  sport: {
+    vertiefung: "empfehlung:sport:0",
   },
   events: {
     vertiefung: "events-biathlon",
@@ -1090,7 +1181,9 @@ export function rueckfrageKnoten(
  */
 const NOTKNOTEN: FlowNode = {
   id: "notknoten",
-  messages: ["Da ist mir etwas dazwischengekommen. Wählen Sie am besten ein Thema."],
+  messages: [
+    "Entschuldigung, da ist mir etwas dazwischengekommen. Wählen Sie am besten ein Thema, dann geht es weiter.",
+  ],
   chips: menuChips,
 }
 
@@ -1178,6 +1271,10 @@ export function getNode(
   }
 
   if (id === "hinweise") return meldungenKnoten(sprache, lage.wetter)
+
+  if (id.startsWith("web:")) {
+    return webKnoten(id.slice(4), sprache, waehleVariante) ?? NOTKNOTEN
+  }
 
   if (id.startsWith("dienst:")) {
     return dienstKnoten(id.slice(7), sprache) ?? NOTKNOTEN

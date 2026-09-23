@@ -426,3 +426,80 @@ Nachgespielt: 9 von 10 freien Eingaben zugeordnet. Das „gern“ ist jetzt
 eine Antwort auf „digital oder gedruckt?“, weil „Ortplan“ direkt zur
 Flyerfrage führt. Dort bleibt es mehrdeutig, und die Rückfrage lässt die
 Schaltflächen stehen.
+
+## 10. Dritte Runde (23.09.2026): Vorgaben des Autors
+
+Branch `avatar-varianten`, nicht committet.
+
+### Avatar
+
+Illustrierte Figur (`agent-figur.tsx`) im Kreis, 40 px statt des früheren
+Robotersymbols mit 32 px (`agent-avatar.tsx`). Sie steht an der letzten Blase
+jeder Folge und wandert mit, wenn eine neue Blase dazukommt. Nur der Avatar
+der laufenden Antwort bewegt sich: Blinzeln, beim Nachdenken Kopfneigung und
+Seitenblick. Grundlage: M [00:10:33], [00:17:03], Mori 2012, S. 99 f.
+
+Verworfen am selben Tag: Bühne über dem Chat mit eigener Sprechblase, Spalte
+mit Himmel, Bergen und Theke, freigestellte große Figur links, die neben die
+sprechende Blase fährt.
+
+### Seiten auf ruhpolding.de (`web.ts`)
+
+41 Seiten, jede am 23.09.2026 mit HTTP 200 abgerufen. Themen-Antworten
+tragen die passende Seite als Schaltfläche, etwa „Alle Touren auf
+ruhpolding.de“ beim Wandern oder die Unterkunftsuche bei der Unterkunft. Die
+Seite erscheint als eigener QR-Code (gestrichelter Rahmen, Weltkugel).
+
+In der Detailauskunft steht nach dem Kartenlink die Wahl: Flyer, Website
+oder nichts. Der Flyer läuft danach wie bisher (digital oder gedruckt). Ohne
+Flyer wird nur die Website angeboten. Getippt geht „die Website bitte“ oder
+„lieber online“.
+
+Unter jedem QR-Code steht die Adresse als Link, damit sie sich im
+Browser-Test öffnen lässt (`qr-card.tsx`).
+
+### Sport
+
+Neues Thema und neues Interesse der Bedarfsklärung. Sieben Ziele aus
+ruhpolding.de/zeit-fuer-bewegung und den dort verlinkten Seiten:
+Tandem-Gleitschirmflug am Unternberg, Fly-Line, BergFit-Weg, Terrainkurweg
+Klein Kanada, Golfclub, Adventure Golf Park, Minigolf am Kurhaus. Dazu die
+Vita Alpina als Wahl bei Regen. Rad und MTB führen in die Radtouren, der
+Wintersport ins Winterthema.
+
+### Bilder (`bilder.ts`)
+
+Zehn Bilder von ruhpolding.de, geladen von dort, nicht kopiert. Genau eines
+je Detailauskunft, direkt nach dem ersten Satz, mit Urheber und Link auf die
+Herkunftsseite. Keine Bilder in Vorschlagslisten. Lädt ein Bild nicht,
+verschwindet die Karte.
+
+### Wetter-Regler
+
+Schieberegler statt Dropdown in der Vorschauleiste (`wetter-regler.tsx`),
+Sonne mit warmem Verlauf, Regen mit Streifen.
+
+### Wärmere Texte
+
+Begrüßung, Menü, Abschied, Überbrückungen, Quittungen und Fragen der
+Bedarfsklärung, Abschluss der Vorschlagslisten und Flyer-Dialog. Inhalt und
+Anrede „Sie“ unverändert.
+
+### Beim Gegenprüfen korrigiert
+
+- Skiverleih: Der Prototyp sagte, Ruhpolding Tourismus nenne keine
+  Verleihbetriebe. ruhpolding.de/ski-snowboardschulen nennt Sport Plenk, die
+  Langlaufschule Ruhpolding und die Langlauf- & Wintersportschule.
+- Webcams: statt „nicht verlässlich hinterlegt“ der Verweis auf die
+  Webcam-Seite mit den dort genannten Standorten.
+
+### Offen
+
+- **Bildrechte:** Vor dem nächsten Deployment auf GitHub Pages die Zustimmung
+  von Ruhpolding Tourismus für die zehn Bilder einholen.
+- Der Startpunkt des Terrainkurwegs Klein Kanada ist nicht belegt. Der
+  Kartenlink sucht nach „Klein Kanada Ruhpolding“.
+
+Prüfung: `bun test` 250 grün (18 neu in `src/lib/vorgaben-2309.test.ts`),
+Typecheck und Build sauber. Im Browser durchgespielt: Sport im Freitext,
+Bedarfsklärung, Tandemflug mit Bild, Karten-QR mit Link, Website-QR, Regler.

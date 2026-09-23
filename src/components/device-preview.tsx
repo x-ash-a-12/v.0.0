@@ -20,6 +20,7 @@ import {
 import { BuehneContext } from "@/lib/buehne"
 import { StandortContext, STANDORTE } from "@/lib/location"
 import { WetterContext, WETTER, wetter as findeWetter } from "@/lib/wetter"
+import { WetterRegler } from "@/components/wetter-regler"
 import { exportiere } from "@/lib/telemetry"
 import { cn } from "@/lib/utils"
 
@@ -195,25 +196,7 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
         <span className="mr-1 ml-3 text-xs font-medium text-muted-foreground">
           Wetter
         </span>
-        <Select
-          value={wetterId}
-          onValueChange={(wert) =>
-            setWetterId(findeWetter(wert ?? wetterId).id)
-          }
-        >
-          <SelectTrigger size="sm" className="w-28" aria-label="Wetter">
-            <SelectValue>
-              {(wert) => findeWetter(wert).label}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {WETTER.map((eintrag) => (
-              <SelectItem key={eintrag.id} value={eintrag.id}>
-                {eintrag.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <WetterRegler wert={wetterId} onWechsel={setWetterId} />
 
         {/* Auswertung der Tests, ebenfalls Werkzeug des Versuchsleiters. */}
         <Button

@@ -128,7 +128,7 @@ const FERNZIELE: Fernziel[] = [
     nameEn: "the Chiemsee",
     stelle: "die Tourist-Information am Chiemsee",
     stelleEn: "the tourist information at the Chiemsee",
-    suche: "Tourist-Information Chiemsee",
+    suche: "Chiemsee-Alpenland Tourismus",
     immer: true,
   },
   {
@@ -148,7 +148,7 @@ const FERNZIELE: Fernziel[] = [
     nameEn: "Salzburg",
     stelle: "Salzburg Tourismus",
     stelleEn: "Salzburg Tourismus",
-    suche: "Tourist Information Salzburg",
+    suche: "Tourist Information Salzburg Hauptbahnhof",
     immer: false,
     fahrplan: "fahrplan:salzburg",
   },
@@ -159,7 +159,7 @@ const FERNZIELE: Fernziel[] = [
     nameEn: "Munich",
     stelle: "München Tourismus",
     stelleEn: "Munich tourist information",
-    suche: "Tourist Information München",
+    suche: "Tourist Information am Marienplatz München",
     immer: false,
     fahrplan: "fahrplan:muenchen",
   },
@@ -411,7 +411,7 @@ export function dienstKnoten(id: string, sprache: Sprache): FlowNode | null {
           hint: en
             ? "Scan the code to take the route with you."
             : "Scannen Sie den Code, um den Weg mitzunehmen.",
-          url: mapsSuche("Bahnhof"),
+          url: mapsSuche("Bahnhof Ruhpolding"),
         },
         chips: [ANDERE_FRAGE(en)],
       }

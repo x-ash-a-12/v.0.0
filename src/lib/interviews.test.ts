@@ -50,7 +50,7 @@ function text(id: string, wetterId: "sonne" | "regen" = "sonne"): string {
 describe("Erst fragen, dann empfehlen (KA [00:12:47])", () => {
   test("die offene Frage nach Unternehmungen beginnt mit dem Interesse", () => {
     const node = getNode("bedarf:", "de", MITTAGS)
-    expect(node.messages.flat().join(" ")).toContain("Was interessiert Sie")
+    expect(node.messages.flat().join(" ")).toContain("Worauf haben Sie Lust")
     expect(node.chips?.map((chip) => chip.label)).toContain(
       "Gleich Vorschläge zeigen"
     )
@@ -58,7 +58,7 @@ describe("Erst fragen, dann empfehlen (KA [00:12:47])", () => {
 
   test("die Reihenfolge folgt der Auskunft: Interesse, Dauer, Begleitung", () => {
     expect(text("bedarf:i=kultur")).toContain("Wie lange")
-    expect(text("bedarf:i=kultur,d=tage")).toContain("Wer ist mit dabei")
+    expect(text("bedarf:i=kultur,d=tage")).toContain("wer ist mit dabei")
   })
 
   test("bei den Bergen wird nach Aufstieg und Erfahrung gefragt", () => {
@@ -391,15 +391,18 @@ describe("Vorschlag, Details, Karte, dann ein Flyer (Vorgabe vom 23.09.2026)", (
     expect(antwort).toContain("Quelle: Flyer „Die 10 schönsten Gipfeltouren“")
   })
 
-  test("nach dem Kartenlink kommt genau eine Flyerfrage", () => {
+  test("nach dem Kartenlink kommt genau eine Frage: Flyer oder Website", () => {
+    // Seit dem 23.09.2026 mit der passenden Seite auf ruhpolding.de als
+    // zweiter Möglichkeit neben dem Flyer.
     const node = getNode("ziel:sagenweg", "de", MITTAGS)
     expect(node.qr?.url).toContain("google.com/maps")
     expect(node.nachher?.flat()).toHaveLength(1)
     expect(node.nachher?.flat()[0]).toContain(
-      "„Die 10 schönsten Wander- & Spazierwege“ kostenlos dazu"
+      "„Die 10 schönsten Wander- & Spazierwege“ kostenlos mit, oder die passende Seite auf ruhpolding.de"
     )
     expect(node.chips?.[0].to).toBe("flyer:wandern")
-    expect(node.chips?.[1].to).toBe("flyer-nein")
+    expect(node.chips?.[1].to).toBe("web:wanderwege")
+    expect(node.chips?.[2].to).toBe("flyer-nein")
   })
 
   test("der Flyer passt zur Art des Ziels", () => {

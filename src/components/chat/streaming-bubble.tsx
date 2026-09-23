@@ -1,4 +1,5 @@
-import { BotAvatar } from "@/components/chat/bot-avatar"
+import { AgentAvatar } from "@/components/chat/agent-avatar"
+import { zipfel } from "@/components/chat/zipfel"
 import { cn } from "@/lib/utils"
 
 /**
@@ -11,21 +12,20 @@ const bubbleBase =
 
 type StreamingBubbleProps = {
   text: string
-  showAvatar: boolean
 }
 
 /** Die wachsende Blase während der gestaffelten Ausgabe. */
-export function StreamingBubble({ text, showAvatar }: StreamingBubbleProps) {
+export function StreamingBubble({ text }: StreamingBubbleProps) {
   return (
     <div className="flex items-end gap-2">
-      {showAvatar ? (
-        <BotAvatar />
-      ) : (
-        <div className="size-8 shrink-0" aria-hidden="true" />
-      )}
-      <div className="flex min-w-0 max-w-[calc(100%-2.5rem)] flex-col @sm:max-w-[80%]">
+      <AgentAvatar zustand="wartet" />
+      <div className="flex max-w-[calc(100%-3rem)] min-w-0 flex-col @sm:max-w-[80%]">
         <div
-          className={cn(bubbleBase, "rounded-bl-sm bg-muted text-foreground")}
+          className={cn(
+            bubbleBase,
+            "rounded-bl-sm bg-muted text-foreground",
+            zipfel
+          )}
           // Screenreader lesen erst die fertige Nachricht vor, nicht jedes
           // Häppchen einzeln.
           aria-live="polite"

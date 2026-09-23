@@ -15,7 +15,10 @@ import {
   mapsSuche,
   RADVERLEIH,
   vorschlagbar,
+  webVon,
 } from "@/lib/ziele"
+import { WEB } from "@/lib/web"
+import { BILDER } from "@/lib/bilder"
 import type { WetterId } from "@/lib/wetter"
 import { schalterSatz } from "@/lib/service"
 import { zettelChip } from "@/lib/zettel"
@@ -46,13 +49,13 @@ import { TOURIST_INFO } from "@/lib/daten"
  * ------------------------------------------------------------------ */
 
 const ABSCHLUSS = [
-  "Welcher Vorschlag interessiert Sie? Dann sage ich Ihnen, für wen er sich eignet und worauf Sie achten sollten.",
-  "Sagen Sie mir, was davon Sie anspricht. Dann erzähle ich Ihnen mehr dazu. Passt nichts, nenne ich Ihnen gern andere.",
+  "Ist etwas für Sie dabei? Sagen Sie mir einfach, was Sie anspricht, dann erzähle ich Ihnen mehr dazu.",
+  "Was davon gefällt Ihnen? Passt nichts, nenne ich Ihnen gern andere.",
 ]
 
 const ABSCHLUSS_EN = [
-  "Which suggestion interests you? Then I will tell you who it suits and what to watch out for.",
-  "Tell me which of these appeals and I will tell you more. If none fit, I am happy to name others.",
+  "Anything for you? Just tell me what appeals and I will tell you more about it.",
+  "Which of these do you like? If none fit, I am happy to name others.",
 ]
 
 const NICHTS_MEHR = [
@@ -228,9 +231,9 @@ const HINWEIS_QR_EN = [
   "One scan with the camera and the route to the starting point is on your phone.",
 ]
 
-const EINLEITUNG_ZIEL = ["Gern.", "Sehr gern.", "Gute Wahl."]
+const EINLEITUNG_ZIEL = ["Schöne Wahl!", "Sehr gern.", "Gute Wahl!"]
 
-const EINLEITUNG_ZIEL_EN = ["Certainly.", "Gladly.", "Good choice."]
+const EINLEITUNG_ZIEL_EN = ["Lovely choice!", "Gladly.", "Good choice!"]
 
 /**
  * Ein Ziel in der Detailauskunft.
@@ -358,18 +361,42 @@ export function zielKnoten(
   if (eintrag.flyer) messages.push(flyerQuelle(eintrag.flyer, en))
 
   const flyer = eintrag.flyer ? FLYER[eintrag.flyer] : null
+  const webId = webVon(eintrag)
+  const seite = webId ? WEB[webId] : null
   const chips: Chip[] = []
+  // Zum Mitnehmen gibt es bis zu zwei Wege: den Flyer, wie am Schalter, und
+  // die Seite auf ruhpolding.de mit mehr Touren, Zeiten und Bildern. Der
+  // Gast wählt, der Flyer geht danach weiter wie bisher (digital oder
+  // gedruckt). Vorgabe des Autors vom 23.09.2026.
   if (flyer) {
-    chips.push(
-      { label: en ? "Yes, please" : "Ja, gern", to: `flyer:${flyer.id}` },
-      { label: en ? "No, thank you" : "Nein, danke", to: "flyer-nein" }
-    )
+    chips.push({
+      label: en ? "The flyer, please" : "Den Flyer, bitte",
+      to: `flyer:${flyer.id}`,
+    })
+  }
+  if (seite) {
+    // Allein angeboten, beantwortet die Schaltfläche die Frage "Soll ich sie
+    // Ihnen mitgeben?", neben dem Flyer ist sie eine von zwei Möglichkeiten.
+    chips.push({
+      label: flyer
+        ? en
+          ? "The website"
+          : "Die Website"
+        : en
+          ? "Yes, please"
+          : "Ja, gern",
+      to: `web:${seite.id}`,
+    })
+  }
+  if (flyer || seite) {
+    chips.push({ label: en ? "No, thank you" : "Nein, danke", to: "flyer-nein" })
   }
   chips.push(
     zettelChip(`ziel:${zielId}`, sprache),
     ...geschwisterChips(eintrag, en).filter((chip) => chip.to !== "menu")
   )
-  if (!flyer) chips.push({ label: en ? "Something else" : "Andere Frage", to: "menu" })
+  if (!flyer && !seite)
+    chips.push({ label: en ? "Something else" : "Andere Frage", to: "menu" })
 
   return {
     id: `ziel:${zielId}`,
@@ -380,20 +407,52 @@ export function zielKnoten(
     // hier aus weitergeht statt wieder bei den ersten dreien anzufangen.
     gruppe: herkunft,
     messages,
-    qr,
-    // Die Frage nach dem Flyer kommt nach dem Kartenlink, wie am Schalter:
-    // erst der Weg, dann das Material dazu.
-    nachher: flyer
-      ? [
-          en
-            ? `Would you like the flyer „${flyer.titelEn}“ free of charge to go with it?`
-            : `Möchten Sie den Flyer „${flyer.titel}“ kostenlos dazu haben?`,
-        ]
+    bild: eintrag.bild
+      ? {
+          url: BILDER[eintrag.bild].url,
+          alt: en ? BILDER[eintrag.bild].altEn : BILDER[eintrag.bild].alt,
+          urheber: BILDER[eintrag.bild].urheber,
+          seite: BILDER[eintrag.bild].seite,
+        }
       : undefined,
-    jaNein: Boolean(flyer),
-    nein: flyer ? "flyer-nein" : undefined,
+    qr,
+    // Die Frage nach dem Material kommt nach dem Kartenlink, wie am
+    // Schalter: erst der Weg, dann etwas zum Mitnehmen.
+    nachher: mitnehmFrage(flyer, seite, en),
+    jaNein: Boolean(flyer || seite),
+    nein: flyer || seite ? "flyer-nein" : undefined,
     chips,
   }
+}
+
+/** Was der Gast zum Ziel mitnehmen kann: Flyer, Website oder beides. */
+function mitnehmFrage(
+  flyer: (typeof FLYER)[keyof typeof FLYER] | null,
+  seite: (typeof WEB)[keyof typeof WEB] | null,
+  en: boolean
+): string[] | undefined {
+  if (flyer && seite) {
+    return [
+      en
+        ? `Would you like to take something with you? I can give you the flyer „${flyer.titelEn}“ free of charge, or the matching page on ruhpolding.de.`
+        : `Möchten Sie dazu noch etwas mitnehmen? Ich gebe Ihnen gern den Flyer „${flyer.titel}“ kostenlos mit, oder die passende Seite auf ruhpolding.de.`,
+    ]
+  }
+  if (flyer) {
+    return [
+      en
+        ? `Would you like the flyer „${flyer.titelEn}“ free of charge to go with it?`
+        : `Möchten Sie den Flyer „${flyer.titel}“ kostenlos dazu haben?`,
+    ]
+  }
+  if (seite) {
+    return [
+      en
+        ? `There is more on the page „${seite.titelEn}“ on ruhpolding.de. Shall I give it to you?`
+        : `Mehr dazu steht auf der Seite „${seite.titel}“ auf ruhpolding.de. Soll ich sie Ihnen mitgeben?`,
+    ]
+  }
+  return undefined
 }
 
 /** Wer die Öffnungszeiten weiß, mit Telefon und Öffnungszeiten der TI. */

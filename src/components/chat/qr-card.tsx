@@ -1,7 +1,7 @@
 import * as React from "react"
 import QRCode from "qrcode"
 
-import { FileText, MapPin } from "lucide-react"
+import { ExternalLink, FileText, Globe, MapPin } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { QrPayload } from "@/lib/chat-flow"
@@ -32,18 +32,20 @@ export function QrCard({ qr }: { qr: QrPayload }) {
     }
   }, [qr.url])
 
-  // Zwei Arten von Codes stehen oft direkt untereinander: der Weg zum
-  // Ausgangspunkt und der Flyer dazu. Rahmen und Symbol unterscheiden sie,
-  // damit niemand den falschen scannt.
+  // Bis zu drei Arten von Codes stehen oft direkt untereinander: der Weg zum
+  // Ausgangspunkt, der Flyer und die Seite auf ruhpolding.de. Rahmen und
+  // Symbol unterscheiden sie, damit niemand den falschen scannt.
   const flyer = qr.art === "flyer"
-  const Symbol = flyer ? FileText : MapPin
+  const web = qr.art === "web"
+  const Symbol = flyer ? FileText : web ? Globe : MapPin
 
   return (
     <Card
       size="sm"
       className={cn(
         "w-full max-w-full",
-        flyer && "border-2 border-primary bg-muted/40"
+        flyer && "border-2 border-primary bg-muted/40",
+        web && "border-2 border-dashed border-sky-600/70 dark:border-sky-400/70"
       )}
     >
       <CardHeader>
@@ -51,7 +53,11 @@ export function QrCard({ qr }: { qr: QrPayload }) {
           <Symbol
             className={cn(
               "size-4 shrink-0",
-              flyer ? "text-primary" : "text-muted-foreground"
+              flyer
+                ? "text-primary"
+                : web
+                  ? "text-sky-700 dark:text-sky-400"
+                  : "text-muted-foreground"
             )}
             aria-hidden="true"
           />
@@ -77,6 +83,22 @@ export function QrCard({ qr }: { qr: QrPayload }) {
         <p className="text-center text-xs text-muted-foreground [overflow-wrap:anywhere]">
           {qr.hint}
         </p>
+        {/*
+          Derselbe Link zum Anklicken. Am Terminal scannt der Gast den Code,
+          im Browser-Test führt der Link direkt dorthin (Wunsch des Autors,
+          23.09.2026). Lange Adressen werden nach zwei Zeilen gekürzt, das
+          Ziel des Links bleibt vollständig.
+        */}
+        <a
+          href={qr.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={qr.url}
+          className="flex max-w-full items-start gap-1 text-xs text-sky-700 underline underline-offset-2 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-300"
+        >
+          <ExternalLink className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
+          <span className="line-clamp-2 break-all">{qr.url}</span>
+        </a>
       </CardContent>
     </Card>
   )

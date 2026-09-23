@@ -1,4 +1,6 @@
 import type { FlyerId } from "@/lib/flyer"
+import type { WebId } from "@/lib/web"
+import type { BildId } from "@/lib/bilder"
 import type { Oeffnung } from "@/lib/jetzt"
 import {
   BERGBAHNEN,
@@ -32,7 +34,13 @@ import {
  */
 
 /** Wofür sich jemand interessiert, gefragt wie am Schalter. */
-export type Interesse = "berge" | "rad" | "familie" | "kultur" | "gemuetlich"
+export type Interesse =
+  | "berge"
+  | "rad"
+  | "familie"
+  | "kultur"
+  | "gemuetlich"
+  | "sport"
 
 /** Wer mitkommt. Frau Amort fragt nach Kindern, Kinderwagen und Älteren. */
 export type Begleitung = "kinder" | "senioren" | "erwachsene"
@@ -133,6 +141,16 @@ export type Ziel = {
    */
   /** Der Flyer, aus dem die Angaben stammen und der dazu angeboten wird. */
   flyer?: FlyerId
+  /**
+   * Die Seite auf ruhpolding.de, die der Gast zu diesem Ziel mitnehmen kann.
+   * Fehlt sie, gilt die Seite, die zum Flyer gehört (webVon).
+   */
+  web?: WebId
+  /**
+   * Ein Bild von ruhpolding.de für die Detailauskunft (bilder.ts). Nur dort,
+   * nie in Vorschlagslisten.
+   */
+  bild?: BildId
   /** Einstufung laut Flyer, nur wo der Flyer eine nennt. */
   schwierigkeit?: "leicht" | "mittel" | "schwer"
   /** Für wen sich das Ziel eignet. */
@@ -160,14 +178,58 @@ export type Ziel = {
  * erfunden wird.
  */
 export function mapsSuche(ziel: string): string {
-  return mapsSucheFrei(`${ziel} Ruhpolding`)
+  return ORTE[ziel] ?? mapsSucheFrei(`${ziel} Ruhpolding`)
 }
 
 /** Dieselbe Abfrage ohne den Ortszusatz, für Ziele außerhalb. */
 export function mapsSucheFrei(anfrage: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    anfrage
-  )}`
+  return (
+    ORTE[anfrage] ??
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      anfrage
+    )}`
+  )
+}
+
+/**
+ * Feste Orte statt Suche, dort, wo die Suche ins Leere lief.
+ *
+ * Am 23.09.2026 lieferten zwölf Suchen "Kein Ergebnis" oder einen falschen
+ * Ort, unter anderem die Talstationen beider Bergbahnen und der Bahnhof. Der
+ * Autor hat die richtigen Orte in Google Maps herausgesucht. Verlinkt ist
+ * jeweils die Orts-ID (cid) aus seinem Link: Sie trifft genau diesen Ort und
+ * hält die Adresse kurz, der QR-Code wird dadurch gröber und leichter lesbar.
+ * Alle am selben Tag geöffnet und mit Name und Adresse geprüft.
+ */
+const ORTE: Record<string, string> = Object.fromEntries(
+  (
+    [
+      ["Unternbergbahn", "1010664599588463926"],
+      ["Rauschbergbahn Talstation", "1413801206378716248"],
+      ["Parkplatz Holzknechtmuseum", "10905605612371705295"],
+      ["Glockenschmiede Museum", "13491746658430805616"],
+      ["Parkplatz Langer Sand", "10367882696966016406"],
+      ["Naturschutzgebiet Drei-Seen-Gebiet", "3268017886805810999"],
+      ["Egglbrücke", "14539272316207013853"],
+      ["Bahnhof Ruhpolding", "6171278910785915893"],
+      ["Chiemsee-Alpenland Tourismus", "8813448434298382846"],
+      ["Tourist Information Salzburg Hauptbahnhof", "11764306211466983839"],
+      ["Tourist Information am Marienplatz München", "4791345877669129070"],
+    ] as const
+  ).map(([ort, cid]) => [ort, `https://www.google.com/maps?cid=${cid}`])
+)
+
+/** Die Seite auf ruhpolding.de, die zu einem Flyer gehört. */
+const FLYER_WEB: Partial<Record<FlyerId, WebId>> = {
+  wandern: "wanderwege",
+  gipfel: "gipfeltouren",
+  rad: "biketouren",
+  almsommer: "almen",
+}
+
+/** Die Seite zu einem Ziel: die eigene, sonst die seines Flyers. */
+export function webVon(eintrag: Ziel): WebId | undefined {
+  return eintrag.web ?? (eintrag.flyer ? FLYER_WEB[eintrag.flyer] : undefined)
 }
 
 /** Darf das Ziel in einer Vorschlagsliste auftauchen? */
@@ -270,13 +332,13 @@ export const ZIELE: Ziel[] = [
   {
     id: "dreiseen",
     flyer: "wandern",
-    suche: "Wanderparkplatz Wildbachfurt",
+    suche: "Parkplatz Langer Sand",
     name: "Drei-Seen-Gebiet",
     nameEn: "Three-lakes area",
     beschreibung:
-      "Eine Runde an Löden-, Mitter- und Weitsee im Naturschutzgebiet. Start ist an der Wildbachfurt.",
+      "Eine Runde an Löden-, Mitter- und Weitsee im Naturschutzgebiet. Start ist am Parkplatz Langer Sand.",
     beschreibungEn:
-      "A walk past the Lödensee, Mittersee and Weitsee in the nature reserve. It starts at Wildbachfurt.",
+      "A walk past the Lödensee, Mittersee and Weitsee in the nature reserve. It starts at the Langer Sand car park.",
     eckdaten: "6,6 km · 2:00 h · 100 Höhenmeter",
     eckdatenEn: "6.6 km · 2:00 h · 100 m ascent",
     geeignet: {
@@ -528,6 +590,7 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "hoerndlwand",
+    bild: "hoerndlwand",
     flyer: "gipfel",
     schwierigkeit: "schwer",
     suche: "Seehaus",
@@ -591,7 +654,7 @@ export const ZIELE: Ziel[] = [
     flyer: "gipfel",
     schwierigkeit: "schwer",
     tagesfuellend: true,
-    suche: "Wanderparkplatz Laubau",
+    suche: "Parkplatz Holzknechtmuseum",
     name: `${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe})`,
     nameEn: `${WANDERN.sonntagshorn} (1,961 m)`,
     beschreibung:
@@ -628,12 +691,13 @@ export const ZIELE: Ziel[] = [
    * ---------------------------------------------------------------- */
   {
     id: "rauschberg",
+    web: "bergbahnen",
     // Belegt: kein Fahrbetrieb wegen des geplanten Neubaus, siehe daten.ts.
     ausserBetrieb: {
       de: "Die Rauschbergbahn fährt derzeit nicht, weil sie neu gebaut wird. Ein Termin für die Wiederaufnahme ist nicht bekannt.",
       en: "The Rauschberg lift is not running at present because it is being rebuilt. No date for reopening is known.",
     },
-    suche: "Talstation Rauschbergbahn",
+    suche: "Rauschbergbahn Talstation",
     name: BERGBAHNEN.rauschbergName,
     nameEn: BERGBAHNEN.rauschbergName,
     beschreibung: "Die Talstation der Rauschbergbahn im Ort.",
@@ -655,8 +719,9 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "unternberg",
+    web: "unternberg",
     flyer: "almsommer",
-    suche: "Talstation Unternbergbahn",
+    suche: "Unternbergbahn",
     name: `${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn}`,
     nameEn: `${BERGBAHNEN.unternbergName} by ${BERGBAHNEN.unternbergBahnEn}`,
     beschreibung: `Mit der ${BERGBAHNEN.unternbergBahn} auf den ${BERGBAHNEN.unternbergName}, ohne selbst aufzusteigen. Oben liegen die Unternberg Alm und die Boider Alm.`,
@@ -797,6 +862,7 @@ export const ZIELE: Ziel[] = [
    * ---------------------------------------------------------------- */
   {
     id: "vitalwelt",
+    web: "baeder",
     flyer: "ortsplan",
     suche: "Vita Alpina",
     name: FAMILIE.vitalwelt,
@@ -814,7 +880,9 @@ export const ZIELE: Ziel[] = [
     zeitenErfragen: true,
     topic: "familie",
     naehe: "vitalwelt",
-    interessen: ["familie", "gemuetlich"],
+    // Sport seit dem 23.09.2026: ruhpolding.de/baeder-und-seen nennt
+    // Wellenbad und Wasserrutsche "zum Austoben". Bei Regen die Wahl drinnen.
+    interessen: ["familie", "gemuetlich", "sport"],
     drinnen: true,
     kurz: true,
     stichwoerter: [
@@ -834,6 +902,7 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "freizeitpark",
+    web: "freizeit",
     flyer: "ortsplan",
     suche: "Freizeitpark Ruhpolding",
     name: FAMILIE.freizeitpark,
@@ -862,6 +931,8 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "coaster",
+    bild: "coaster",
+    web: "coaster",
     flyer: "ortsplan",
     suche: "Chiemgau Coaster",
     name: "Chiemgau Coaster",
@@ -883,6 +954,8 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "heimatmuseum",
+    bild: "heimatmuseum",
+    web: "heimatmuseum",
     flyer: "ortsplan",
     suche: "Heimatmuseum Ruhpolding",
     name: FAMILIE.heimatmuseum,
@@ -904,6 +977,8 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "holzknechtmuseum",
+    bild: "holzknechtmuseum",
+    web: "holzknechtmuseum",
     flyer: "ortsplan",
     suche: "Holzknechtmuseum",
     name: KULTUR.holzknechtmuseum,
@@ -926,8 +1001,9 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "glockenschmiede",
+    web: "museen",
     flyer: "ortsplan",
-    suche: "Glockenschmiede",
+    suche: "Glockenschmiede Museum",
     name: KULTUR.glockenschmiede,
     nameEn: KULTUR.glockenschmiedeEn,
     beschreibung:
@@ -949,6 +1025,7 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "kirche",
+    web: "kirchen",
     flyer: "ortsplan",
     suche: KULTUR.kirche,
     name: KULTUR.kirche,
@@ -1044,6 +1121,7 @@ export const ZIELE: Ziel[] = [
    * ---------------------------------------------------------------- */
   {
     id: "post",
+    web: "restaurants",
     suche: "Hotel zur Post",
     name: GASTRONOMIE.gasthausPost,
     nameEn: GASTRONOMIE.gasthausPost,
@@ -1066,6 +1144,7 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "pizzeria",
+    web: "restaurants",
     suche: "Made in Italy Ruhpolding",
     name: GASTRONOMIE.pizzeria,
     nameEn: GASTRONOMIE.pizzeria,
@@ -1088,6 +1167,207 @@ export const ZIELE: Ziel[] = [
   },
 
   /* ---------------------------------------------------------------- *
+   * Sport, Quelle ruhpolding.de/zeit-fuer-bewegung und die dort verlinkten
+   * Seiten, abgerufen 2026-09-23. Rad und Mountainbike stehen oben bei den
+   * Radtouren, Wintersport unter "Winter".
+   * ---------------------------------------------------------------- */
+  {
+    id: "tandemflug",
+    web: "paragleiten",
+    bild: "tandemflug",
+    suche: "Unternbergbahn",
+    name: "Tandem-Gleitschirmflug am Unternberg",
+    nameEn: "Tandem paragliding at the Unternberg",
+    // ruhpolding.de/der-traum-vom-fliegen: "Mit einem Tandempiloten kann
+    // hier jeder abheben." Die Flugschule Freiraum sitzt am Fuß des
+    // Unternbergs. ruhpolding.de/fliegen-und-paragleiten: Landeplatz in
+    // Bärngschwendt.
+    beschreibung:
+      "Der Unternberg ist ein Lieblingsrevier der Gleitschirmflieger. Mit einem Tandempiloten kann dort jeder abheben, auch ohne eigene Flugerfahrung. Tandemflüge bietet die Flugschule Freiraum am Fuß des Unternbergs an.",
+    beschreibungEn:
+      "The Unternberg is a favourite spot for paragliders. With a tandem pilot anyone can take off there, even without flying experience. Tandem flights are offered by the Freiraum flying school at the foot of the Unternberg.",
+    eckdaten: "Tandemflug mit Pilot · Start am Unternberg · Landeplatz in Bärngschwendt",
+    eckdatenEn: "Tandem flight with a pilot · take-off at the Unternberg · landing field in Bärngschwendt",
+    geeignet: {
+      de: "Alle, die einmal fliegen möchten. Im Bericht auf ruhpolding.de war der jüngste Passagier des Piloten vier Jahre alt, der älteste über 80.",
+      en: "Anyone who would like to fly once. In the report on ruhpolding.de the pilot's youngest passenger was four years old, the oldest over 80.",
+    },
+    achtung: {
+      de: "Ob geflogen wird, entscheiden Wetter und Wind. Einen Termin vereinbaren Sie mit der Flugschule.",
+      en: "Whether you fly depends on the weather and the wind. You arrange a date with the flying school.",
+    },
+    topic: "sport",
+    interessen: ["sport"],
+    beiRegenNicht: true,
+    stichwoerter: [
+      "tandemflug",
+      "tandem",
+      "gleitschirm",
+      "gleitschirmflug",
+      "gleitschirmfliegen",
+      "paragliding",
+      "paraglider",
+      "fliegen",
+      "freiraum",
+    ],
+  },
+  {
+    id: "flyline",
+    web: "fly-line",
+    bild: "flyline",
+    suche: "Unternbergbahn",
+    name: "Fly-Line am Unternberg",
+    nameEn: "Fly-Line at the Unternberg",
+    beschreibung:
+      "Eine sanfte Fahrt im Sitzgurt durch den Wald, mit Blick auf das Bergpanorama. Ein geschultes Trainerteam begleitet die Fahrt. Mit der Chiemgau Karte ist pro angefangener Urlaubswoche eine Einzelfahrt inklusive.",
+    beschreibungEn:
+      "A gentle ride in a harness through the forest, with a view of the mountain panorama. A trained team accompanies the ride. With the Chiemgau Karte one single ride per started holiday week is included.",
+    eckdaten: "rund 600 m · Fahrt etwa 11 Minuten, davon 4:30 Minuten Abfahrt",
+    eckdatenEn: "about 600 m · ride about 11 minutes, 4:30 minutes of it downhill",
+    geeignet: {
+      de: "Familien, Freundeskreise und Gruppen.",
+      en: "Families, friends and groups.",
+    },
+    achtung: {
+      de: "Geöffnet in der Sommersaison. Laut ruhpolding.de können die Zeiten am Unternberg je nach Wetter abweichen.",
+      en: "Open in the summer season. According to ruhpolding.de the times at the Unternberg can vary with the weather.",
+    },
+    zeitenErfragen: true,
+    topic: "sport",
+    interessen: ["sport", "familie"],
+    kurz: true,
+    stichwoerter: ["flyline", "fly", "line", "zipline"],
+  },
+  {
+    id: "bergfit",
+    web: "bergfit",
+    bild: "bergfit",
+    suche: "Rathaus Ruhpolding",
+    name: "BergFit-Weg",
+    nameEn: "BergFit trail",
+    beschreibung:
+      "Ein Fitnesstest im Gehen, vom Rathaus hinauf zum Adlerhügel. Oben zeigt die Auswertung, welche Tourenschwierigkeit gerade zu Ihrer Kondition passt: leicht, mittel oder schwer.",
+    beschreibungEn:
+      "A fitness test on foot, from the town hall up to the Adlerhügel. At the top the evaluation shows which tour difficulty currently suits your fitness: easy, medium or hard.",
+    eckdaten: "1,4 km · 0:25 h · 92 Höhenmeter · leicht",
+    eckdatenEn: "1.4 km · 0:25 h · 92 m ascent · easy",
+    schwierigkeit: "leicht",
+    geeignet: {
+      de: "Alle, die vor einer Bergtour wissen wollen, was sie sich zutrauen können.",
+      en: "Anyone who wants to know before a mountain tour what they can take on.",
+    },
+    achtung: {
+      de: "Mitnehmen: Pulsmessung mit Brust- oder Oberarmgurt (Verleih bei Sport Plenk, Hauptstraße 55), eine Uhr und festes Schuhwerk. Der Test wird gegangen, nicht gelaufen.",
+      en: "Bring: heart rate measurement with a chest or arm strap (hire at Sport Plenk, Hauptstraße 55), a watch and sturdy shoes. The test is walked, not run.",
+    },
+    topic: "sport",
+    interessen: ["sport"],
+    kurz: true,
+    stichwoerter: ["bergfit", "fitnesstest", "fitness", "kondition", "adlerhuegel"],
+  },
+  {
+    id: "terrainkur",
+    web: "terrainkur",
+    suche: "Naturschutzgebiet Drei-Seen-Gebiet",
+    name: "Terrainkurweg Klein Kanada",
+    nameEn: "Klein Kanada terrain cure trail",
+    beschreibung:
+      "Ein ausgeschilderter Gesundheitsweg für dosiertes Ausdauertraining, auf 750 bis 780 Metern Höhe. Unterwegs gibt es Ruhemöglichkeiten.",
+    beschreibungEn:
+      "A signposted health trail for measured endurance training, at 750 to 780 metres altitude. There are places to rest along the way.",
+    eckdaten: "6,6 km · 2:00 h · 30 Höhenmeter · leicht",
+    eckdatenEn: "6.6 km · 2:00 h · 30 m ascent · easy",
+    schwierigkeit: "leicht",
+    geeignet: {
+      de: "Laut ruhpolding.de für Menschen mit unterschiedlicher Leistungsfähigkeit, im eigenen Tempo.",
+      en: "According to ruhpolding.de for people of differing fitness, at their own pace.",
+    },
+    topic: "sport",
+    interessen: ["sport", "gemuetlich"],
+    stichwoerter: ["terrainkur", "terrainkurweg", "kanada", "gesundheitsweg", "walking"],
+  },
+  {
+    id: "golfclub",
+    web: "golf",
+    bild: "golf",
+    suche: "Golfclub Ruhpolding",
+    name: "Golfclub Ruhpolding",
+    nameEn: "Ruhpolding golf club",
+    beschreibung:
+      "Golf mit Bergpanorama, mit großer Übungsanlage und Schnupperangeboten. Laut ruhpolding.de geeignet vom Anfänger bis zum Profi.",
+    beschreibungEn:
+      "Golf with a mountain panorama, a large practice area and taster offers. According to ruhpolding.de suitable from beginner to pro.",
+    eckdaten: "Rauschbergstraße 1a · Tel. +49 8663 2461",
+    eckdatenEn: "Rauschbergstraße 1a · phone +49 8663 2461",
+    geeignet: {
+      de: "Geübte Golfer und Einsteiger. Wer es ausprobieren will, fängt am besten mit einem Schnupperkurs an.",
+      en: "Experienced golfers and beginners. Anyone who wants to try it is best off starting with a taster course.",
+    },
+    achtung: {
+      de: "Ein Polohemd reicht, Jogginghose und ärmelloses Shirt gehen nicht.",
+      en: "A polo shirt is fine, tracksuit bottoms and sleeveless shirts are not.",
+    },
+    zeitenErfragen: true,
+    topic: "sport",
+    interessen: ["sport"],
+    stichwoerter: ["golf", "golfen", "golfclub", "golfplatz", "abschlag", "platzreife"],
+  },
+  {
+    id: "adventuregolf",
+    web: "adventure-golf",
+    bild: "adventuregolf",
+    suche: "Adventure Golf Park Ruhpolding",
+    name: "Adventure Golf Park",
+    nameEn: "Adventure Golf Park",
+    beschreibung:
+      "18 Themenbahnen, dazu 5 Bahnen Kleingolf, die echtes Golfspiel nachahmen. Mit der Chiemgau Karte einmal pro angefangener Urlaubswoche frei.",
+    beschreibungEn:
+      "18 themed holes plus 5 short-golf holes that imitate real golf. Free once per started holiday week with the Chiemgau Karte.",
+    eckdaten: "je nach Witterung Mitte/Ende März bis Ende November · Tel. +49 8663 2461",
+    eckdatenEn: "depending on the weather mid/late March to end of November · phone +49 8663 2461",
+    geeignet: {
+      de: "Familien, Freundeskreise und Gruppen.",
+      en: "Families, friends and groups.",
+    },
+    achtung: {
+      de: "Bei Regen können die Öffnungszeiten abweichen. Im Zweifel vorher anrufen.",
+      en: "In the rain the opening hours may differ. If in doubt, call ahead.",
+    },
+    topic: "sport",
+    interessen: ["sport", "familie"],
+    beiRegenNicht: true,
+    kurz: true,
+    stichwoerter: ["adventuregolf", "adventure", "themenbahn", "kleingolf"],
+  },
+  {
+    id: "minigolf",
+    web: "minigolf",
+    bild: "minigolf",
+    suche: "Minigolf am Kurhaus",
+    name: "Minigolf am Kurhaus",
+    nameEn: "Minigolf at the Kurhaus",
+    beschreibung:
+      "Minigolf, Jetgolf, PitPat, Tischtennis, Tischfußball und Billard, etwa 50 Meter südlich des Kurparks. Bei Dunkelheit wird mit Flutlicht gespielt.",
+    beschreibungEn:
+      "Minigolf, jet golf, PitPat, table tennis, table football and billiards, about 50 metres south of the spa park. After dark they play under floodlights.",
+    eckdaten: "Kurhausstraße 7a · Tel. +49 8663 5663",
+    eckdatenEn: "Kurhausstraße 7a · phone +49 8663 5663",
+    geeignet: {
+      de: "Familien und alle, die es gesellig mögen.",
+      en: "Families and anyone who likes it sociable.",
+    },
+    achtung: {
+      de: "Geöffnet bei trockener Witterung.",
+      en: "Open in dry weather.",
+    },
+    topic: "sport",
+    interessen: ["sport", "familie", "gemuetlich"],
+    beiRegenNicht: true,
+    kurz: true,
+    stichwoerter: ["minigolf", "jetgolf", "pitpat", "tischtennis", "billard"],
+  },
+
+  /* ---------------------------------------------------------------- *
    * Nicht belegt: werden gefunden, aber nicht beschrieben
    * ---------------------------------------------------------------- */
   {
@@ -1102,33 +1382,6 @@ export const ZIELE: Ziel[] = [
     eckdatenEn: "",
     topic: "wandern",
     stichwoerter: ["foerchensee", "barfussweg"],
-  },
-  {
-    id: "gipfelalm",
-    ungesichert:
-      "keine Gipfelalm in der Gastronomieliste, und die Bahn dorthin fährt nicht",
-    suche: "Gipfelalm Rauschberg",
-    name: GASTRONOMIE.gipfelalm,
-    nameEn: GASTRONOMIE.gipfelalm,
-    beschreibung: "",
-    beschreibungEn: "",
-    eckdaten: "",
-    eckdatenEn: "",
-    topic: "essen",
-    stichwoerter: ["gipfelalm", "berghuett", "bergstation"],
-  },
-  {
-    id: "sportamort",
-    ungesichert: "kein Verleihbetrieb dieses Namens in einer Quelle genannt",
-    suche: "Sport Amort",
-    name: WINTER.sportgeschaeft,
-    nameEn: WINTER.sportgeschaeft,
-    beschreibung: "",
-    beschreibungEn: "",
-    eckdaten: "",
-    eckdatenEn: "",
-    topic: "winter",
-    stichwoerter: ["sportamort", "skiverleih"],
   },
   {
     id: "kurpark",
@@ -1187,6 +1440,7 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "westernberg",
+    web: "ski-alpin",
     suche: "Skigebiet Westernberg",
     name: `Skigebiet ${WINTER.skigebiet}`,
     nameEn: `${WINTER.skigebiet} ski area`,
@@ -1212,6 +1466,7 @@ export const ZIELE: Ziel[] = [
    * ---------------------------------------------------------------- */
   {
     id: "touristinfo",
+    web: "kontakt",
     flyer: "ortsplan",
     suche: "Tourist Information",
     name: "Tourist-Information Ruhpolding",
@@ -1264,7 +1519,7 @@ export const ZIELE: Ziel[] = [
   },
   {
     id: "laubau",
-    suche: "Wanderparkplatz Laubau",
+    suche: "Parkplatz Holzknechtmuseum",
     name: PARKEN.laubau,
     nameEn: PARKEN.laubauEn,
     beschreibung: `Ausgangspunkt für die Touren im Süden, unter anderem für den Aufstieg auf das ${WANDERN.sonntagshorn}.`,
@@ -1418,7 +1673,27 @@ export const GRUPPEN: Record<string, Gruppe> = {
       "brander",
       "post",
       "pizzeria",
-      "gipfelalm",
+    ],
+  },
+  sport: {
+    id: "sport",
+    einleitung: [
+      "Sportlich hat Ruhpolding einiges zu bieten. Zum Beispiel:",
+      "Wer sich bewegen will, ist hier richtig. Ein paar Ideen:",
+    ],
+    einleitungEn: [
+      "Ruhpolding has plenty to offer for sport. For example:",
+      "If you want to get moving, you are in the right place. A few ideas:",
+    ],
+    ziele: [
+      "tandemflug",
+      "flyline",
+      "golfclub",
+      "bergfit",
+      "adventuregolf",
+      "terrainkur",
+      "minigolf",
+      "vitalwelt",
     ],
   },
   winter: {
@@ -1431,7 +1706,7 @@ export const GRUPPEN: Record<string, Gruppe> = {
       "For winter, these come into question:",
       "In winter mainly these:",
     ],
-    ziele: ["arena", "westernberg", "coaster", "sportamort"],
+    ziele: ["arena", "westernberg", "coaster"],
   },
   events: {
     id: "events",

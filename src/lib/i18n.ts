@@ -1,4 +1,5 @@
 import { TOPICS, type Chip, type FlowNode } from "@/lib/chat-flow"
+import { WEB } from "@/lib/web"
 import { type Sprache } from "@/lib/sprache"
 import {
   ANREISE,
@@ -177,13 +178,40 @@ const CHIPS_GLOBAL: Record<string, string> = {
   "ziel:sonntagshorn": `Route to the ${WANDERN.sonntagshorn}`,
   "ziel:arena": `Route to the ${EVENTS.chiemgauArena}`,
   "ziel:rathausgarage": "Route to the car park",
+  // Seiten auf ruhpolding.de (web.ts). Auch dort, wo die deutsche Aufschrift
+  // eine eigene ist ("Alle Touren auf ruhpolding.de").
+  ...Object.fromEntries(
+    Object.values(WEB).map((seite) => [
+      `web:${seite.id}`,
+      `${seite.titelEn} on ruhpolding.de`,
+    ])
+  ),
+  "web:alle-wandertouren": "All tours on ruhpolding.de",
+  "web:wetter": "Forecast on ruhpolding.de",
+  "web:webcams": "Webcams on ruhpolding.de",
+  "web:unterkunft": "Search accommodation on ruhpolding.de",
 }
 
 const EN: Record<string, Uebersetzung> = {
+  sport: {
+    kurz: [
+      "As I said: from tandem flights at the Unternberg to golf and the BergFit trail, there is plenty on offer.",
+    ],
+    messages: [
+      "Ruhpolding has plenty on offer for sport: tandem paragliding and the Fly-Line at the Unternberg, golf and adventure golf, and the BergFit trail, which tests your fitness for the mountains.",
+      "Cycling and mountain biking are part of it too, and in winter cross-country and downhill skiing. Shall I find something that suits you?",
+    ],
+    chips: {
+      "bedarf:i=sport": "Yes, please",
+      "bedarf:i=rad": "Cycling & MTB",
+      winter: "Winter sports",
+      "web:sport": "All sports on ruhpolding.de",
+    },
+  },
   start: {
     messages: [
-      "Grüß Gott, and welcome to the Ruhpolding tourist information. I am the digital assistant and help with questions about your stay.",
-      "You are currently at {standort:kurz}. Just tell me what you have in mind and I will find what suits you. You can also choose below.",
+      "Grüß Gott, and a warm welcome to Ruhpolding! Lovely to have you here. I am the digital assistant of the tourist information and I am happy to help with anything about your stay.",
+      "You are currently at {standort:kurz}. Just tell me what you have in mind and I will find what suits you. Or tap a topic below.",
     ],
     chips: {
       "bedarf:": "What can I do here?",
@@ -194,7 +222,12 @@ const EN: Record<string, Uebersetzung> = {
     },
   },
   menu: {
-    messages: ["Of course. What else can I help you with?"],
+    messages: [
+      [
+        "Of course. What else can I help you with?",
+        "Gladly. What else would you like to know?",
+      ],
+    ],
   },
   danke: {
     messages: [
@@ -434,13 +467,13 @@ const EN: Record<string, Uebersetzung> = {
   },
   "wetter-3tage": {
     messages: [
-      "I do not hold a forecast for the coming days.",
+      "I do not hold a forecast for the coming days myself. The current forecast for Ruhpolding is on ruhpolding.de, though.",
       "The tourist information's tour flyers advise checking the weather forecast and the route carefully before every tour.",
     ],
   },
   "wetter-webcam": {
     messages: [
-      "I cannot show webcam images here, and I do not hold reliable information on which webcams exist in the village.",
+      "I cannot show webcam images here. ruhpolding.de has a webcam page, though, including a view over Ruhpolding to the Rauschberg and one from the Hochfelln towards the Chiemsee.",
     ],
   },
   "essen-huette": {
@@ -474,8 +507,8 @@ const EN: Record<string, Uebersetzung> = {
   },
   "winter-verleih": {
     messages: [
-      "Ruhpolding Tourismus does not name any hire shops, so I have none on record.",
-      `At the tourist information desk someone will help you in person (${TOURIST_INFO.oeffnungszeitenEn}).`,
+      "Under „Ski- & Snowboard Verleih“ Ruhpolding Tourismus lists Sport Plenk, the Langlaufschule Ruhpolding and the Langlauf- & Wintersportschule. I have no prices or times for them.",
+      "I am happy to give you the overview of all ski schools and hire shops.",
     ],
   },
   "unterkunft-hof": {
