@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { BERGBAHNEN } from "@/lib/daten"
 import { type Sprache } from "@/lib/sprache"
+import { WETTER, type Wetter } from "@/lib/wetter"
 
 /**
  * Simulierter Aufstellort des Terminals.
@@ -36,39 +37,33 @@ export type Standort = {
 }
 
 /*
- * DATEN: vom Autor zu ersetzen. Sämtliche Wegangaben in diesem Block sind
- * Platzhalter. Sie sind so formuliert, dass sie auch dann tragen, wenn Ziel
- * und Aufstellort zusammenfallen.
+ * Wegangaben nur, wo sie belegt sind.
+ *
+ * Bis zum 23.09.2026 standen hier Platzhalter wie "12 Gehminuten". Einer
+ * davon war nachweislich falsch: von der Tourist-Information zum Bahnhof
+ * "10 Gehminuten", obwohl beide im Bahnhofsgebäude liegen (Ortsplan, Feld
+ * N9). Eine geratene Entfernung schickt Gäste los wie eine geratene
+ * Öffnungszeit. Deshalb stehen hier nur noch die Angaben, die belegt sind.
+ * Fehlt eine, lässt aufloesen() den Satz weg, in dem sie stünde.
+ *
+ * DATEN: Weitere Gehzeiten vom Autor nachzutragen, sobald belegt.
  */
 export const STANDORTE: Standort[] = [
   {
     id: "info",
     // Ohne Straße: mit ihr lief der Name im Umschalter unter den Pfeil.
-    // Welche Adresse die Tourist-Information hat, steht ohnehin auf ihrer
-    // Kontaktkarte, und hier ist nur der Aufstellort zu unterscheiden.
     label: "Tourist-Information",
     kurz: "an der Tourist-Information",
     kurzEn: "the tourist information",
-    // DATEN: vom Autor zu ersetzen
-    angebot:
-      "Der Ortskern mit den Geschäften und der Gastronomie liegt direkt vor der Tür, der Kurpark ein paar Schritte weiter. Zur Talstation der Bergbahn und zur Vitalwelt sind es jeweils ein kurzer Fußweg.",
-    angebotEn:
-      "The village centre with its shops and restaurants is right outside, the spa gardens a few steps further. The valley station and the Vitalwelt are both a short walk away.",
+    angebot: "",
+    angebotEn: "",
     naehe: {
-      // DATEN: vom Autor zu ersetzen
-      touristinfo: "ein paar Schritte",
-      rauschberg: "12 Gehminuten",
-      arena: "20 Gehminuten",
-      vitalwelt: "5 Gehminuten",
-      bahnhof: "10 Gehminuten",
+      touristinfo: "nur wenige Schritte",
+      bahnhof: "nur wenige Schritte, beide liegen im Bahnhofsgebäude",
     },
     naeheEn: {
-      // DATEN: vom Autor zu ersetzen
-      touristinfo: "a few steps",
-      rauschberg: "a 12 minute walk",
-      arena: "a 20 minute walk",
-      vitalwelt: "a 5 minute walk",
-      bahnhof: "a 10 minute walk",
+      touristinfo: "just a few steps",
+      bahnhof: "just a few steps, both are in the station building",
     },
   },
   {
@@ -76,26 +71,15 @@ export const STANDORTE: Standort[] = [
     label: "Bahnhof Ruhpolding",
     kurz: "am Bahnhof",
     kurzEn: "the railway station",
-    // DATEN: vom Autor zu ersetzen
-    angebot:
-      "Vom Bahnhof fährt der Ortsbus in den Ortskern und weiter zu den Talstationen, mit der Gästekarte kostenlos. Zu Fuß erreichst du das Zentrum in einer knappen Viertelstunde.",
-    angebotEn:
-      "The local bus runs from the station into the village and on to the valley stations, free with the guest card. The centre is a quarter of an hour on foot.",
+    angebot: "",
+    angebotEn: "",
     naehe: {
-      // DATEN: vom Autor zu ersetzen
-      touristinfo: "10 Gehminuten",
-      rauschberg: "20 Gehminuten",
-      arena: "25 Gehminuten",
-      vitalwelt: "12 Gehminuten",
-      bahnhof: "keine zwei Schritte",
+      touristinfo: "nur wenige Schritte, sie liegt im Bahnhofsgebäude",
+      bahnhof: "nur wenige Schritte",
     },
     naeheEn: {
-      // DATEN: vom Autor zu ersetzen
-      touristinfo: "a 10 minute walk",
-      rauschberg: "a 20 minute walk",
-      arena: "a 25 minute walk",
-      vitalwelt: "a 12 minute walk",
-      bahnhof: "no distance at all",
+      touristinfo: "just a few steps, it is in the station building",
+      bahnhof: "just a few steps",
     },
   },
   {
@@ -103,24 +87,13 @@ export const STANDORTE: Standort[] = [
     label: `Talstation ${BERGBAHNEN.rauschbergName}`,
     kurz: `an der Talstation ${BERGBAHNEN.rauschbergName}`,
     kurzEn: `the ${BERGBAHNEN.rauschbergName} valley station`,
-    // DATEN: vom Autor zu ersetzen
-    angebot: `Hier startet die ${BERGBAHNEN.rauschbergBahn} auf den Berg, oben warten die Gipfelwege und die Einkehr mit Panoramaterrasse. Unten führen mehrere markierte Wanderwege direkt ab der Talstation los.`,
-    angebotEn: `The ${BERGBAHNEN.rauschbergBahn} starts here; at the top you will find the summit trails and a terrace to stop at. Down here several marked hiking paths begin right at the valley station.`,
+    angebot: "",
+    angebotEn: "",
     naehe: {
-      // DATEN: vom Autor zu ersetzen
-      touristinfo: "12 Gehminuten",
-      rauschberg: "keine 100 Meter",
-      arena: "15 Gehminuten",
-      vitalwelt: "15 Gehminuten",
-      bahnhof: "20 Gehminuten",
+      rauschberg: "nur wenige Schritte",
     },
     naeheEn: {
-      // DATEN: vom Autor zu ersetzen
-      touristinfo: "a 12 minute walk",
-      rauschberg: "less than 100 metres",
-      arena: "a 15 minute walk",
-      vitalwelt: "a 15 minute walk",
-      bahnhof: "a 20 minute walk",
+      rauschberg: "just a few steps",
     },
   },
 ]
@@ -134,12 +107,55 @@ export const STANDORTE: Standort[] = [
 export function aufloesen(
   text: string,
   standort: Standort,
-  sprache: Sprache = "de"
+  sprache: Sprache = "de",
+  wetter: Wetter = WETTER[0]
+): string {
+  return ersetze(ohneUnbekannteWege(text, standort, sprache), standort, sprache, wetter)
+}
+
+/**
+ * Nimmt Zeilen und Sätze heraus, deren Wegangabe am Aufstellort nicht belegt
+ * ist. "Von hier sind es {naehe:arena}." wird sonst zu "Von hier sind es ."
+ * oder, schlimmer, zu einer geratenen Zahl.
+ */
+function ohneUnbekannteWege(
+  text: string,
+  standort: Standort,
+  sprache: Sprache
+): string {
+  const wege = sprache === "en" ? standort.naeheEn : standort.naehe
+  const unbekannt = (teil: string) =>
+    [...teil.matchAll(/\{naehe:([a-zA-Z]+)\}/g)].some(
+      (treffer) => !wege[treffer[1]]
+    )
+  return text
+    .split("\n")
+    .filter((zeile) => !(zeile.trim().startsWith("—") && unbekannt(zeile)))
+    .map((zeile) =>
+      zeile
+        .split(/(?<=[.!?])\s+/)
+        .filter((satz) => !unbekannt(satz))
+        .join(" ")
+    )
+    .filter((zeile) => zeile.length > 0)
+    .join("\n")
+}
+
+function ersetze(
+  text: string,
+  standort: Standort,
+  sprache: Sprache = "de",
+  wetter: Wetter = WETTER[0]
 ): string {
   const en = sprache === "en"
   return text.replace(
-    /\{(naehe|standort):([a-zA-Z]+)\}/g,
+    /\{(naehe|standort|wetter):([a-zA-Z]+)\}/g,
     (_treffer, art: string, schluessel: string) => {
+      if (art === "wetter") {
+        if (schluessel === "lage") return en ? wetter.lageEn : wetter.lage
+        if (schluessel === "kurz") return en ? wetter.kurzEn : wetter.kurz
+        return ""
+      }
       if (art === "standort") {
         if (schluessel === "kurz") return en ? standort.kurzEn : standort.kurz
         if (schluessel === "label") return standort.label

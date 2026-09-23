@@ -34,10 +34,10 @@ export function istWiederholung(verlauf: Verlauf, node: FlowNode): boolean {
 }
 
 const RUECKBEZUEGE = [
-  "Du hattest vorhin nach {thema} gefragt, dazu passt das hier gut.",
-  "Nach {thema} hattest du ja schon gefragt, das ergänzt sich gut.",
-  "Das schließt an {thema} an, wonach du vorhin gefragt hattest.",
-  "Vorhin ging es dir um {thema}, jetzt schauen wir hier weiter.",
+  "Sie hatten vorhin nach {thema} gefragt, dazu passt das hier gut.",
+  "Nach {thema} hatten Sie ja schon gefragt, das ergänzt sich gut.",
+  "Das schließt an {thema} an, wonach Sie vorhin gefragt hatten.",
+  "Vorhin ging es Ihnen um {thema}, jetzt schauen wir hier weiter.",
 ] as const
 
 const RUECKBEZUEGE_EN = [

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Info, NotebookPen } from "lucide-react"
 
 import { BotAvatar } from "@/components/chat/bot-avatar"
 import { QrCard } from "@/components/chat/qr-card"
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui/table"
 import type { ChatMessage } from "@/hooks/use-chat"
 import type { DataTable, InfoCard } from "@/lib/chat-flow"
+import type { HinweisKarte } from "@/lib/meldungen"
+import type { ZettelAnsicht } from "@/lib/zettel"
 import { cn } from "@/lib/utils"
 
 const bubbleBase =
@@ -113,6 +116,73 @@ function DataTableView({ table }: { table: DataTable }) {
   )
 }
 
+/**
+ * Ein aktueller Hinweis, abgesetzt von der Antwort.
+ *
+ * Er soll als Meldung erkennbar sein und nicht als Teil des Gesprächs, denn
+ * er stammt aus einer anderen Quelle als die Antwort. Deshalb trägt er ein
+ * Symbol und in der Fußzeile Quelle und Stand.
+ */
+function HinweisView({ hinweis }: { hinweis: HinweisKarte }) {
+  return (
+    <Card size="sm" className="w-full max-w-full border-l-4 border-l-primary">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <Info className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          {hinweis.titel}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-1.5">
+        <p className="text-sm [overflow-wrap:anywhere]">{hinweis.text}</p>
+        <p className="text-xs text-muted-foreground">{hinweis.herkunft}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * Der Zettel des Gasts.
+ *
+ * Wie ein Blatt aufgebaut: Titel, je Eintrag eine Überschrift mit den
+ * Zeilen darunter, und unten der Absender. So sieht auch der Ausdruck aus,
+ * den das Terminal ausgeben würde.
+ */
+function ZettelView({ zettel }: { zettel: ZettelAnsicht }) {
+  return (
+    <Card size="sm" className="w-full max-w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <NotebookPen
+            className="size-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          {zettel.titel}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        {zettel.eintraege.map((eintrag, index) => (
+          <div key={eintrag.quelle} className="grid gap-0.5">
+            <p className="text-sm font-medium">
+              {index + 1}. {eintrag.titel}
+            </p>
+            {eintrag.zeilen.map((zeile) => (
+              <p
+                key={zeile}
+                className="text-sm [overflow-wrap:anywhere] text-muted-foreground"
+              >
+                {zeile}
+              </p>
+            ))}
+          </div>
+        ))}
+        <p className="border-t pt-2 text-xs text-muted-foreground">
+          {zettel.fuss}
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
 type MessageItemProps = {
   message: ChatMessage
   showAvatar: boolean
@@ -159,6 +229,10 @@ export const MessageItem = React.memo(function MessageItem({
           <InfoCardView card={message.card} />
         ) : message.kind === "table" ? (
           <DataTableView table={message.table} />
+        ) : message.kind === "hinweis" ? (
+          <HinweisView hinweis={message.hinweis} />
+        ) : message.kind === "zettel" ? (
+          <ZettelView zettel={message.zettel} />
         ) : (
           <QrCard qr={message.qr} />
         )}

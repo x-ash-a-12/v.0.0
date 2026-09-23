@@ -103,11 +103,11 @@ export const BERGBAHNEN = {
  */
 export const WANDERN = {
   /**
-   * @ungeprueft Keine offizielle Gesamtangabe gefunden. Weder die
-   * Wanderübersicht noch die Wegeliste nennt eine Kilometersumme.
-   * Ohne "rund", das Wort steht im Antworttext.
+   * Flyer "Die 10 schönsten Wander- & Spazierwege", Drucklegung 03/25:
+   * "In Ruhpolding locken 240 Kilometer Spazier-, Wander- und Bergwege".
+   * Bis zum 23.09.2026 stand hier ungeprüft "250 km".
    */
-  wegenetzKm: "250 km",
+  wegenetzKm: "240 km",
   /** @ungeprueft auf den geprüften Seiten nicht namentlich genannt */
   foerchensee: "Förchensee",
   /** @ungeprueft kein Rundweg am Förchensee mit Längenangabe gefunden */
@@ -127,6 +127,36 @@ export const WANDERN = {
   sonntagshornStart: "Wanderparkplatz Holzknechtmuseum / Laubau",
   /** Derselbe Ort, für die englische Fassung als Gattung benannt. */
   sonntagshornStartEn: "Holzknechtmuseum / Laubau hikers' car park",
+  /**
+   * Aus der Wegeliste: https://www.ruhpolding.de/schoensten-wander-spazierwege
+   * Abgerufen 2026-09-03. Die Liste nennt Länge und Gehzeit, keine
+   * Schwierigkeit. Deshalb steht im Antworttext auch keine.
+   */
+  taubensee: "Traunauen und Taubensee",
+  taubenseeEn: "Traun meadows and Taubensee",
+  taubenseeLaenge: "8,6 km",
+  taubenseeGehzeit: "2:15 h",
+} as const
+
+/**
+ * Kultur im Ort.
+ *
+ * Museen: https://www.ruhpolding.de/bei-regen, abgerufen 2026-09-03. Die Seite
+ * führt Holzknechtmuseum, Heimatmuseum und Glockenschmiede als Ziele bei
+ * schlechtem Wetter.
+ *
+ * Kirche: Interview Auskunft 22.09.2026, KA [00:13:11]: "Gehen Sie da hinauf
+ * zur Kirche, da haben Sie einen schönen Überblick." Frau Amort nennt die
+ * Kirche nicht beim Namen.
+ */
+export const KULTUR = {
+  holzknechtmuseum: "Holzknechtmuseum",
+  holzknechtmuseumEn: "Holzknechtmuseum (woodcutters' museum)",
+  glockenschmiede: "Glockenschmiede",
+  glockenschmiedeEn: "Glockenschmiede (bell forge)",
+  /** Wanderflyer (Kapellen- & Marterlweg) und Ortsplan (Feld L10). */
+  kirche: "Pfarrkirche St. Georg",
+  kircheEn: "St. George's parish church",
 } as const
 
 /**
@@ -416,6 +446,7 @@ export const FAMILIE = {
   kletterhalleFahrzeit: "15 Minuten",
   kletterhalleFahrzeitEn: "15 minutes",
   heimatmuseum: "Heimatmuseum Ruhpolding",
+  heimatmuseumEn: "Ruhpolding local history museum",
 } as const
 
 /**

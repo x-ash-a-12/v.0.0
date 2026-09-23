@@ -6,6 +6,7 @@ import {
 } from "@/lib/chat-flow"
 import { leitbegriff, type Sprache } from "@/lib/sprache"
 import { themenRangfolge } from "@/lib/verstehen"
+import { schalterSatz } from "@/lib/service"
 
 /**
  * Weicher zweiter Durchgang, wenn kein INTENTS-Muster gegriffen hat.
@@ -38,45 +39,45 @@ export function weicheSuche(text: string): WeicherTreffer[] {
    nichts wortgleich wiederholt. */
 
 const MIT_BEGRIFF_ZWEI = [
-  `Zu „{begriff}" habe ich gerade nichts Passendes hinterlegt. Meinst du {a}, oder suchst du eher {b}?`,
-  `„{begriff}" ist bei mir nicht direkt hinterlegt. Passt {a} zu dem, was du suchst, oder eher {b}?`,
-  `Beim Stichwort „{begriff}" bin ich mir nicht sicher. Geht es dir um {a} oder um {b}?`,
+  `Zu „{begriff}" habe ich gerade nichts Passendes hinterlegt. Meinen Sie {a}, oder suchen Sie eher {b}?`,
+  `„{begriff}" ist bei mir nicht direkt hinterlegt. Passt {a} zu dem, was Sie suchen, oder eher {b}?`,
+  `Beim Stichwort „{begriff}" bin ich mir nicht sicher. Geht es Ihnen um {a} oder um {b}?`,
   `Zu „{begriff}" finde ich nichts Eigenes. Am nächsten dran ist {a}, sonst vielleicht {b}?`,
 ]
 
 const MIT_BEGRIFF_EINS = [
-  `Zu „{begriff}" habe ich nichts Eigenes hinterlegt. Meinst du vielleicht {a}?`,
-  `„{begriff}" ist bei mir nicht direkt hinterlegt. Passt {a} zu dem, was du suchst?`,
-  `Beim Stichwort „{begriff}" bin ich unsicher. Geht es dir um {a}?`,
+  `Zu „{begriff}" habe ich nichts Eigenes hinterlegt. Meinen Sie vielleicht {a}?`,
+  `„{begriff}" ist bei mir nicht direkt hinterlegt. Passt {a} zu dem, was Sie suchen?`,
+  `Beim Stichwort „{begriff}" bin ich unsicher. Geht es Ihnen um {a}?`,
   `Zu „{begriff}" finde ich nichts Genaues. Am nächsten dran wäre {a}.`,
 ]
 
 const OHNE_BEGRIFF_ZWEI = [
-  `Da bin ich mir nicht ganz sicher. Meinst du {a}, oder eher {b}?`,
+  `Da bin ich mir nicht ganz sicher. Meinen Sie {a}, oder eher {b}?`,
   `Das kann ich gerade nicht eindeutig zuordnen. Geht es um {a} oder um {b}?`,
-  `Ich bin nicht sicher, worauf du hinauswillst. Passt {a}, oder eher {b}?`,
-  `Damit ich dich richtig verstehe: {a} oder {b}?`,
+  `Ich bin nicht sicher, worauf Sie hinauswollen. Passt {a}, oder eher {b}?`,
+  `Damit ich Sie richtig verstehe: {a} oder {b}?`,
 ]
 
 const OHNE_BEGRIFF_EINS = [
-  `Da bin ich mir nicht ganz sicher. Meinst du {a}?`,
+  `Da bin ich mir nicht ganz sicher. Meinen Sie {a}?`,
   `Das kann ich gerade nicht eindeutig zuordnen. Geht es um {a}?`,
-  `Ich bin nicht sicher, worauf du hinauswillst. Passt {a}?`,
-  `Damit ich dich richtig verstehe: geht es dir um {a}?`,
+  `Ich bin nicht sicher, worauf Sie hinauswollen. Passt {a}?`,
+  `Damit ich Sie richtig verstehe: Geht es Ihnen um {a}?`,
 ]
 
 const NICHTS_MIT_BEGRIFF = [
-  `Zu „{begriff}" habe ich gerade keine verlässliche Auskunft. Frag mich gern noch einmal anders, oder wähle eines der Themen.`,
-  `„{begriff}" liegt außerhalb dessen, was bei mir hinterlegt ist. Formulier es gern anders, oder schau in die Themen.`,
-  `Zu „{begriff}" kann ich dir nichts Belastbares sagen. Versuch es gern mit anderen Worten.`,
-  `Beim Thema „{begriff}" muss ich passen. Frag gern anders, oder wähle eines der Themen.`,
+  `Zu „{begriff}" habe ich gerade keine verlässliche Auskunft. Fragen Sie gern noch einmal anders, oder wählen Sie eines der Themen.`,
+  `„{begriff}" liegt außerhalb dessen, was bei mir hinterlegt ist. Formulieren Sie es gern anders, oder schauen Sie in die Themen.`,
+  `Zu „{begriff}" kann ich Ihnen nichts Belastbares sagen. Versuchen Sie es gern mit anderen Worten.`,
+  `Beim Thema „{begriff}" muss ich passen. Fragen Sie gern anders, oder wählen Sie eines der Themen.`,
 ]
 
 const NICHTS_OHNE_BEGRIFF = [
-  `Dazu habe ich gerade keine verlässliche Auskunft. Frag mich gern noch einmal anders, oder wähle eines der Themen.`,
-  `Das kann ich dir gerade nicht beantworten. Formulier es gern anders, oder schau in die Themen.`,
-  `Dazu liegt mir nichts vor. Versuch es gern mit anderen Worten, oder wähle eines der Themen.`,
-  `Da muss ich passen. Frag gern noch einmal anders, oder wähle eines der Themen.`,
+  `Dazu habe ich gerade keine verlässliche Auskunft. Fragen Sie gern noch einmal anders, oder wählen Sie eines der Themen.`,
+  `Das kann ich Ihnen gerade nicht beantworten. Formulieren Sie es gern anders, oder schauen Sie in die Themen.`,
+  `Dazu liegt mir nichts vor. Versuchen Sie es gern mit anderen Worten, oder wählen Sie eines der Themen.`,
+  `Da muss ich passen. Fragen Sie gern noch einmal anders, oder wählen Sie eines der Themen.`,
 ]
 
 /* Dieselben Fälle auf Englisch, für die Sprachumschaltung. */
@@ -159,6 +160,10 @@ export function fallbackKnoten(
     else varianten = en ? EN_NICHTS_OHNE_BEGRIFF : NICHTS_OHNE_BEGRIFF
   }
 
+  // Findet sich gar nichts, verweist der Prototyp wie die Auskunft weiter,
+  // statt nur um andere Worte zu bitten (KA [00:10:53], [00:11:22]).
+  const nichts = treffer.length === 0
+
   const chips: Chip[] = [
     ...treffer.map((eintrag) => {
       const topic = TOPICS.find((thema) => thema.id === eintrag.topic)
@@ -167,6 +172,9 @@ export function fallbackKnoten(
         to: eintrag.topic,
       }
     }),
+    ...(nichts
+      ? [{ label: en ? "Tourist information" : "Tourist-Information", to: "info" }]
+      : []),
     { label: en ? "Something else" : "Andere Frage", to: "menu" },
   ]
 
@@ -177,7 +185,41 @@ export function fallbackKnoten(
     // Hinweis vorangestellt, die Auskunft liege nur auf Deutsch vor, obwohl
     // er gerade auf Englisch nachfragt.
     fertig: true,
-    messages: [fuelle(waehleVariante(varianten), begriff, treffer, sprache)],
+    messages: [
+      fuelle(waehleVariante(varianten), begriff, treffer, sprache),
+      ...(nichts ? [schalterSatz(sprache)] : []),
+    ],
+    chips,
+  }
+}
+
+const IM_GESPRAECH = [
+  "Das habe ich leider nicht verstanden. Sie können es anders formulieren oder unten eine der Möglichkeiten wählen.",
+  "Da bin ich nicht mitgekommen. Formulieren Sie es gern anders, oder tippen Sie unten auf eine der Möglichkeiten.",
+]
+const IM_GESPRAECH_EN = [
+  "Sorry, I did not understand that. You can put it differently or choose one of the options below.",
+  "I did not quite follow. Feel free to rephrase, or tap one of the options below.",
+]
+
+/**
+ * Rückfrage mitten im Gespräch.
+ *
+ * Im Testlauf vom 23.09.2026 verschwanden nach einer unverstandenen Eingabe
+ * die Schaltflächen der vorigen Frage, und die Rückfrage bot stattdessen
+ * Themen an. Der Gast war damit aus dem Faden. Diese Fassung lässt die
+ * Schaltflächen stehen und den Gesprächszustand unverändert, sodass die
+ * nächste Eingabe sich weiter auf die vorige Frage beziehen kann.
+ */
+export function rueckfrageImGespraech(
+  chips: Chip[],
+  sprache: Sprache = "de"
+): FlowNode {
+  return {
+    id: "rueckfrage-kontext",
+    fertig: true,
+    behalteKontext: true,
+    messages: [waehleVariante(sprache === "en" ? IM_GESPRAECH_EN : IM_GESPRAECH)],
     chips,
   }
 }

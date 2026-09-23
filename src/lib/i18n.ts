@@ -6,10 +6,9 @@ import {
   EVENTS,
   FAMILIE,
   GASTRONOMIE,
-  LOIPEN,
+  KULTUR,
   PARKEN,
   TOURIST_INFO,
-  UNTERKUNFT,
   WANDERN,
   WINTER,
 } from "@/lib/daten"
@@ -162,10 +161,19 @@ const CHIPS_GLOBAL: Record<string, string> = {
   "unterkunft-barrierefrei": "Accessible stays",
   "qr-hinweis": "How does the QR code work?",
   "empfehlung:hier:0": "What can I do here?",
+  "bedarf:": "What can I do here?",
+  "dienst:ortsplan": "Village map",
+  "dienst:tickets": "Buy tickets",
+  hinweise: "Current notices",
+  info: "Tourist information",
+  "zettel:neu:info": "Add to my notes",
+  "empfehlung:essen:0": "Suggestions for eating out",
   "fahrplan:traunstein": "Train to Traunstein",
   // Wege zu einzelnen Zielen.
   "ziel:rauschberg": `Route to the ${BERGBAHNEN.rauschbergName} valley station`,
   "ziel:foerchensee": `Route to the ${WANDERN.foerchensee}`,
+  "ziel:taubensee": `Route to ${WANDERN.taubenseeEn}`,
+  "ziel:unternberg": `Route to the ${BERGBAHNEN.unternbergName}`,
   "ziel:sonntagshorn": `Route to the ${WANDERN.sonntagshorn}`,
   "ziel:arena": `Route to the ${EVENTS.chiemgauArena}`,
   "ziel:rathausgarage": "Route to the car park",
@@ -175,15 +183,22 @@ const EN: Record<string, Uebersetzung> = {
   start: {
     messages: [
       "Grüß Gott, and welcome to the Ruhpolding tourist information. I am the digital assistant and help with questions about your stay.",
-      "You are currently at {standort:kurz}. What can I help you with? Pick a topic or just type.",
+      "You are currently at {standort:kurz}. Just tell me what you have in mind and I will find what suits you. You can also choose below.",
     ],
+    chips: {
+      "bedarf:": "What can I do here?",
+      "dienst:ortsplan": "Village map & orientation",
+      "fahrplan:traunstein": "Train & bus",
+      hinweise: "Current notices",
+      menu: "All topics",
+    },
   },
   menu: {
     messages: ["Of course. What else can I help you with?"],
   },
   danke: {
     messages: [
-      "You are very welcome. Enjoy your stay in Ruhpolding, and just ask if anything else comes up.",
+      "You are very welcome. Enjoy your stay in Ruhpolding, and if something else comes up tomorrow, just come back, you are no bother.",
     ],
   },
   /*
@@ -197,7 +212,8 @@ const EN: Record<string, Uebersetzung> = {
    */
   standort: {
     messages: [
-      `You are currently at {standort:kurz}, here in Ruhpolding in the Chiemgau. From here it is {naehe:touristinfo} to the tourist information and {naehe:rauschberg} to the ${BERGBAHNEN.rauschbergName} valley station.`,
+      "You are currently at {standort:kurz}, here in Ruhpolding in the Chiemgau.",
+      "From here it is {naehe:touristinfo} to the tourist information.",
     ],
   },
   "ueber-mich": {
@@ -219,37 +235,39 @@ const EN: Record<string, Uebersetzung> = {
   },
   bergbahnen: {
     messages: [
-      `There are two: the ${BERGBAHNEN.rauschbergBahnEn} up the ${BERGBAHNEN.rauschbergName} and the ${BERGBAHNEN.unternbergBahnEn} up the ${BERGBAHNEN.unternbergName}. Both start in the village and run daily in summer from ${BERGBAHNEN.betriebSommerVon} to ${BERGBAHNEN.betriebSommerBis}, last ride up at ${BERGBAHNEN.letzteBergfahrt}.`,
-      `It is {naehe:rauschberg} from here to the ${BERGBAHNEN.rauschbergName} valley station.`,
+      `There are two in the village: the ${BERGBAHNEN.unternbergBahnEn} up the ${BERGBAHNEN.unternbergName} and the Rauschberg lift. The Rauschberg lift is not running at present because it is being rebuilt.`,
+      "The Unternberg chairlift does not run in the rain.",
     ],
+    chips: { "ziel:unternberg": "Route to the Unternberg" },
   },
   wandern: {
     kurz: [
-      `As said: about ${WANDERN.wegenetzKm} of waymarked trails, and in summer the mountain lifts run from ${BERGBAHNEN.betriebSommerVon} to ${BERGBAHNEN.betriebSommerBis}.`,
+      `As said: the ${BERGBAHNEN.unternbergBahnEn} on the ${BERGBAHNEN.unternbergName} is running, the Rauschberg lift is not.`,
     ],
     messages: [
-      [
-        `Ruhpolding has about ${WANDERN.wegenetzKm} of waymarked trails. Popular choices are the ${BERGBAHNEN.rauschbergName} with the ${BERGBAHNEN.rauschbergBahnEn} from the village, the ${BERGBAHNEN.unternbergName} with the ${BERGBAHNEN.unternbergBahnEn}, and the flat loop around the ${WANDERN.foerchensee}.`,
-        `There are about ${WANDERN.wegenetzKm} of waymarked trails here. Most walked are the ${BERGBAHNEN.rauschbergName}, reached by the ${BERGBAHNEN.rauschbergBahnEn} from the village, the ${BERGBAHNEN.unternbergName} with the ${BERGBAHNEN.unternbergBahnEn}, and the level loop around the ${WANDERN.foerchensee}.`,
-      ],
-      `In summer the mountain lifts run daily from ${BERGBAHNEN.betriebSommerVon} to ${BERGBAHNEN.betriebSommerBis}, last ride up at ${BERGBAHNEN.letzteBergfahrt}. From here it is {naehe:rauschberg} to the ${BERGBAHNEN.rauschbergName} valley station.`,
+      `Around Ruhpolding there are tours for every level, from the ${WANDERN.taubenseeEn} walk (${WANDERN.taubenseeLaenge}) up to the ${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe}).`,
+      `Without climbing yourself, the ${BERGBAHNEN.unternbergBahnEn} takes you up the ${BERGBAHNEN.unternbergName}. The Rauschberg lift is not running at present, it is being rebuilt.`,
+      "So I can name the right tour for you: shall I ask you a few questions?",
     ],
+    chips: { "bedarf:i=berge": "Yes, find a suitable tour" },
   },
   events: {
     kurz: [
-      `As said: the ${EVENTS.biathlonKurzEn} ${EVENTS.biathlonMonatEn}, the ${EVENTS.sommerkonzerteEn} ${EVENTS.sommerkonzerteZeitEn}, the ${EVENTS.wochenmarktEn} ${EVENTS.wochenmarktZeitEn}.`,
+      `As said: the ${EVENTS.biathlonKurzEn} ${EVENTS.biathlonTerminEn}, everything else in the tourist information's weekly programme.`,
     ],
     messages: [
-      `Three fixed dates each year: the ${EVENTS.biathlonKurzEn} at the ${EVENTS.chiemgauArena} ${EVENTS.biathlonMonatEn}, the ${EVENTS.sommerkonzerteEn} at the ${EVENTS.kurpark}, ${EVENTS.sommerkonzerteZeitEn}, and the ${EVENTS.wochenmarktEn} ${EVENTS.wochenmarktZeitEn} on the ${EVENTS.rathausplatz}.`,
+      `The fixed date is the ${EVENTS.biathlonKurzEn} at the ${EVENTS.chiemgauArena}; the next edition is ${EVENTS.biathlonTerminEn}.`,
+      "All other events are in the events calendar. The tourist information also hands out a printed programme every week.",
     ],
+    chips: { "dienst:tickets": "Buy tickets" },
   },
   anreise: {
     kurz: [
-      `As said: by car on the ${ANREISE.autobahn} to ${ANREISE.ausfahrt}, by train ${ANREISE.bahnTaktEn} from ${ANREISE.bahnAbfahrtsort}.`,
+      `As said: by car on the ${ANREISE.autobahn} to ${ANREISE.ausfahrt}, by train via Traunstein.`,
     ],
     messages: [
-      `By car take the ${ANREISE.autobahn} to the ${ANREISE.ausfahrt} exit, then the ${ANREISE.bundesstrasse}, ${ANREISE.fahrzeitAbAusfahrtEn}.`,
-      `By train there is an ${ANREISE.bahnTaktEn} service from ${ANREISE.bahnAbfahrtsort} to Ruhpolding, taking ${ANREISE.bahnFahrzeitEn}. The station is ${ANREISE.bahnhofZumZentrumEn} from the centre, and {naehe:bahnhof} from here.`,
+      `By car take the ${ANREISE.autobahn} to the ${ANREISE.ausfahrt} exit; from there it is ${ANREISE.fahrzeitAbAusfahrtEn}.`,
+      "By train you come via Traunstein, from where the Bayerische Regiobahn runs to Ruhpolding. The station is {naehe:bahnhof} from here.",
     ],
   },
   busnetz: {
@@ -272,51 +290,50 @@ const EN: Record<string, Uebersetzung> = {
     },
   },
   wetter: {
-    // SIMULIERT: tagesaktuelle Angabe, im Prototyp ohne Datenanbindung nicht
-    // echt darstellbar.
-    kurz: [
-      "As said, the demo conditions: fair today, a chance of thunderstorms tomorrow afternoon.",
-    ],
-    messages: [
-      "Demo conditions: fair today, 22 °C in the valley, freezing level at 3,200 m, light winds. Thunderstorms are possible tomorrow afternoon, so an early start is advisable.",
-    ],
+    kurz: ["As said: {wetter:lage}"],
+    messages: ["{wetter:lage}"],
+    chips: { "bedarf:f=1": "What suits the weather?" },
   },
   essen: {
     kurz: [
-      `As said: the ${GASTRONOMIE.gipfelalm} up the mountain, the ${GASTRONOMIE.gasthausPost} and the ${GASTRONOMIE.pizzeria} in the village.`,
+      `As said: in the village among others the ${GASTRONOMIE.gasthausPost} and the ${GASTRONOMIE.pizzeria}, up the mountain the ${GASTRONOMIE.almstueberl}.`,
     ],
     messages: [
-      `Everything from mountain huts to fine dining. Up on the ${BERGBAHNEN.rauschbergName} the ${GASTRONOMIE.gipfelalm} with its panoramic terrace, in the village the ${GASTRONOMIE.gasthausPost} with Bavarian cooking and the ${GASTRONOMIE.pizzeria}. For fine dining there is the restaurant at Hotel ${GASTRONOMIE.hotelGehoben}.`,
+      `Ruhpolding Tourismus keeps a list of the restaurants in the village, among them the ${GASTRONOMIE.gasthausPost}, the ${GASTRONOMIE.pizzeria} and, up the mountain, the ${GASTRONOMIE.almstueberl}.`,
+      "I do not have reliable opening times or closing days, so please check those with the restaurant.",
     ],
+    chips: { "empfehlung:essen:0": "Suggestions for eating out" },
   },
   familie: {
     kurz: [
-      `As said: the ${FAMILIE.freizeitpark}, the ${FAMILIE.vitalwelt} and the ${FAMILIE.barfusswegEn} at the ${WANDERN.foerchensee}.`,
+      `As said: the ${FAMILIE.freizeitpark}, the ${FAMILIE.vitalwelt} and, when it rains, the museums in the village.`,
     ],
     messages: [
-      `With children, three places are worth it: the ${FAMILIE.freizeitpark} with its fairytale wood and rides, open ${FAMILIE.freizeitparkOeffnungEn}, the ${FAMILIE.vitalwelt} with a children's pool and slide, and the ${FAMILIE.barfusswegEn} at the ${WANDERN.foerchensee}. If it rains, the ${FAMILIE.heimatmuseum} is an option.`,
-      `The ${FAMILIE.vitalwelt} is {naehe:vitalwelt} from here.`,
+      `With children, the ${FAMILIE.freizeitpark} and the ${FAMILIE.vitalwelt} leisure pool are options in the village, and the three museums when it rains.`,
+      "What fits best depends on how long you are staying and on the weather. Shall I ask you briefly?",
     ],
+    chips: { "bedarf:i=familie,b=kinder": "Yes, suitable suggestions" },
   },
   winter: {
     kurz: [
-      `As said: around ${LOIPEN.netz} of trails and the competition stadium at the ${EVENTS.chiemgauArena}.`,
+      `As said: cross-country and biathlon at the ${EVENTS.chiemgauArena}, downhill at Unternberg, ${WINTER.skigebiet} and Maiergschwendt.`,
     ],
     messages: [
-      `Ruhpolding is a centre for cross-country skiing: around ${LOIPEN.netz} of groomed trails and the competition stadium at the ${EVENTS.chiemgauArena}, which is open to the public and {naehe:arena} from here. For downhill there are smaller areas at the ${WINTER.skigebiet} and in Inzell.`,
+      `In winter Ruhpolding is above all a cross-country and biathlon resort. The ${EVENTS.chiemgauArena} hosts the ${EVENTS.biathlonKurzEn}. It is {naehe:arena} from here. For downhill there are three ski areas: Unternberg, ${WINTER.skigebiet} and Maiergschwendt.`,
     ],
   },
   unterkunft: {
     kurz: [
-      `As said: from a room in a guest house to the ${UNTERKUNFT.hoechsteKategorieEn}, bookable through the guest card platform or directly with the host.`,
+      "As said: all hosts are on ruhpolding.de, and at the desk you can get an offer to take away.",
     ],
     messages: [
-      `The range runs from a room in a guest house through farm stays to the ${UNTERKUNFT.hoechsteKategorieEn}. You can book through the official guest card platform or directly with the host, and the tourist information also places guests at short notice whenever something is free.`,
+      "The hosts in Ruhpolding are listed on ruhpolding.de, where you can also book directly.",
+      "At the tourist information desk the team will put together an offer and print it for you, so you can compare in peace and come back later.",
     ],
   },
   info: {
     messages: [
-      "These are the contact details of the tourist information. The team is happy to help in person as well, {naehe:touristinfo} from here.",
+      "These are the contact details of the tourist information. The team is happy to help in person as well. It is {naehe:touristinfo} from here.",
     ],
     kurz: ["As said, here are the contact details once more."],
     card: {
@@ -342,42 +359,38 @@ const EN: Record<string, Uebersetzung> = {
    */
   "wandern-leicht": {
     messages: [
-      `For a pushchair the loop around the ${WANDERN.foerchensee} (${WANDERN.foerchenseeRundeEn}) or the ${WANDERN.uferwegTraunEn} work well. Both are walkable all year and need no mountain gear.`,
+      "For pushchairs the tourist information's walking flyer names these trails:",
+      "— Ruhpolding legends trail, 3.6 km, accessible and easy with a pushchair\n— Traun meadows and Taubensee, 8.6 km, with an off-road pushchair\n— Schwarzachen Alm, 7.1 km, wide forest road, hardly steep",
+      "Which trail would you like to know more about?",
     ],
-    qr: {
-      title: `Route to the ${WANDERN.foerchensee}`,
-      hint: "Scan the code to take the route with you.",
+    chips: {
+      "ziel:sagenweg": "Ruhpolding legends trail",
+      "ziel:taubensee": "Traun meadows and Taubensee",
+      "ziel:schwarzachen": "Schwarzachen Alm",
     },
   },
   "wandern-schwer": {
     messages: [
-      `The climb up the ${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe}), the highest peak in the Chiemgau Alps, is a demanding one. Allow ${WANDERN.sonntagshornGehzeitEn} from the ${WANDERN.sonntagshornStartEn}, and bring sturdy boots and a head for heights.`,
+      `The most demanding tour in the summit flyer is the ${WANDERN.sonntagshorn} (1,961 m), the highest mountain in the Chiemgau: 16.9 km, 9 hours, 1,340 m ascent from Laubau.`,
+      "According to the flyer it requires alpine experience, sure-footedness, a head for heights and climbing ability at grade I to II.",
     ],
-    qr: {
-      title: `Route to the ${WANDERN.sonntagshornStartEn}`,
-      hint: "Scan the code to take the starting point with you.",
+    chips: {
+      "ziel:sonntagshorn": "More about the Sonntagshorn",
+      "empfehlung:gipfel:0": "All summit hikes",
     },
   },
   "bergbahn-preise": {
-    messages: ["Here are the summer fares for the two mountain lifts."],
+    messages: ["Here are the fares for the Unternberg chairlift."],
     card: {
-      title: "Mountain lifts Ruhpolding, summer",
+      title: "Unternberg chairlift",
       rows: [
         {
-          label: `${BERGBAHNEN.rauschbergName}, return ticket`,
-          value: `adults ${BERGBAHNEN.rauschbergErwachsen}`,
-        },
-        {
-          label: `${BERGBAHNEN.unternbergName}, return ticket`,
-          value: `adults ${BERGBAHNEN.unternbergErwachsen}`,
+          label: "adults, return ticket",
+          value: BERGBAHNEN.unternbergErwachsen,
         },
         {
           label: `children ${BERGBAHNEN.kinderAlterEn}`,
           value: BERGBAHNEN.ermaessigungKinder,
-        },
-        {
-          label: "with the guest card",
-          value: BERGBAHNEN.ermaessigungGaestekarteEn,
         },
       ],
       note: BERGBAHNEN.kartenhinweisEn,
@@ -385,7 +398,7 @@ const EN: Record<string, Uebersetzung> = {
   },
   "events-biathlon": {
     messages: [
-      `The ${EVENTS.biathlonName} takes place ${EVENTS.biathlonTerminEn} at the ${EVENTS.chiemgauArena}. Tickets are available online and at the box office. A free ski bus runs ${EVENTS.skibusTaktEn} from the village centre to the arena, and it is {naehe:arena} from here.`,
+      `The ${EVENTS.biathlonName} takes place ${EVENTS.biathlonTerminEn} at the ${EVENTS.chiemgauArena}. Tickets are sold at the tourist information and online via Reservix. Village bus 9533 stops at the arena. It is {naehe:arena} from here.`,
     ],
     qr: {
       title: `Route to the ${EVENTS.chiemgauArena}`,
@@ -393,95 +406,86 @@ const EN: Record<string, Uebersetzung> = {
     },
   },
   "events-woche": {
-    // SIMULIERT: wie die deutsche Fassung eine Demo-Auswahl.
     messages: [
-      "This week (demo selection): Wednesday 8 pm open-air concert by the traditional brass band at the Kurpark, Thursday 10 am guided herb walk (sign up at the tourist information), Friday 8 am weekly market on the Rathausplatz.",
+      "I do not hold this week's programme. The tourist information hands out a printed programme every week, and all events are in the events calendar on ruhpolding.de.",
+      `The tourist information is open ${TOURIST_INFO.oeffnungszeitenEn}.`,
     ],
   },
   "anreise-parken": {
-    messages: ["An overview of where to park in the village."],
+    messages: ["An overview of parking in the village."],
     card: {
       title: "Parking in Ruhpolding",
       rows: [
         { label: PARKEN.rathausEn, value: PARKEN.rathausTarifEn },
         { label: PARKEN.laubauEn, value: PARKEN.laubauTarifEn },
-        { label: PARKEN.vitalweltEn, value: PARKEN.vitalweltTarifEn },
         { label: "motorhomes", value: PARKEN.wohnmobileEn },
       ],
-      note: PARKEN.gaestekarteHinweisEn,
+      note: "Parking in the village centre is free, but time limits and parking discs still apply. The hiking car parks, the Chiemgau Arena car park and the underground car park charge a fee.",
     },
     qr: {
-      title: `Route to the ${PARKEN.rathausEn}`,
+      title: "Route to the town hall car park",
       hint: "Scan the code to be guided there.",
     },
   },
   "anreise-bus": {
     messages: [
-      `The village bus (${ANREISE.ortsbusLinieEn}) runs ${ANREISE.ortsbusTaktEn} between the station, the centre and the valley stations. With the ${ANREISE.gaestekarteName} guest card travel is free across the whole Chiemgau, including regional trains as far as ${ANREISE.gaestekarteBahnBis}.`,
+      `In the village there are the village bus lines (${ANREISE.ortsbusLinieEn}) and the ${ANREISE.rufbusName} on-demand bus. With the ${ANREISE.gaestekarteName} the village lines are free, and so is the train as far as ${ANREISE.gaestekarteBahnBis}.`,
     ],
   },
   "wetter-3tage": {
-    // SIMULIERT: wie die deutsche Fassung eine Demo-Prognose.
     messages: [
-      "Demo forecast: Wednesday sunny 24 °C, Thursday changeable 19 °C with showers, Friday settled 21 °C. The risk of thunderstorms is highest on Thursday.",
+      "I do not hold a forecast for the coming days.",
+      "The tourist information's tour flyers advise checking the weather forecast and the route carefully before every tour.",
     ],
   },
   "wetter-webcam": {
-    // SIMULIERT: wie die deutsche Fassung ohne Livebilder.
     messages: [
-      `There are live webcams at the ${BERGBAHNEN.rauschbergName} summit station, the ${EVENTS.chiemgauArena} and on the ${EVENTS.rathausplatz}. In the real application the current images would appear here.`,
+      "I cannot show webcam images here, and I do not hold reliable information on which webcams exist in the village.",
     ],
   },
   "essen-huette": {
     messages: [
-      `Huts with a playground right outside: the ${GASTRONOMIE.almstueberl} next to the summit station, the ${GASTRONOMIE.weitseealm} at the cross-country centre and the ${GASTRONOMIE.laubaualm} at the hikers' car park. All three are easy to reach with a pushchair.`,
+      "I do not have reliable information on which huts have a playground, and I would rather not guess. Most mountain inns are open until 19 October this year.",
+      `At the tourist information desk someone will help you in person (${TOURIST_INFO.oeffnungszeitenEn}).`,
     ],
   },
   "essen-ruhetag": {
     messages: [
-      `Many inns in the village close on ${GASTRONOMIE.ruhetageEn}. The mountain restaurants at the lifts stay open every day in summer. An up-to-date overview is available at the tourist information.`,
+      "There is no single closing day for everyone. The tourist information collects closing days and seasonal breaks in a restaurant list that it keeps up to date. You can take a copy there.",
     ],
   },
   "familie-regen": {
     messages: [
-      `For wet weather: the ${FAMILIE.vitalwelt} with its indoor pool and sauna, the amusement park with its covered areas, the ${FAMILIE.kletterhalleEn} (${FAMILIE.kletterhalleFahrzeitEn} away) and the ${FAMILIE.heimatmuseum}. The tourist information has a craft corner for children.`,
+      `For rainy days Ruhpolding Tourismus names the ${FAMILIE.vitalwelt} and the three museums in the village: the ${KULTUR.holzknechtmuseum}, the ${FAMILIE.heimatmuseumEn} and the ${KULTUR.glockenschmiede}. Nearby it lists the Babalu Funpark in Traunstein.`,
     ],
+    chips: { "vorschlag:i=kultur,f=1:0": "Suggestions for indoors" },
   },
   "familie-baby": {
     messages: [
-      `There are baby changing facilities at the tourist information, at the ${FAMILIE.vitalwelt} and at the ${BERGBAHNEN.rauschbergName} and ${BERGBAHNEN.unternbergName} valley stations. Most cafés in the village are happy to warm water if you need it.`,
+      "I do not have reliable information on baby changing facilities.",
+      `At the tourist information desk someone will help you in person (${TOURIST_INFO.oeffnungszeitenEn}).`,
     ],
   },
   "winter-loipe": {
-    messages: ["The key facts about cross-country skiing here."],
-    card: {
-      title: "Cross-country skiing in Ruhpolding",
-      rows: [
-        {
-          label: "trail network",
-          value: `about ${LOIPEN.netz}, ${LOIPEN.spurartenEn}`,
-        },
-        { label: "trail pass, day", value: LOIPEN.passTag },
-        { label: "trail pass, week", value: LOIPEN.passWoche },
-        { label: "with the guest card", value: LOIPEN.gaestekarteEn },
-      ],
-      // SIMULIERT: wie die deutsche Fassung ohne Datenanbindung.
-      note: "Snow depth and trail report would be updated daily in the real application.",
-    },
+    messages: [
+      "Ruhpolding Tourismus gives neither a total length for the trail network nor prices for a trail pass, so I will not give you any either.",
+      "Individual trails are listed with their length on ruhpolding.de, for example the Drei-Seen-Loipe at 12.3 km.",
+    ],
   },
   "winter-verleih": {
     messages: [
-      `Sports shops with hire: ${WINTER.sportgeschaeft} on the Dorfplatz, the ski hire at the ${WINTER.skigebiet} valley station and the ${WINTER.langlaufShopEn} at the ${EVENTS.chiemgauArena}. During the school holidays it is worth reserving ahead.`,
+      "Ruhpolding Tourismus does not name any hire shops, so I have none on record.",
+      `At the tourist information desk someone will help you in person (${TOURIST_INFO.oeffnungszeitenEn}).`,
     ],
   },
   "unterkunft-hof": {
     messages: [
-      `${UNTERKUNFT.hoefeAnzahlEn} farms in Ruhpolding offer farm holidays, many with animals to help look after and an alpine hut of their own. These places are often booked out months ahead, so it is worth asking early.`,
+      "Farms offering farm holidays are listed individually in the hosts list on ruhpolding.de. The list gives no total.",
     ],
   },
   "unterkunft-barrierefrei": {
     messages: [
-      `Several houses are certified to the ${UNTERKUNFT.zertifizierung} standard, among them ${UNTERKUNFT.barrierefreiHaeuserEn}. The ${FAMILIE.vitalwelt} and the ${BERGBAHNEN.rauschbergName} gondola are wheelchair accessible.`,
+      "Accessible places to stay are marked individually in the hosts list on ruhpolding.de. I do not have a compilation, and I would rather not name any I cannot check.",
     ],
   },
 }
@@ -499,6 +503,7 @@ const CHIPS_NACH_WORTLAUT: Record<string, string> = {
   "Zurück zum Thema": "Back to the topic",
   "Andere Frage": "Something else",
   "Alle Vorschläge": "All suggestions",
+  Ortsplan: "Village map",
   "Andere Vorschläge": "Other suggestions",
 }
 

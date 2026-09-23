@@ -141,6 +141,25 @@ export function eignung(
   }
 }
 
+/**
+ * Der Hinweis an einem Tagesausflug, wenn der Tag dafür schon zu weit ist.
+ *
+ * Seit ungesicherte Ziele nicht mehr vorgeschlagen werden, sind die Listen
+ * kürzer, und ein Tagesausflug rutscht abends nicht mehr auf die zweite
+ * Seite. Er bleibt stehen, weil jemand für morgen planen kann, aber er sagt,
+ * dass er heute nicht mehr passt.
+ */
+export function spaetHinweis(
+  tagesfuellend: boolean | undefined,
+  jetzt: Date,
+  sprache: Sprache = "de"
+): string | null {
+  if (!tagesfuellend || jetzt.getHours() < 14) return null
+  return sprache === "en"
+    ? "Too late to start today, better tomorrow morning"
+    : "Für heute zu spät, eher etwas für morgen früh"
+}
+
 export type Tageszeit =
   "morgen" | "vormittag" | "mittag" | "nachmittag" | "abend" | "nacht"
 
@@ -199,23 +218,23 @@ export function zeitbezug(jetzt: Date, sprache: Sprache = "de"): string {
     case "morgen":
       return en
         ? `It is ${zeit}, so there is a whole day ahead of you.`
-        : `Es ist ${zeit} Uhr, da liegt noch ein ganzer Tag vor dir.`
+        : `Es ist ${zeit} Uhr, da liegt noch ein ganzer Tag vor Ihnen.`
     case "vormittag":
       return en
-        ? `It is ${zeit} — good timing, most places have just opened.`
-        : `Es ist ${zeit} Uhr, gute Zeit: das meiste hat gerade geöffnet.`
+        ? `It is ${zeit}, so most of the day is still ahead of you.`
+        : `Es ist ${zeit} Uhr, der größte Teil des Tages liegt noch vor Ihnen.`
     case "mittag":
       return en
         ? `It is ${zeit}, still plenty of time for something bigger.`
         : `Es ist ${zeit} Uhr, für etwas Größeres reicht der Tag noch.`
     case "nachmittag":
       return en
-        ? `It is ${zeit}, so I am leaving out anything that needs a full day.`
-        : `Es ist ${zeit} Uhr, deshalb lasse ich weg, was einen ganzen Tag braucht.`
+        ? `It is ${zeit}, so I will not put anything that needs a full day first.`
+        : `Es ist ${zeit} Uhr, deshalb nenne ich nichts, was einen ganzen Tag braucht, an erster Stelle.`
     case "abend":
       return en
-        ? `It is ${zeit} — most attractions have closed, but not everything.`
-        : `Es ist ${zeit} Uhr, die meisten Ausflugsziele haben zu, aber nicht alles.`
+        ? `It is ${zeit}, so there is not much of today left.`
+        : `Es ist ${zeit} Uhr, vom Tag ist nicht mehr viel übrig.`
     case "nacht":
       return en
         ? `It is ${zeit}, so this is more of a plan for tomorrow.`

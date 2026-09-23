@@ -14,17 +14,27 @@ import {
 import { type Sprache } from "@/lib/sprache"
 import { type Folge } from "@/lib/verstehen"
 import { empfehlungsKnoten, fahrplanKnoten, zielKnoten } from "@/lib/empfehlung"
+import { bedarfKnoten, vorschlagKnoten } from "@/lib/bedarf"
+import { meldungenKnoten } from "@/lib/meldungen"
+import { flyerKnoten, flyerListeKnoten, flyerNeinKnoten } from "@/lib/flyer"
+import { dienstKnoten, verweisKnoten } from "@/lib/service"
+import type { WetterId } from "@/lib/wetter"
 import { mapsSuche } from "@/lib/ziele"
+import {
+  zettelChip,
+  zettelKnoten,
+  type ZettelAnsicht,
+  type ZettelEintrag,
+} from "@/lib/zettel"
 import {
   ANREISE,
   BERGBAHNEN,
   EVENTS,
   FAMILIE,
   GASTRONOMIE,
-  LOIPEN,
+  KULTUR,
   PARKEN,
   TOURIST_INFO,
-  UNTERKUNFT,
   WANDERN,
   WINTER,
 } from "@/lib/daten"
@@ -74,6 +84,12 @@ export type QrPayload = {
   title: string
   hint: string
   url: string
+  /**
+   * "flyer" für einen Code auf ein Flyer-PDF. Er bekommt einen anderen
+   * Rahmen als der Code zum Ausgangspunkt, damit der Gast beide
+   * auseinanderhält.
+   */
+  art?: "flyer"
 }
 
 /** Ein Knoten im vordefinierten Gesprächsbaum. */
@@ -133,6 +149,43 @@ export type FlowNode = {
    * Übersetzung mehr. Gilt für alles, was zur Laufzeit entsteht.
    */
   fertig?: boolean
+  /**
+   * Der nächste Ausschnitt derselben Vorschlagsliste, für "gibt es noch
+   * andere". Vorschläge aus der Bedarfsklärung haben keine Gruppe, deshalb
+   * steht der Weg hier direkt.
+   */
+  weiter?: string
+  /**
+   * Aktuelle Hinweise, die dieser Knoten ausdrücklich zeigt, auch wenn sie
+   * im Gespräch schon vorkamen. Sonst erscheinen Hinweise nur einmal und nur
+   * beim passenden Thema (meldungen.ts).
+   */
+  hinweise?: string[]
+  /** Der Zettel des Gasts, als eigene Karte. */
+  zettel?: ZettelAnsicht
+  /**
+   * Nachrichten nach Karte, Tabelle, Zettel und QR-Code. Für den Abschluss
+   * eines Vorgangs: erst "ich drucke", dann der Ausdruck, dann "fertig".
+   */
+  nachher?: (string | string[])[]
+  /**
+   * Zusätzliche Wartezeit in Millisekunden, bevor der Anhang erscheint. Die
+   * Tippanzeige läuft dabei weiter, damit sichtbar bleibt, dass etwas
+   * passiert (M [00:58:14]).
+   */
+  warten?: number
+  /**
+   * Die Antwort endet mit einer Ja-Nein-Frage. Ein getipptes "ja" wählt dann
+   * die erste Schaltfläche, ein "nein" führt nach `nein`.
+   */
+  jaNein?: boolean
+  nein?: string
+  /**
+   * Der Knoten ist eine Rückfrage auf eine unverstandene Eingabe. Er lässt
+   * den Gesprächszustand stehen, damit die nächste Eingabe sich noch auf die
+   * vorige Frage beziehen kann.
+   */
+  behalteKontext?: boolean
 }
 
 /** Thema für die Startauswahl und das Menü. */
@@ -230,6 +283,23 @@ const menuChips: Chip[] = TOPICS.map((topic) => ({
   to: topic.id,
 }))
 
+/**
+ * Die Auswahl am Einstieg.
+ *
+ * Vorher standen hier alle neun Themen. Die Auskunft wirft dem Gast nicht
+ * alles auf einmal hin (KA [00:14:27]), sie fragt zuerst, was er will, und
+ * gibt ihm dann meistens den Ortsplan (KA [00:30:27]). Deshalb stehen am
+ * Anfang die Frage nach dem Vorhaben, die Orientierung und die Bahn, die am
+ * Bahnhof täglich gefragt wird. Die Themen bleiben über "Alle Themen" da.
+ */
+const startChips: Chip[] = [
+  { label: "Was kann ich hier unternehmen?", to: "bedarf:" },
+  { label: "Ortsplan & Orientierung", to: "dienst:ortsplan" },
+  { label: "Bahn & Bus", to: "fahrplan:traunstein" },
+  { label: "Aktuelle Hinweise", to: "hinweise" },
+  { label: "Alle Themen", to: "menu" },
+]
+
 const backChips = (topic: string): Chip[] => [
   { label: "Zurück zum Thema", to: topic },
   { label: "Andere Frage", to: "menu" },
@@ -289,22 +359,22 @@ export const FLOW: Record<string, FlowNode> = {
   start: {
     id: "start",
     messages: [
-      "Grüß Gott und herzlich willkommen bei der Tourist-Information Ruhpolding. Ich bin der digitale Assistent und helfe bei Fragen rund um deinen Aufenthalt.",
-      "Du stehst gerade {standort:kurz}. Wobei kann ich helfen? Du kannst ein Thema wählen oder frei tippen.",
+      "Grüß Gott und herzlich willkommen bei der Tourist-Information Ruhpolding. Ich bin der digitale Assistent und helfe Ihnen bei Fragen rund um Ihren Aufenthalt.",
+      "Sie stehen gerade {standort:kurz}. Erzählen Sie mir einfach, was Sie vorhaben, dann suche ich das Passende für Sie heraus. Sie können auch unten wählen.",
     ],
-    chips: menuChips,
+    chips: startChips,
   },
 
   menu: {
     id: "menu",
-    messages: ["Gern. Womit kann ich sonst noch helfen?"],
+    messages: ["Gern. Womit kann ich Ihnen sonst noch helfen?"],
     chips: menuChips,
   },
 
   danke: {
     id: "danke",
     messages: [
-      "Sehr gern. Einen schönen Aufenthalt in Ruhpolding. Wenn noch etwas ist, frag einfach.",
+      "Sehr gern. Einen schönen Aufenthalt in Ruhpolding. Und wenn Ihnen morgen noch etwas einfällt, kommen Sie einfach wieder, Sie stören nicht.",
     ],
     chips: menuChips,
   },
@@ -324,13 +394,14 @@ export const FLOW: Record<string, FlowNode> = {
     id: "standort",
     messages: [
       [
-        `Du stehst gerade {standort:kurz}, hier in Ruhpolding im Chiemgau. Zur Tourist-Information sind es von hier {naehe:touristinfo}, zur Talstation ${BERGBAHNEN.rauschbergName} {naehe:rauschberg}.`,
-        `Dieses Gerät steht {standort:kurz} in Ruhpolding. Von hier aus sind es {naehe:touristinfo} zur Tourist-Information und {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
-        `Der Standort ist {standort:kurz}, mitten in Ruhpolding. {naehe:touristinfo} zur Tourist-Information, {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
+        "Sie stehen gerade {standort:kurz}, hier in Ruhpolding im Chiemgau.",
+        "Dieses Gerät steht {standort:kurz} in Ruhpolding.",
       ],
+      "Zur Tourist-Information sind es von hier {naehe:touristinfo}.",
     ],
     chips: [
-      { label: "Was kann ich hier machen?", to: "empfehlung:hier:0" },
+      { label: "Was kann ich hier machen?", to: "bedarf:" },
+      { label: "Ortsplan", to: "dienst:ortsplan" },
       { label: "Anreise & Parken", to: "anreise" },
       { label: "Andere Frage", to: "menu" },
     ],
@@ -353,8 +424,8 @@ export const FLOW: Record<string, FlowNode> = {
         "Ich bin ein digitaler Assistent, kein Mitarbeiter aus Fleisch und Blut. Auskunft gebe ich zu Wandern und Bergbahnen, Veranstaltungen, Anreise und Parken, Wetter, Essen, Familienangeboten, Winter, Unterkünften und der Tourist-Information.",
       ],
       [
-        "Du kannst frei tippen, ganze Sätze sind kein Problem. Was ich nicht weiß, sage ich dir auch.",
-        "Schreib einfach los, gern in ganzen Sätzen. Wenn ich etwas nicht hinterlegt habe, sage ich es dir offen.",
+        "Sie können frei tippen, ganze Sätze sind kein Problem. Was ich nicht weiß, sage ich Ihnen auch.",
+        "Schreiben Sie einfach los, gern in ganzen Sätzen. Wenn ich etwas nicht hinterlegt habe, sage ich es Ihnen offen.",
       ],
     ],
     chips: menuChips,
@@ -364,13 +435,13 @@ export const FLOW: Record<string, FlowNode> = {
     id: "qr-hinweis",
     messages: [
       [
-        `Zu Zielen, bei denen sich das lohnt, blende ich einen QR-Code ein. Du scannst ihn mit der Handykamera und hast die Route auf dem eigenen Gerät. Sag mir, wohin du willst, dann gebe ich den Code dazu aus.`,
-        `Für Ziele im Ort gebe ich einen QR-Code mit aus: einmal mit der Handykamera scannen und die Route ist auf deinem Gerät. Nenn mir das Ziel, dann bekommst du den passenden Code.`,
+        `Zu Zielen, bei denen sich das lohnt, blende ich einen QR-Code ein. Sie scannen ihn mit der Handykamera und haben die Route auf dem eigenen Gerät. Sagen Sie mir, wohin Sie möchten, dann gebe ich den Code dazu aus.`,
+        `Für Ziele im Ort gebe ich einen QR-Code mit aus: einmal mit der Handykamera scannen und die Route ist auf Ihrem Gerät. Nennen Sie mir das Ziel, dann bekommen Sie den passenden Code.`,
       ],
     ],
     chips: [
-      { label: `Weg zum ${BERGBAHNEN.rauschbergName}`, to: "ziel:rauschberg" },
-      { label: `Weg zum ${WANDERN.foerchensee}`, to: "ziel:foerchensee" },
+      { label: `Weg zum ${BERGBAHNEN.unternbergName}`, to: "ziel:unternberg" },
+      { label: `Weg zu ${WANDERN.taubensee}`, to: "ziel:taubensee" },
       { label: "Weg zum Parkplatz", to: "ziel:rathausgarage" },
       { label: "Andere Frage", to: "menu" },
     ],
@@ -380,53 +451,64 @@ export const FLOW: Record<string, FlowNode> = {
     id: "wandern",
     topic: "wandern",
     kurz: [
-      `Wie gesagt: rund ${WANDERN.wegenetzKm} markierte Wege, und die Bergbahnen fahren im Sommer von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr.`,
+      `Wie gesagt: die ${BERGBAHNEN.unternbergBahn} am ${BERGBAHNEN.unternbergName} fährt, die Rauschbergbahn derzeit nicht.`,
     ],
+    // Bis zum 22.09. stand hier, beide Bahnen führen täglich. Die
+    // Rauschbergbahn fährt laut ruhpolding.de nicht, siehe daten.ts.
     messages: [
       [
-        `Ruhpolding hat rund ${WANDERN.wegenetzKm} markierte Wanderwege. Beliebt sind der ${BERGBAHNEN.rauschbergName} mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die flache Runde um den ${WANDERN.foerchensee}.`,
-        `Das Wegenetz umfasst rund ${WANDERN.wegenetzKm}, alles markiert. Am häufigsten gegangen werden der ${BERGBAHNEN.rauschbergName}, den die ${BERGBAHNEN.rauschbergBahn} ab dem Ort erschließt, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn} und die ebene Runde um den ${WANDERN.foerchensee}.`,
-        `Zur Auswahl stehen rund ${WANDERN.wegenetzKm} markierte Wege. Besonders gefragt sind der ${BERGBAHNEN.rauschbergName}, erreichbar mit der ${BERGBAHNEN.rauschbergBahn} ab dem Ort, der ${BERGBAHNEN.unternbergName} mit der ${BERGBAHNEN.unternbergBahn}, und flach die Runde um den ${WANDERN.foerchensee}.`,
+        `Rund um Ruhpolding gibt es Touren für jeden Anspruch, vom Weg durch die ${WANDERN.taubensee} (${WANDERN.taubenseeLaenge}) bis zum ${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe}).`,
+        `Die Spanne reicht vom Weg durch die ${WANDERN.taubensee} mit ${WANDERN.taubenseeLaenge} bis zum ${WANDERN.sonntagshorn} mit ${WANDERN.sonntagshornHoehe}.`,
       ],
       [
-        `Die Bergbahnen fahren im Sommer täglich von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt} Uhr. Von hier sind es {naehe:rauschberg} zur Talstation ${BERGBAHNEN.rauschbergName}.`,
-        `Beide Bahnen sind im Sommer täglich von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr in Betrieb, die letzte Bergfahrt geht um ${BERGBAHNEN.letzteBergfahrt} Uhr. Zur Talstation ${BERGBAHNEN.rauschbergName} sind es von hier {naehe:rauschberg}.`,
+        `Ohne Aufstieg kommen Sie mit der ${BERGBAHNEN.unternbergBahn} auf den ${BERGBAHNEN.unternbergName}. Die Rauschbergbahn fährt derzeit nicht, sie wird neu gebaut.`,
+        `Hinauf ohne eigenen Aufstieg geht es mit der ${BERGBAHNEN.unternbergBahn} am ${BERGBAHNEN.unternbergName}. Die Rauschbergbahn steht still, weil sie neu gebaut wird.`,
       ],
+      "Damit ich Ihnen die passende Tour nenne: Darf ich Ihnen ein paar Fragen stellen?",
     ],
+    // "ja gern" blieb im Testlauf vom 23.09.2026 ohne Treffer.
+    jaNein: true,
+    nein: "vorschlag:i=berge,f=1:0",
     chips: [
+      { label: "Ja, passende Tour finden", to: "bedarf:i=berge" },
       { label: "Welche Bergbahnen gibt es?", to: "bergbahnen" },
-      { label: "Leichte Tour mit Kinderwagen", to: "wandern-leicht" },
-      { label: "Anspruchsvolle Bergtour", to: "wandern-schwer" },
       { label: "Andere Frage", to: "menu" },
     ],
   },
   "wandern-leicht": {
     id: "wandern-leicht",
+    // Laut Flyer "Die 10 schönsten Wander- & Spazierwege", 03/25. Andere
+    // Wege nennt der Prototyp für den Kinderwagen nicht.
     messages: [
-      `Für den Kinderwagen eignet sich der Rundweg am ${WANDERN.foerchensee} (${WANDERN.foerchenseeRunde}) oder der ${WANDERN.uferwegTraun}. Beide sind ganzjährig begehbar und brauchen keine Bergausrüstung.`,
+      "Für den Kinderwagen nennt der Wanderflyer der Tourist-Information diese Wege:",
+      "— Ruhpoldinger Sagenweg, 3,6 km, barrierefrei und problemlos mit Kinderwagen\n— Traunauen und Taubensee, 8,6 km, mit geländegängigem Kinderwagen\n— Schwarzachen Alm, 7,1 km, breite Forststraße, kaum steigend",
+      "Zu welchem Weg möchten Sie mehr wissen?",
     ],
-    ziel: "foerchensee",
-    qr: {
-      title: `Weg zum ${WANDERN.foerchensee}`,
-      hint: "Scanne den Code, um die Route mitzunehmen.",
-      url: mapsSuche(WANDERN.foerchensee),
-    },
     topic: "wandern",
-    chips: backChips("wandern"),
+    angebot: ["sagenweg", "taubensee", "schwarzachen"],
+    chips: [
+      { label: "Ruhpoldinger Sagenweg", to: "ziel:sagenweg" },
+      { label: "Traunauen und Taubensee", to: "ziel:taubensee" },
+      { label: "Schwarzachen Alm", to: "ziel:schwarzachen" },
+      { label: "Andere Frage", to: "menu" },
+    ],
   },
   "wandern-schwer": {
     id: "wandern-schwer",
+    // Anforderungen laut Flyer "Die 10 schönsten Gipfeltouren", 03/25.
+    // Vorher stand hier nur "festes Schuhwerk und Trittsicherheit", das
+    // unterschlug das Klettern im I. bis II. Grad.
     messages: [
-      `Anspruchsvoll ist der Aufstieg auf das ${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe}), den höchsten Berg der Chiemgauer Alpen. Gehzeit ${WANDERN.sonntagshornGehzeit} ab dem ${WANDERN.sonntagshornStart}, festes Schuhwerk und Trittsicherheit vorausgesetzt.`,
+      `Die anspruchsvollste Tour im Gipfelflyer ist das ${WANDERN.sonntagshorn} (${WANDERN.sonntagshornHoehe}), der höchste Berg des Chiemgaus: 16,9 km, 9 Stunden, 1.340 Höhenmeter ab der Laubau.`,
+      "Sie erfordert laut Flyer alpine Erfahrung, Trittsicherheit, Schwindelfreiheit und Kletterkönnen im I. bis II. Schwierigkeitsgrad.",
     ],
     ziel: "sonntagshorn",
-    qr: {
-      title: `Weg zum ${WANDERN.sonntagshornStart}`,
-      hint: "Scanne den Code, um den Startpunkt mitzunehmen.",
-      url: mapsSuche(WANDERN.sonntagshornStart),
-    },
     topic: "wandern",
-    chips: backChips("wandern"),
+    chips: [
+      { label: "Mehr zum Sonntagshorn", to: "ziel:sonntagshorn" },
+      { label: "Alle Gipfeltouren", to: "empfehlung:gipfel:0" },
+      { label: "Andere Frage", to: "menu" },
+    ],
   },
   /*
    * Eigener Knoten für die Frage, welche Bahnen es gibt.
@@ -440,18 +522,15 @@ export const FLOW: Record<string, FlowNode> = {
     id: "bergbahnen",
     messages: [
       [
-        `Es sind zwei: die ${BERGBAHNEN.rauschbergBahn} auf den ${BERGBAHNEN.rauschbergName} und die ${BERGBAHNEN.unternbergBahn} auf den ${BERGBAHNEN.unternbergName}. Beide starten im Ort, im Sommer fahren sie täglich von ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr, letzte Bergfahrt um ${BERGBAHNEN.letzteBergfahrt} Uhr.`,
-        `Zwei Bahnen gibt es: die ${BERGBAHNEN.rauschbergBahn} zum ${BERGBAHNEN.rauschbergName} und die ${BERGBAHNEN.unternbergBahn} zum ${BERGBAHNEN.unternbergName}, beide ab dem Ort. Betrieb im Sommer täglich ${BERGBAHNEN.betriebSommerVon} bis ${BERGBAHNEN.betriebSommerBis} Uhr, die letzte Bergfahrt geht um ${BERGBAHNEN.letzteBergfahrt} Uhr.`,
+        `Im Ort gibt es zwei: die ${BERGBAHNEN.unternbergBahn} auf den ${BERGBAHNEN.unternbergName} und die Rauschbergbahn. Die Rauschbergbahn fährt derzeit nicht, weil sie neu gebaut wird.`,
+        `Zwei Bahnen gibt es, die ${BERGBAHNEN.unternbergBahn} zum ${BERGBAHNEN.unternbergName} und die Rauschbergbahn. Fahren können Sie derzeit nur am ${BERGBAHNEN.unternbergName}, die Rauschbergbahn wird neu gebaut.`,
       ],
-      [
-        `Zur Talstation ${BERGBAHNEN.rauschbergName} sind es von hier {naehe:rauschberg}.`,
-        `Die Talstation ${BERGBAHNEN.rauschbergName} erreichst du von hier in {naehe:rauschberg}.`,
-      ],
+      "Bei Regen fährt die Sesselbahn am Unternberg nicht.",
     ],
     topic: "wandern",
-    ziel: "rauschberg",
+    ziel: "unternberg",
     chips: [
-      { label: "Weg zur Talstation", to: "ziel:rauschberg" },
+      { label: "Weg zum Unternberg", to: "ziel:unternberg" },
       { label: "Preise Bergbahnen", to: "bergbahn-preise" },
       { label: "Andere Frage", to: "menu" },
     ],
@@ -459,23 +538,20 @@ export const FLOW: Record<string, FlowNode> = {
 
   "bergbahn-preise": {
     id: "bergbahn-preise",
-    messages: ["Hier die Sommerpreise der beiden Bergbahnen."],
+    // Ohne Rauschberg-Preis (kein Fahrbetrieb) und ohne Gästekarten-
+    // Ermäßigung (nicht belegt, daten.ts).
+    messages: ["Hier die Preise der Sesselbahn am Unternberg."],
     card: {
-      title: "Bergbahnen Ruhpolding, Sommer",
+      title: "Unternberg Sesselbahn",
       rows: [
         {
-          label: `${BERGBAHNEN.rauschbergName}, Berg- und Talfahrt`,
-          value: `Erwachsene ${BERGBAHNEN.rauschbergErwachsen}`,
-        },
-        {
-          label: `${BERGBAHNEN.unternbergName}, Berg- und Talfahrt`,
-          value: `Erwachsene ${BERGBAHNEN.unternbergErwachsen}`,
+          label: "Erwachsene, Berg- und Talfahrt",
+          value: BERGBAHNEN.unternbergErwachsen,
         },
         {
           label: `Kinder ${BERGBAHNEN.kinderAlter}`,
           value: BERGBAHNEN.ermaessigungKinder,
         },
-        { label: "mit Gästekarte", value: BERGBAHNEN.ermaessigungGaestekarte },
       ],
       note: BERGBAHNEN.kartenhinweis,
     },
@@ -487,17 +563,19 @@ export const FLOW: Record<string, FlowNode> = {
     id: "events",
     topic: "events",
     kurz: [
-      `Wie gesagt: ${EVENTS.biathlonKurz} ${EVENTS.biathlonMonat}, ${EVENTS.sommerkonzerte} ${EVENTS.sommerkonzerteZeit}, ${EVENTS.wochenmarkt} ${EVENTS.wochenmarktZeit}.`,
+      `Wie gesagt: der ${EVENTS.biathlonKurz} ${EVENTS.biathlonTermin}, alles Weitere im Wochenprogramm der Tourist-Information.`,
     ],
+    // Vorher mit Sommerkonzerten und Wochenmarkt, beide nicht belegt.
     messages: [
       [
-        `Feste Termine im Jahr: der ${EVENTS.biathlonKurz} in der ${EVENTS.chiemgauArena} ${EVENTS.biathlonMonat}, die ${EVENTS.sommerkonzerte} am ${EVENTS.kurpark} (${EVENTS.sommerkonzerteZeit}) und der ${EVENTS.wochenmarkt} ${EVENTS.wochenmarktZeit} am ${EVENTS.rathausplatz}.`,
-        `Drei Termine stehen jedes Jahr fest: ${EVENTS.biathlonMonat} der ${EVENTS.biathlonKurz} in der ${EVENTS.chiemgauArena}, ${EVENTS.sommerkonzerteZeit} die ${EVENTS.sommerkonzerte} am ${EVENTS.kurpark}, dazu der ${EVENTS.wochenmarkt} ${EVENTS.wochenmarktZeit} am ${EVENTS.rathausplatz}.`,
-        `Im Jahreslauf gibt es den ${EVENTS.biathlonKurz} ${EVENTS.biathlonMonat} in der ${EVENTS.chiemgauArena}, die ${EVENTS.sommerkonzerte} am ${EVENTS.kurpark} (${EVENTS.sommerkonzerteZeit}) sowie ${EVENTS.wochenmarktZeit} den ${EVENTS.wochenmarkt} am ${EVENTS.rathausplatz}.`,
+        `Fester Termin ist der ${EVENTS.biathlonKurz} in der ${EVENTS.chiemgauArena}, die nächste Ausgabe ist ${EVENTS.biathlonTermin}.`,
+        `Der feste Höhepunkt im Jahr ist der ${EVENTS.biathlonKurz} in der ${EVENTS.chiemgauArena}, als Nächstes ${EVENTS.biathlonTermin}.`,
       ],
+      "Alle weiteren Veranstaltungen stehen im Veranstaltungskalender. Die Tourist-Information gibt außerdem jede Woche ein gedrucktes Programm aus.",
     ],
     chips: [
       { label: "Biathlon-Weltcup", to: "events-biathlon" },
+      { label: "Karten kaufen", to: "dienst:tickets" },
       { label: "Was ist diese Woche los?", to: "events-woche" },
       { label: "Andere Frage", to: "menu" },
     ],
@@ -505,8 +583,10 @@ export const FLOW: Record<string, FlowNode> = {
   "events-biathlon": {
     id: "events-biathlon",
     bridge: true,
+    // Den Skibus im Viertelstundentakt gab es nur im Antworttext, belegt ist
+    // die Dorflinie 9533 mit Halt an der Arena.
     messages: [
-      `Der ${EVENTS.biathlonName} findet ${EVENTS.biathlonTermin} in der ${EVENTS.chiemgauArena} statt. Tickets gibt es online und an der Tageskasse. Vom Ortszentrum fährt ein kostenloser Skibus im ${EVENTS.skibusTakt} zur Arena, von hier sind es {naehe:arena}.`,
+      `Der ${EVENTS.biathlonName} findet ${EVENTS.biathlonTermin} in der ${EVENTS.chiemgauArena} statt. Karten gibt es in der Tourist-Information und online über Reservix. Die Dorflinie 9533 hält an der Arena. Von hier sind es {naehe:arena}.`,
     ],
     ziel: "arena",
     qr: {
@@ -519,10 +599,13 @@ export const FLOW: Record<string, FlowNode> = {
   },
   "events-woche": {
     id: "events-woche",
-    // SIMULIERT: tagesaktuelle Angabe, im Prototyp ohne Datenanbindung nicht
-    // echt darstellbar. In Abschnitt 4.4 der Arbeit als Grenze auszuweisen.
+    // Vorher eine erfundene "Demo-Auswahl" mit Standkonzert, Kräuter-
+    // wanderung und Wochenmarkt. Nichts davon war belegt.
+    // KA [00:05:04]: "Wir machen außerdem jede Woche Veranstaltungsprogramme,
+    // die ausgegeben werden. Es steht alles auf unserer Webseite."
     messages: [
-      "Diese Woche (Demo-Auswahl): Mittwoch 20:00 Uhr Standkonzert der Trachtenkapelle am Kurpark, Donnerstag 10:00 Uhr geführte Kräuterwanderung (Anmeldung in der Tourist-Info), Freitag 8:00 Uhr Wochenmarkt am Rathausplatz.",
+      "Das aktuelle Wochenprogramm habe ich nicht hinterlegt. Die Tourist-Information gibt es jede Woche gedruckt aus, und alle Veranstaltungen stehen im Veranstaltungskalender auf ruhpolding.de.",
+      `Die Tourist-Information hat ${TOURIST_INFO.oeffnungszeiten} geöffnet.`,
     ],
     topic: "events",
     chips: backChips("events"),
@@ -532,16 +615,18 @@ export const FLOW: Record<string, FlowNode> = {
     id: "anreise",
     topic: "anreise",
     kurz: [
-      `Wie gesagt: mit dem Auto über die ${ANREISE.autobahn} bis ${ANREISE.ausfahrt}, mit der Bahn ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort}.`,
+      `Wie gesagt: mit dem Auto über die ${ANREISE.autobahn} bis ${ANREISE.ausfahrt}, mit der Bahn über Traunstein.`,
     ],
+    // Ohne Bundesstraße, Takt, Abfahrt ab München und Fahrzeit: keine davon
+    // ist belegt (daten.ts).
     messages: [
       [
-        `Mit dem Auto über die ${ANREISE.autobahn} bis zur Ausfahrt ${ANREISE.ausfahrt}, dann die ${ANREISE.bundesstrasse}, ${ANREISE.fahrzeitAbAusfahrt}.`,
-        `Wer mit dem Auto kommt, verlässt die ${ANREISE.autobahn} bei ${ANREISE.ausfahrt} und fährt über die ${ANREISE.bundesstrasse} weiter, ${ANREISE.fahrzeitAbAusfahrt}.`,
+        `Mit dem Auto über die ${ANREISE.autobahn} bis zur Ausfahrt ${ANREISE.ausfahrt}, von dort sind es ${ANREISE.fahrzeitAbAusfahrt}.`,
+        `Wer mit dem Auto kommt, verlässt die ${ANREISE.autobahn} bei ${ANREISE.ausfahrt}, danach sind es noch ${ANREISE.fahrzeitAbAusfahrt}.`,
       ],
       [
-        `Mit der Bahn ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort} nach Ruhpolding, Fahrzeit ${ANREISE.bahnFahrzeit}. Der Bahnhof liegt ${ANREISE.bahnhofZumZentrum} vom Zentrum, von hier sind es {naehe:bahnhof}.`,
-        `Züge fahren ${ANREISE.bahnTakt} ab ${ANREISE.bahnAbfahrtsort}, die Fahrt dauert ${ANREISE.bahnFahrzeit}. Vom Bahnhof ins Zentrum sind es ${ANREISE.bahnhofZumZentrum}, von hier bis dorthin {naehe:bahnhof}.`,
+        "Mit der Bahn geht es über Traunstein, von dort fährt die Bayerische Regiobahn nach Ruhpolding. Zum Bahnhof sind es von hier {naehe:bahnhof}.",
+        "Die Bahn kommt über Traunstein, die Strecke nach Ruhpolding fährt die Bayerische Regiobahn. Zum Bahnhof sind es von hier {naehe:bahnhof}.",
       ],
     ],
     chips: [
@@ -554,20 +639,22 @@ export const FLOW: Record<string, FlowNode> = {
   "anreise-parken": {
     id: "anreise-parken",
     messages: ["Ein Überblick über die Parkmöglichkeiten im Ort."],
+    // Ohne das Parkhaus an der Vitalwelt und ohne freies Parken mit
+    // Gästekarte, beides nicht belegt.
     card: {
       title: "Parken in Ruhpolding",
       rows: [
         { label: PARKEN.rathaus, value: PARKEN.rathausTarif },
         { label: PARKEN.laubau, value: PARKEN.laubauTarif },
-        { label: PARKEN.vitalwelt, value: PARKEN.vitalweltTarif },
         { label: "Wohnmobile", value: PARKEN.wohnmobile },
       ],
-      note: PARKEN.gaestekarteHinweis,
+      // Flyer "Ruhpoldinger Almsommer", Drucklegung 03/25.
+      note: "Im Ortszentrum parken Sie kostenfrei, Parkzeitbegrenzungen und Parkscheibe gelten weiterhin. Gebührenpflichtig sind die Wanderparkplätze, der Parkplatz an der Chiemgau Arena und die Tiefgarage.",
     },
     ziel: "rathausgarage",
     qr: {
       title: `Weg zum ${PARKEN.rathaus}`,
-      hint: "Scanne den Code, um dich hinführen zu lassen.",
+      hint: "Scannen Sie den Code, um sich hinführen zu lassen.",
       url: mapsSuche(PARKEN.rathaus),
     },
     topic: "anreise",
@@ -615,8 +702,9 @@ export const FLOW: Record<string, FlowNode> = {
 
   "anreise-bus": {
     id: "anreise-bus",
+    // Ohne Takt: für die Dorflinien ist keiner veröffentlicht.
     messages: [
-      `Der Ortsbus (${ANREISE.ortsbusLinie}) fährt ${ANREISE.ortsbusTakt} zwischen Bahnhof, Zentrum und den Talstationen. Mit der Gästekarte ${ANREISE.gaestekarteName} ist die Fahrt im gesamten Chiemgau kostenlos, inklusive der Regionalzüge bis ${ANREISE.gaestekarteBahnBis}.`,
+      `Im Ort fahren die Dorflinien (${ANREISE.ortsbusLinie}) und der Rufbus ${ANREISE.rufbusName}. Mit der ${ANREISE.gaestekarteName} sind die Dorflinien kostenlos, die Bahn bis ${ANREISE.gaestekarteBahnBis} ebenfalls.`,
     ],
     topic: "anreise",
     chips: [
@@ -630,18 +718,14 @@ export const FLOW: Record<string, FlowNode> = {
     id: "wetter",
     topic: "wetter",
     // SIMULIERT: tagesaktuelle Angabe, siehe Kommentar an den Nachrichten.
-    kurz: [
-      "Wie gesagt, die Demo-Lage: heute heiter, morgen am Nachmittag Gewitterneigung.",
-    ],
+    kurz: ["Wie gesagt: {wetter:lage}"],
     // SIMULIERT: tagesaktuelle Angabe, im Prototyp ohne Datenanbindung nicht
     // echt darstellbar. In Abschnitt 4.4 der Arbeit als Grenze auszuweisen.
-    messages: [
-      [
-        "Aktuelle Demo-Lage: heute heiter bei 22 °C im Tal, Nullgradgrenze bei 3.200 m, schwacher Wind. Für morgen sind am Nachmittag Wärmegewitter möglich, ein früher Tourenstart ist ratsam.",
-        "Die Demo-Lage heute: heiter, 22 °C im Tal, schwacher Wind, Nullgradgrenze auf 3.200 m. Morgen können am Nachmittag Wärmegewitter aufziehen, deshalb früh losgehen.",
-      ],
-    ],
+    // Die Lage kommt aus der Einstellung des Versuchsleiters (wetter.ts),
+    // damit Wetterauskunft und Vorschläge nicht auseinanderlaufen.
+    messages: ["{wetter:lage}"],
     chips: [
+      { label: "Was passt zum Wetter?", to: "bedarf:f=1" },
       { label: "Bergwetter 3 Tage", to: "wetter-3tage" },
       { label: "Webcams", to: "wetter-webcam" },
       { label: "Andere Frage", to: "menu" },
@@ -649,20 +733,20 @@ export const FLOW: Record<string, FlowNode> = {
   },
   "wetter-3tage": {
     id: "wetter-3tage",
-    // SIMULIERT: tagesaktuelle Angabe, im Prototyp ohne Datenanbindung nicht
-    // echt darstellbar. In Abschnitt 4.4 der Arbeit als Grenze auszuweisen.
+    // Vorher eine erfundene Demo-Prognose, die auch der Wettereinstellung
+    // widersprechen konnte.
     messages: [
-      "Demo-Prognose: Mittwoch sonnig 24 °C, Donnerstag wechselhaft 19 °C mit Schauern, Freitag stabil 21 °C. Die Gewitterneigung ist am Donnerstag am höchsten.",
+      "Eine Prognose für die nächsten Tage habe ich nicht hinterlegt.",
+      "Die Tourenflyer der Tourist-Information raten, Wetterbericht und Strecke vor jeder Tour genau zu prüfen.",
     ],
     topic: "wetter",
     chips: backChips("wetter"),
   },
   "wetter-webcam": {
     id: "wetter-webcam",
-    // SIMULIERT: Livebilder, im Prototyp ohne Datenanbindung nicht echt
-    // darstellbar. In Abschnitt 4.4 der Arbeit als Grenze auszuweisen.
+    // Die früher genannten Webcam-Standorte waren nicht belegt.
     messages: [
-      `Live-Webcams gibt es von der ${BERGBAHNEN.rauschbergName}-Bergstation, der ${EVENTS.chiemgauArena} und vom ${EVENTS.rathausplatz}. In der echten Anwendung würden hier die aktuellen Bilder erscheinen.`,
+      "Webcam-Bilder kann ich Ihnen hier nicht zeigen, und welche Webcams es im Ort gibt, habe ich nicht verlässlich hinterlegt.",
     ],
     topic: "wetter",
     chips: backChips("wetter"),
@@ -672,32 +756,40 @@ export const FLOW: Record<string, FlowNode> = {
     id: "essen",
     topic: "essen",
     kurz: [
-      `Wie gesagt: die ${GASTRONOMIE.gipfelalm} am Berg, im Ort das ${GASTRONOMIE.gasthausPost} und die ${GASTRONOMIE.pizzeria}.`,
+      `Wie gesagt: im Ort unter anderem das ${GASTRONOMIE.gasthausPost} und die ${GASTRONOMIE.pizzeria}, am Berg die ${GASTRONOMIE.almstueberl}.`,
     ],
+    // Vorher mit der Gipfelalm am Rauschberg, die in der Gastronomieliste
+    // nicht vorkommt und deren Bahn nicht fährt.
     messages: [
       [
-        `Von der Berghütte bis zum gehobenen Lokal ist alles da. Auf dem ${BERGBAHNEN.rauschbergName} die ${GASTRONOMIE.gipfelalm} mit Panoramaterrasse, im Ort das ${GASTRONOMIE.gasthausPost} mit bayerischer Küche und die ${GASTRONOMIE.pizzeria}. Gehoben isst man im Restaurant des Hotels ${GASTRONOMIE.hotelGehoben}.`,
-        `Die Spanne reicht von der Berghütte bis zum gehobenen Lokal: oben am ${BERGBAHNEN.rauschbergName} die ${GASTRONOMIE.gipfelalm} mit Panoramaterrasse, unten im Ort das ${GASTRONOMIE.gasthausPost} mit bayerischer Küche und die ${GASTRONOMIE.pizzeria}, gehoben das Restaurant des Hotels ${GASTRONOMIE.hotelGehoben}.`,
+        `Ruhpolding Tourismus führt die Lokale im Ort in einer Liste, darunter das ${GASTRONOMIE.gasthausPost}, die ${GASTRONOMIE.pizzeria} und am Berg die ${GASTRONOMIE.almstueberl}.`,
+        `In der Gastronomieliste von Ruhpolding Tourismus stehen unter anderem das ${GASTRONOMIE.gasthausPost}, die ${GASTRONOMIE.pizzeria} und die ${GASTRONOMIE.almstueberl}.`,
       ],
+      "Öffnungszeiten und Ruhetage habe ich nicht gesichert hinterlegt, die erfragt die Tourist-Information für Sie.",
     ],
     chips: [
-      { label: "Hütten mit Spielplatz", to: "essen-huette" },
+      { label: "Vorschläge zum Essen", to: "empfehlung:essen:0" },
       { label: "Ruhetage beachten", to: "essen-ruhetag" },
       { label: "Andere Frage", to: "menu" },
     ],
   },
   "essen-huette": {
     id: "essen-huette",
+    // Vorher drei Hütten mit Spielplatz, zwei davon stehen in keiner Liste.
     messages: [
-      `Spielplatz direkt an der Hütte: das ${GASTRONOMIE.almstueberl} neben der Bergstation, die ${GASTRONOMIE.weitseealm} am Langlaufzentrum und die ${GASTRONOMIE.laubaualm} am Wanderparkplatz. Alle drei sind gut mit dem Kinderwagen erreichbar.`,
+      "Welche Hütten einen Spielplatz haben, habe ich nicht gesichert hinterlegt, und raten will ich da nicht. Die meisten Almen haben heuer bis 19. Oktober offen.",
+      `Am Schalter der Tourist-Information hilft Ihnen jemand persönlich weiter (${TOURIST_INFO.oeffnungszeiten}).`,
     ],
     topic: "essen",
     chips: backChips("essen"),
   },
   "essen-ruhetag": {
     id: "essen-ruhetag",
+    // KA [00:20:49], [00:21:59]: die Liste wird laufend nachgetragen und
+    // liegt im Selbstbedienungsbereich aus. Ein pauschaler Ruhetag war nicht
+    // belegt.
     messages: [
-      `Viele Gasthäuser im Ort haben ${GASTRONOMIE.ruhetage} Ruhetag. Die Berggastronomie an den Bahnen hat im Sommer durchgehend geöffnet. Eine tagesaktuelle Übersicht liegt in der Tourist-Info aus.`,
+      "Einen festen Ruhetag für alle gibt es nicht. Ruhetage und Betriebsruhen sammelt die Tourist-Information in einer Gastronomieliste, die sie laufend nachträgt. Die Liste liegt dort zum Mitnehmen aus.",
     ],
     topic: "essen",
     chips: backChips("essen"),
@@ -707,36 +799,44 @@ export const FLOW: Record<string, FlowNode> = {
     id: "familie",
     topic: "familie",
     kurz: [
-      `Wie gesagt: ${FAMILIE.freizeitpark}, ${FAMILIE.vitalwelt} und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}.`,
+      `Wie gesagt: der ${FAMILIE.freizeitpark}, die ${FAMILIE.vitalwelt} und bei Regen die Museen im Ort.`,
     ],
+    // Vorher mit Barfußweg, Kinderbecken und Öffnungszeit, alles nicht
+    // belegt.
     messages: [
       [
-        `Für Familien lohnen sich der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften (${FAMILIE.freizeitparkOeffnung}), die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Bei Regen ist das ${FAMILIE.heimatmuseum} eine Option.`,
-        `Mit Kindern lohnen sich vor allem drei Ziele: der ${FAMILIE.freizeitpark} mit Märchenwald und Fahrgeschäften, geöffnet ${FAMILIE.freizeitparkOeffnung}, die ${FAMILIE.vitalwelt} mit Kinderbecken und Rutsche und der ${FAMILIE.barfussweg} am ${WANDERN.foerchensee}. Regnet es, bietet sich das ${FAMILIE.heimatmuseum} an.`,
+        `Mit Kindern kommen im Ort unter anderem der ${FAMILIE.freizeitpark} und das Erlebnisbad ${FAMILIE.vitalwelt} infrage, bei Regen auch die drei Museen.`,
+        `Für Familien gibt es den ${FAMILIE.freizeitpark} und das Erlebnisbad ${FAMILIE.vitalwelt}, und wenn es regnet, die Museen im Ort.`,
       ],
-      [
-        `Zur ${FAMILIE.vitalwelt} sind es von hier {naehe:vitalwelt}.`,
-        `Die ${FAMILIE.vitalwelt} erreichst du von hier in {naehe:vitalwelt}.`,
-      ],
+      "Was genau passt, hängt davon ab, wie lange ihr bleibt und wie das Wetter ist. Soll ich kurz nachfragen?",
     ],
+    jaNein: true,
+    nein: "vorschlag:i=familie,b=kinder,f=1:0",
     chips: [
+      { label: "Ja, passende Vorschläge", to: "bedarf:i=familie,b=kinder" },
       { label: "Angebote bei Regen", to: "familie-regen" },
-      { label: "Wickeln & Stillen im Ort", to: "familie-baby" },
       { label: "Andere Frage", to: "menu" },
     ],
   },
   "familie-regen": {
     id: "familie-regen",
+    // Quelle: ruhpolding.de/bei-regen. Kletterhalle und Bastelecke standen
+    // nur im Antworttext.
     messages: [
-      `Schlechtwetter-Programm: die ${FAMILIE.vitalwelt} mit Hallenbad und Sauna, der Freizeitpark mit überdachten Bereichen, die ${FAMILIE.kletterhalle} (${FAMILIE.kletterhalleFahrzeit}) und das ${FAMILIE.heimatmuseum}. Die Tourist-Info hat eine Bastelecke für Kinder.`,
+      `Bei Regen nennt Ruhpolding Tourismus die ${FAMILIE.vitalwelt} und die drei Museen im Ort: ${KULTUR.holzknechtmuseum}, ${FAMILIE.heimatmuseum} und ${KULTUR.glockenschmiede}. In der Umgebung steht dort der Babalu Funpark in Traunstein.`,
     ],
     topic: "familie",
-    chips: backChips("familie"),
+    chips: [
+      { label: "Vorschläge für drinnen", to: "vorschlag:i=kultur,f=1:0" },
+      { label: "Zurück zum Thema", to: "familie" },
+      { label: "Andere Frage", to: "menu" },
+    ],
   },
   "familie-baby": {
     id: "familie-baby",
     messages: [
-      `Wickelmöglichkeiten gibt es in der Tourist-Info, in der ${FAMILIE.vitalwelt} und an den Talstationen von ${BERGBAHNEN.rauschbergName} und ${BERGBAHNEN.unternbergName}. Die meisten Cafés im Ort stellen bei Bedarf gern warmes Wasser bereit.`,
+      "Wo es Wickelmöglichkeiten gibt, habe ich nicht gesichert hinterlegt.",
+      `Am Schalter der Tourist-Information hilft Ihnen jemand persönlich weiter (${TOURIST_INFO.oeffnungszeiten}).`,
     ],
     topic: "familie",
     chips: backChips("familie"),
@@ -746,12 +846,14 @@ export const FLOW: Record<string, FlowNode> = {
     id: "winter",
     topic: "winter",
     kurz: [
-      `Wie gesagt: rund ${LOIPEN.netz} Loipen und das Wettkampfstadion in der ${EVENTS.chiemgauArena}.`,
+      `Wie gesagt: Langlauf und Biathlon in der ${EVENTS.chiemgauArena}, alpin Unternberg, ${WINTER.skigebiet} und Maiergschwendt.`,
     ],
+    // Ohne die 75 km Loipen und das öffentlich nutzbare Stadion, beides
+    // nicht belegt.
     messages: [
       [
-        `Ruhpolding ist ein Zentrum für Langlauf: rund ${LOIPEN.netz} gespurte Loipen und das Wettkampfstadion in der ${EVENTS.chiemgauArena}, das öffentlich genutzt werden kann. Von hier sind es {naehe:arena} dorthin. Alpin gibt es kleinere Skigebiete am ${WINTER.skigebiet} und in Inzell.`,
-        `Der Schwerpunkt liegt im Winter beim Langlauf: rund ${LOIPEN.netz} gespurte Loipen, dazu das öffentlich nutzbare Wettkampfstadion in der ${EVENTS.chiemgauArena}, {naehe:arena} von hier. Alpin bleiben die kleineren Skigebiete am ${WINTER.skigebiet} und in Inzell.`,
+        `Im Winter ist Ruhpolding vor allem Langlauf- und Biathlonort. Die ${EVENTS.chiemgauArena} ist Austragungsort des ${EVENTS.biathlonKurz}. Von hier sind es {naehe:arena}. Alpin gibt es drei Skigebiete: Unternberg, ${WINTER.skigebiet} und Maiergschwendt.`,
+        `Der Winter gehört in Ruhpolding dem Langlauf und dem Biathlon, mit der ${EVENTS.chiemgauArena} als Wettkampfstätte. Zum Skifahren gibt es drei kleine Gebiete: Unternberg, ${WINTER.skigebiet} und Maiergschwendt.`,
       ],
     ],
     chips: [
@@ -762,29 +864,20 @@ export const FLOW: Record<string, FlowNode> = {
   },
   "winter-loipe": {
     id: "winter-loipe",
-    messages: ["Die wichtigsten Angaben zum Langlauf."],
-    card: {
-      title: "Langlauf in Ruhpolding",
-      rows: [
-        {
-          label: "Loipennetz",
-          value: `ca. ${LOIPEN.netz}, ${LOIPEN.spurarten}`,
-        },
-        { label: "Loipenpass Tag", value: LOIPEN.passTag },
-        { label: "Loipenpass Woche", value: LOIPEN.passWoche },
-        { label: "mit Gästekarte", value: LOIPEN.gaestekarte },
-      ],
-      // SIMULIERT: Schneelage und Spurbericht wären tagesaktuell und sind im
-      // Prototyp ohne Datenanbindung nicht echt darstellbar.
-      note: "Schneelage und Spurbericht in der echten Anwendung tagesaktuell.",
-    },
+    // Vorher eine Karte mit Netzlänge und Loipenpass-Preisen, keiner der
+    // Werte war belegt.
+    messages: [
+      "Eine Gesamtlänge des Loipennetzes und Preise für einen Loipenpass nennt Ruhpolding Tourismus nicht, deshalb nenne ich Ihnen auch keine.",
+      "Einzelne Loipen stehen mit ihrer Länge auf ruhpolding.de, etwa die Drei-Seen-Loipe mit 12,3 km.",
+    ],
     topic: "winter",
     chips: backChips("winter"),
   },
   "winter-verleih": {
     id: "winter-verleih",
     messages: [
-      `Sportgeschäfte mit Verleih: ${WINTER.sportgeschaeft} am Dorfplatz, der Skiverleih an der Talstation ${WINTER.skigebiet} und der ${WINTER.langlaufShop} an der ${EVENTS.chiemgauArena}. In der Ferienzeit ist eine Reservierung empfehlenswert.`,
+      "Verleihbetriebe nennt Ruhpolding Tourismus nicht beim Namen, deshalb habe ich keine hinterlegt.",
+      `Am Schalter der Tourist-Information hilft Ihnen jemand persönlich weiter (${TOURIST_INFO.oeffnungszeiten}).`,
     ],
     topic: "winter",
     chips: backChips("winter"),
@@ -794,13 +887,13 @@ export const FLOW: Record<string, FlowNode> = {
     id: "unterkunft",
     topic: "unterkunft",
     kurz: [
-      `Wie gesagt: vom Ferienzimmer bis zum ${UNTERKUNFT.hoechsteKategorie}, buchbar über die Gästekarten-Plattform oder direkt beim Gastgeber.`,
+      "Wie gesagt: alle Gastgeber auf ruhpolding.de, und am Schalter bekommen Sie ein Angebot zum Mitnehmen.",
     ],
+    // KA [00:26:23] bis [00:26:52]. Vorher mit 4-Sterne-Hotel und
+    // spontaner Vermittlung, beides nicht belegt.
     messages: [
-      [
-        `Vom Ferienzimmer über den Bauernhof bis zum ${UNTERKUNFT.hoechsteKategorie} ist das Angebot breit. Buchbar ist alles über die offizielle Gästekarten-Plattform oder direkt bei den Gastgebern. Die Tourist-Info vermittelt bei freier Kapazität auch spontan.`,
-        `Das Angebot reicht vom Ferienzimmer über den Bauernhof bis zum ${UNTERKUNFT.hoechsteKategorie}. Buchen lässt sich alles über die offizielle Gästekarten-Plattform oder direkt beim Gastgeber, und die Tourist-Info vermittelt auch spontan, solange etwas frei ist.`,
-      ],
+      "Die Gastgeber in Ruhpolding stehen auf ruhpolding.de, dort lässt sich auch direkt buchen.",
+      "Am Schalter der Tourist-Information stellt Ihnen das Team ein Angebot zusammen und druckt es Ihnen aus. Damit können Sie in Ruhe vergleichen und später wiederkommen.",
     ],
     chips: [
       { label: "Urlaub am Bauernhof", to: "unterkunft-hof" },
@@ -811,7 +904,7 @@ export const FLOW: Record<string, FlowNode> = {
   "unterkunft-hof": {
     id: "unterkunft-hof",
     messages: [
-      `${UNTERKUNFT.hoefeAnzahl} Höfe in Ruhpolding bieten Urlaub am Bauernhof an, viele mit Tieren zum Mitversorgen und eigener Almhütte. Diese Betriebe sind oft Monate im Voraus ausgebucht, eine frühe Anfrage lohnt sich.`,
+      "Höfe mit Urlaub am Bauernhof stehen in der Gastgeberliste auf ruhpolding.de einzeln. Eine Gesamtzahl nennt die Liste nicht.",
     ],
     topic: "unterkunft",
     chips: backChips("unterkunft"),
@@ -819,7 +912,7 @@ export const FLOW: Record<string, FlowNode> = {
   "unterkunft-barrierefrei": {
     id: "unterkunft-barrierefrei",
     messages: [
-      `Mehrere Häuser sind nach dem Standard ${UNTERKUNFT.zertifizierung} zertifiziert, darunter ${UNTERKUNFT.barrierefreiHaeuser}. Die ${FAMILIE.vitalwelt} und die ${BERGBAHNEN.rauschbergName}-Gondel sind rollstuhlgerecht.`,
+      "Barrierefreie Unterkünfte sind in der Gastgeberliste auf ruhpolding.de einzeln ausgewiesen. Eine Zusammenstellung habe ich nicht, und ich nenne Ihnen lieber keine, die ich nicht prüfen kann.",
     ],
     topic: "unterkunft",
     chips: backChips("unterkunft"),
@@ -831,8 +924,8 @@ export const FLOW: Record<string, FlowNode> = {
     kurz: ["Wie gesagt, hier noch einmal die Kontaktdaten."],
     messages: [
       [
-        "Hier die Kontaktdaten der Tourist-Information. Vor Ort helfen dir die Mitarbeitenden auch persönlich weiter, von hier sind es {naehe:touristinfo}.",
-        "Das sind die Kontaktdaten der Tourist-Information. Persönlich weiter hilft dir das Team auch vor Ort, von hier sind es {naehe:touristinfo}.",
+        "Hier die Kontaktdaten der Tourist-Information. Vor Ort helfen Ihnen die Mitarbeitenden auch persönlich weiter. Von hier sind es {naehe:touristinfo}.",
+        "Das sind die Kontaktdaten der Tourist-Information. Persönlich weiter hilft Ihnen das Team auch vor Ort. Von hier sind es {naehe:touristinfo}.",
       ],
     ],
     card: {
@@ -845,7 +938,7 @@ export const FLOW: Record<string, FlowNode> = {
       ],
       note: TOURIST_INFO.kartenhinweis,
     },
-    chips: [{ label: "Andere Frage", to: "menu" }],
+    chips: [zettelChip("info", "de"), { label: "Andere Frage", to: "menu" }],
   },
 }
 
@@ -884,7 +977,7 @@ export const FOLGEN: Record<string, Folge> = {
     zeit: "wetter-3tage",
   },
   essen: {
-    vertiefung: "essen-huette",
+    vertiefung: "empfehlung:essen:0",
     zeit: "essen-ruhetag",
   },
   familie: {
@@ -909,16 +1002,16 @@ export const FOLGEN: Record<string, Folge> = {
 /* Rückfrage bei Mehrdeutigkeit. */
 
 const RUECKFRAGEN = [
-  "Damit ich dir das Richtige raussuche: geht es dir um {themen}?",
-  "Das kann ich unterschiedlich verstehen. Meinst du {themen}?",
+  "Damit ich Ihnen das Richtige heraussuche: Geht es Ihnen um {themen}?",
+  "Das kann ich unterschiedlich verstehen. Meinen Sie {themen}?",
   "Kurze Rückfrage, damit ich nichts Falsches zeige: {themen}?",
-  "Da gibt es mehrere Richtungen. Soll ich dir {themen} zeigen?",
+  "Da gibt es mehrere Richtungen. Soll ich Ihnen {themen} zeigen?",
 ] as const
 
 /** Nur wenn ein Leitbegriff vorliegt, sonst bliebe der Platzhalter leer. */
 const RUECKFRAGEN_MIT_BEGRIFF = [
-  "Bei „{begriff}“ bin ich nicht sicher, worauf du hinauswillst: {themen}?",
-  "„{begriff}“ kann ich hier zweierlei verstehen. Geht es dir um {themen}?",
+  "Bei „{begriff}“ bin ich nicht sicher, worauf Sie hinauswollen: {themen}?",
+  "„{begriff}“ kann ich hier zweierlei verstehen. Geht es Ihnen um {themen}?",
   "Damit ich „{begriff}“ richtig einordne: {themen}?",
 ] as const
 
@@ -997,7 +1090,7 @@ export function rueckfrageKnoten(
  */
 const NOTKNOTEN: FlowNode = {
   id: "notknoten",
-  messages: ["Da ist mir etwas dazwischengekommen. Wähle am besten ein Thema."],
+  messages: ["Da ist mir etwas dazwischengekommen. Wählen Sie am besten ein Thema."],
   chips: menuChips,
 }
 
@@ -1018,16 +1111,28 @@ const NOTKNOTEN: FlowNode = {
  * Die Sprache muss hier hinein, weil diese Knoten fertig gebaut werden und
  * nicht mehr durch uebersetze() laufen.
  */
+/** Was zur Laufzeit außer Sprache und Uhrzeit in einen Knoten eingeht. */
+export type Lage = {
+  wetter: WetterId
+  zettel: ZettelEintrag[]
+}
+
+const KEINE_LAGE: Lage = { wetter: "sonne", zettel: [] }
+
 export function getNode(
   id: string,
   sprache: Sprache = "de",
-  jetzt: Date = new Date()
+  jetzt: Date = new Date(),
+  lage: Lage = KEINE_LAGE
 ): FlowNode {
   const bekannt = FLOW[id]
   if (bekannt) return bekannt
 
   if (id.startsWith("ziel:")) {
-    return zielKnoten(id.slice(5), sprache, waehleVariante, jetzt) ?? NOTKNOTEN
+    return (
+      zielKnoten(id.slice(5), sprache, waehleVariante, jetzt, lage.wetter) ??
+      NOTKNOTEN
+    )
   }
 
   if (id.startsWith("fahrplan:")) {
@@ -1044,9 +1149,53 @@ export function getNode(
         Number(ab) || 0,
         sprache,
         waehleVariante,
-        jetzt
+        jetzt,
+        lage.wetter
       ) ?? NOTKNOTEN
     )
+  }
+
+  if (id.startsWith("bedarf:")) {
+    return bedarfKnoten(
+      id.slice(7),
+      sprache,
+      waehleVariante,
+      jetzt,
+      lage.wetter
+    )
+  }
+
+  if (id.startsWith("vorschlag:")) {
+    const [, profil, ab] = id.split(":")
+    return vorschlagKnoten(
+      profil ?? "",
+      Number(ab) || 0,
+      sprache,
+      waehleVariante,
+      jetzt,
+      lage.wetter
+    )
+  }
+
+  if (id === "hinweise") return meldungenKnoten(sprache, lage.wetter)
+
+  if (id.startsWith("dienst:")) {
+    return dienstKnoten(id.slice(7), sprache) ?? NOTKNOTEN
+  }
+
+  if (id.startsWith("verweis:")) {
+    return verweisKnoten(id.slice(8), sprache) ?? NOTKNOTEN
+  }
+
+  if (id === "flyer-nein") return flyerNeinKnoten(sprache)
+  if (id === "flyer-liste") return flyerListeKnoten(sprache)
+
+  if (id.startsWith("flyer:")) {
+    return flyerKnoten(id.slice(6), sprache) ?? NOTKNOTEN
+  }
+
+  if (id.startsWith("zettel:")) {
+    return zettelKnoten(id.slice(7), lage.zettel, sprache) ?? NOTKNOTEN
   }
 
   return NOTKNOTEN

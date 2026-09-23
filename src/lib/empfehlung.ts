@@ -1,5 +1,5 @@
 import type { Chip, FlowNode } from "@/lib/chat-flow"
-import { eignung, statusText, zeitbezug } from "@/lib/jetzt"
+import { eignung, spaetHinweis, statusText, zeitbezug } from "@/lib/jetzt"
 import type { Sprache } from "@/lib/sprache"
 import {
   naechsteAbfahrten,
@@ -13,7 +13,14 @@ import {
   type Gruppe,
   type Ziel,
   mapsSuche,
+  RADVERLEIH,
+  vorschlagbar,
 } from "@/lib/ziele"
+import type { WetterId } from "@/lib/wetter"
+import { schalterSatz } from "@/lib/service"
+import { zettelChip } from "@/lib/zettel"
+import { FLYER, flyerQuelle } from "@/lib/flyer"
+import { TOURIST_INFO } from "@/lib/daten"
 
 /**
  * Baut die beiden Knotenarten, die zur Laufzeit entstehen: den Vorschlag aus
@@ -38,44 +45,23 @@ import {
  * Vorschlagsliste
  * ------------------------------------------------------------------ */
 
-/**
- * Hervorhebung des beliebtesten Vorschlags.
- *
- * SIMULIERT: Der Prototyp erhebt keine Beliebtheit, die Auszeichnung steht
- * fest in der Gruppe. In der echten Anwendung käme sie aus den Aufrufzahlen.
- * In Abschnitt 4.4 der Arbeit als Grenze auszuweisen.
- */
-const FAVORIT = [
-  "Am häufigsten gewählt.",
-  "Das nehmen die meisten.",
-  "Der beliebteste der drei.",
-  "Wird hier am häufigsten nachgefragt.",
-]
-
-const FAVORIT_EN = [
-  "Most often chosen.",
-  "This is what most people take.",
-  "The most popular of the three.",
-]
-
 const ABSCHLUSS = [
-  "Sag mir, was dich anspricht, dann bekommst du den Weg dorthin als QR-Code. Wenn nichts dabei ist, frag einfach nach anderen Vorschlägen.",
-  "Welches davon soll ich dir genauer zeigen? Du bekommst dann gleich die Navigation dazu. Sonst nenne ich dir andere.",
-  "Such dir eines aus, dann gebe ich dir den Weg dorthin mit. Passt keines, sag Bescheid, ich habe noch mehr.",
+  "Welcher Vorschlag interessiert Sie? Dann sage ich Ihnen, für wen er sich eignet und worauf Sie achten sollten.",
+  "Sagen Sie mir, was davon Sie anspricht. Dann erzähle ich Ihnen mehr dazu. Passt nichts, nenne ich Ihnen gern andere.",
 ]
 
 const ABSCHLUSS_EN = [
-  "Tell me which one appeals and you will get the route there as a QR code. If none of them fit, just ask for other suggestions.",
-  "Which one shall I show you in detail? You will get the directions with it. Otherwise I will name others.",
+  "Which suggestion interests you? Then I will tell you who it suits and what to watch out for.",
+  "Tell me which of these appeals and I will tell you more. If none fit, I am happy to name others.",
 ]
 
 const NICHTS_MEHR = [
-  "Mehr habe ich zu diesem Thema nicht hinterlegt. Eines der genannten Ziele zeige ich dir aber gern genauer.",
-  "Das waren alle, die ich dazu habe. Wenn eines davon doch passt, sag es mir.",
+  "Mehr habe ich zu diesem Thema nicht hinterlegt. Eines der genannten Ziele erkläre ich Ihnen aber gern genauer.",
+  "Das waren alle, die ich dazu habe. Wenn eines davon doch passt, sagen Sie es mir.",
 ]
 
 const NICHTS_MEHR_EN = [
-  "That is all I have on this topic. I am happy to show you one of the places above in detail though.",
+  "That is all I have on this topic. I am happy to explain one of the places above in detail though.",
   "Those were all of them. If one of them does fit after all, just say so.",
 ]
 
@@ -94,7 +80,8 @@ export function empfehlungsKnoten(
   ab: number,
   sprache: Sprache,
   waehle: Zieher,
-  jetzt: Date
+  jetzt: Date,
+  wetter: WetterId = "sonne"
 ): FlowNode | null {
   const gruppe: Gruppe | undefined = GRUPPEN[gruppenId]
   if (!gruppe) return null
@@ -107,6 +94,10 @@ export function empfehlungsKnoten(
   const sortiert = gruppe.ziele
     .map(findeZiel)
     .filter((eintrag): eintrag is Ziel => Boolean(eintrag))
+    // Was nicht belegt ist, wird nicht vorgeschlagen (KA [00:23:34]), und bei
+    // Regen nichts, was bei Regen nicht fährt oder nicht ratsam ist.
+    .filter(vorschlagbar)
+    .filter((eintrag) => !(wetter === "regen" && eintrag.beiRegenNicht))
     .map((eintrag, index) => ({ eintrag, index }))
     .sort((a, b) => {
       const diff =
@@ -163,14 +154,7 @@ export function empfehlungsKnoten(
           )}`
         : waehle(en ? gruppe.einleitungEn : gruppe.einleitung),
       ...ausschnitt.map((eintrag, index) =>
-        vorschlag(
-          eintrag,
-          ab + index + 1,
-          eintrag.id === gruppe.favorit,
-          en,
-          waehle,
-          jetzt
-        )
+        vorschlag(eintrag, ab + index + 1, en, jetzt)
       ),
       waehle(en ? ABSCHLUSS_EN : ABSCHLUSS),
     ],
@@ -192,9 +176,7 @@ export function empfehlungsKnoten(
 function vorschlag(
   eintrag: Ziel,
   nummer: number,
-  istFavorit: boolean,
   en: boolean,
-  waehle: Zieher,
   jetzt: Date
 ): string {
   const zeilen = [
@@ -211,9 +193,8 @@ function vorschlag(
   }
   const lage = statusText(eintrag.oeffnung, jetzt, en ? "en" : "de")
   if (lage) zeilen.push(`— ${lage}`)
-  if (istFavorit) {
-    zeilen.push(`★ ${waehle(en ? FAVORIT_EN : FAVORIT)}`)
-  }
+  const spaet = spaetHinweis(eintrag.tagesfuellend, jetzt, en ? "en" : "de")
+  if (spaet) zeilen.push(`— ${spaet}`)
   return zeilen.join("\n")
 }
 
@@ -238,59 +219,157 @@ function themaDerGruppe(gruppe: Gruppe): string | undefined {
  * ------------------------------------------------------------------ */
 
 const HINWEIS_QR = [
-  "Scanne den Code mit der Handykamera, dann führt dich die Karte hin.",
-  "Einmal mit der Kamera scannen und die Route liegt auf deinem Gerät.",
-  "Code scannen, dann übernimmt die Navigation auf deinem Handy.",
+  "Scannen Sie den Code mit der Handykamera, dann führt Sie die Karte zum Ausgangspunkt.",
+  "Einmal mit der Kamera scannen, dann haben Sie den Weg zum Ausgangspunkt auf Ihrem Handy.",
 ]
 
 const HINWEIS_QR_EN = [
-  "Scan the code with your phone camera and the map will guide you there.",
-  "One scan with the camera and the route is on your own device.",
+  "Scan the code with your phone camera and the map will guide you to the starting point.",
+  "One scan with the camera and the route to the starting point is on your phone.",
 ]
 
-const EINLEITUNG_ZIEL = [
-  "Gute Wahl.",
-  "Sehr gern.",
-  "Das lässt sich machen.",
-  "Alles klar.",
-]
+const EINLEITUNG_ZIEL = ["Gern.", "Sehr gern.", "Gute Wahl."]
 
-const EINLEITUNG_ZIEL_EN = ["Good choice.", "Certainly.", "That works."]
+const EINLEITUNG_ZIEL_EN = ["Certainly.", "Gladly.", "Good choice."]
 
 /**
- * Ein Ziel mit Beschreibung, Entfernung und QR-Code.
+ * Ein Ziel in der Detailauskunft.
  *
- * Der QR-Code ist der Punkt der ganzen Übung: eine Wegbeschreibung, die am
- * Terminal vorgelesen wird, hat der Gast beim Losgehen schon vergessen. Ein
- * Code, den er scannt, ist auf seinem Gerät.
+ * Der Ablauf folgt der Vorgabe des Autors vom 23.09.2026 und der Arbeitsweise
+ * der Auskunft: erst was es ist, dann für wen es sich eignet, dann worauf man
+ * achten muss, dann der Weg zum Ausgangspunkt. Zum Schluss die Frage nach
+ * genau einem passenden Flyer. Mehr nicht, denn "alles einfach
+ * herumzuschmeißen, das macht man auch nicht" (KA [00:14:27]).
+ *
+ * Öffnungszeiten nennt der Prototyp nie. Die Auskunft ruft dafür bei den
+ * Betrieben an, weil Webseiten oft nicht stimmen (KA [00:06:11],
+ * [00:22:35]). Der Prototyp verweist deshalb an die Tourist-Information,
+ * die das nachfragt. Eine Telefonnummer des Betreibers steht nur dort, wo ein
+ * Flyer sie nennt.
  */
 export function zielKnoten(
   zielId: string,
   sprache: Sprache,
   waehle: Zieher,
-  jetzt: Date
+  jetzt: Date,
+  wetter: WetterId = "sonne"
 ): FlowNode | null {
   const eintrag = findeZiel(zielId)
   if (!eintrag) return null
 
   const en = sprache === "en"
   const name = en ? eintrag.nameEn : eintrag.name
+  const herkunft = gruppeVon(eintrag)
+  const qr = {
+    // Über dem Code steht der Ort, den die Karte ansteuert, nicht der
+    // Anzeigename. Bei einer Bergtour ist das der Ausgangspunkt.
+    title: en ? `Route to ${eintrag.suche}` : `Weg zu: ${eintrag.suche}`,
+    hint: waehle(en ? HINWEIS_QR_EN : HINWEIS_QR),
+    url: mapsSuche(eintrag.suche),
+  }
 
-  const beschreibung = [
+  // Nicht belegt: Name und Weg ja, alles andere nein. "Bevor ich falsche
+  // Informationen herausgebe, gebe ich lieber keine heraus." (KA [00:23:34])
+  if (eintrag.ungesichert) {
+    return {
+      id: `ziel:${zielId}`,
+      fertig: true,
+      topic: eintrag.topic,
+      ziel: zielId,
+      gruppe: herkunft,
+      messages: [
+        en
+          ? `I have nothing reliable on ${name}, so I would rather not describe it. The map will at least show you where it is.`
+          : `Zu ${name} habe ich nichts Gesichertes hinterlegt, deshalb beschreibe ich es Ihnen lieber nicht. Wo es liegt, zeigt Ihnen die Karte.`,
+        schalterSatz(sprache),
+      ],
+      qr,
+      chips: geschwisterChips(eintrag, en),
+    }
+  }
+
+  // 1. Was es ist
+  const kopf = [
     en ? eintrag.beschreibungEn : eintrag.beschreibung,
     `— ${en ? eintrag.eckdatenEn : eintrag.eckdaten}`,
   ]
   if (eintrag.naehe) {
-    beschreibung.push(
+    kopf.push(
       en
         ? `— {naehe:${eintrag.naehe}} from here`
         : `— von hier {naehe:${eintrag.naehe}}`
     )
   }
   const lage = statusText(eintrag.oeffnung, jetzt, sprache)
-  if (lage) beschreibung.push(`— ${lage}`)
+  if (lage) kopf.push(`— ${lage}`)
+  const spaet = spaetHinweis(eintrag.tagesfuellend, jetzt, sprache)
+  if (spaet) kopf.push(`— ${spaet}`)
 
-  const herkunft = gruppeVon(eintrag)
+  const messages: string[] = [
+    eintrag.ausserBetrieb
+      ? `${name}:`
+      : `${waehle(en ? EINLEITUNG_ZIEL_EN : EINLEITUNG_ZIEL)} ${name}:`,
+    kopf.join("\n"),
+  ]
+  if (eintrag.ausserBetrieb) {
+    messages.push(en ? eintrag.ausserBetrieb.en : eintrag.ausserBetrieb.de)
+  }
+
+  // 2. Für wen es sich eignet
+  if (eintrag.geeignet) {
+    messages.push(
+      en
+        ? `Suitable for: ${eintrag.geeignet.en}`
+        : `Geeignet für: ${eintrag.geeignet.de}`
+    )
+  }
+
+  // 3. Worauf man achten muss
+  const achtung: string[] = []
+  if (eintrag.achtung) {
+    achtung.push(en ? eintrag.achtung.en : eintrag.achtung.de)
+  }
+  // Wer ein Ziel bei Regen direkt wählt, bekommt die Warnung trotzdem. Die
+  // Vorschläge lassen es bei Regen weg (KA [00:13:43]).
+  if (wetter === "regen" && eintrag.beiRegenNicht) {
+    achtung.push(
+      en
+        ? "In this rain I would advise against it today. Something indoors would be the better choice."
+        : "Bei dem Regen heute würde ich Ihnen davon abraten. Etwas drinnen wäre heute die bessere Wahl."
+    )
+  }
+  if (eintrag.interessen?.includes("rad")) {
+    achtung.push(en ? RADVERLEIH.en : RADVERLEIH.de)
+  }
+  if (achtung.length > 0) {
+    messages.push(
+      en
+        ? `Please note: ${achtung.join(" ")}`
+        : `Worauf Sie achten sollten: ${achtung.join(" ")}`
+    )
+  }
+
+  // 4. Öffnungszeiten: nie nennen, sondern sagen, wer sie weiß.
+  if (eintrag.zeitenErfragen) {
+    messages.push(zeitenSatz(sprache))
+  }
+
+  // 5. Woher die Angaben stammen (M [00:07:28])
+  if (eintrag.flyer) messages.push(flyerQuelle(eintrag.flyer, en))
+
+  const flyer = eintrag.flyer ? FLYER[eintrag.flyer] : null
+  const chips: Chip[] = []
+  if (flyer) {
+    chips.push(
+      { label: en ? "Yes, please" : "Ja, gern", to: `flyer:${flyer.id}` },
+      { label: en ? "No, thank you" : "Nein, danke", to: "flyer-nein" }
+    )
+  }
+  chips.push(
+    zettelChip(`ziel:${zielId}`, sprache),
+    ...geschwisterChips(eintrag, en).filter((chip) => chip.to !== "menu")
+  )
+  if (!flyer) chips.push({ label: en ? "Something else" : "Andere Frage", to: "menu" })
 
   return {
     id: `ziel:${zielId}`,
@@ -300,20 +379,28 @@ export function zielKnoten(
     // Die Herkunft bleibt am Knoten hängen, damit "gibt es auch andere" von
     // hier aus weitergeht statt wieder bei den ersten dreien anzufangen.
     gruppe: herkunft,
-    messages: [
-      `${waehle(en ? EINLEITUNG_ZIEL_EN : EINLEITUNG_ZIEL)} ${name}:`,
-      beschreibung.join("\n"),
-    ],
-    qr: {
-      // Über dem Code steht der Ort, den die Karte ansteuert, nicht der
-      // Anzeigename des Vorschlags. Sonst führt der Code bei einer Bergtour
-      // scheinbar auf den Gipfel und tatsächlich zum Parkplatz.
-      title: en ? `Route to ${eintrag.suche}` : `Weg zu ${eintrag.suche}`,
-      hint: waehle(en ? HINWEIS_QR_EN : HINWEIS_QR),
-      url: mapsSuche(eintrag.suche),
-    },
-    chips: geschwisterChips(eintrag, en),
+    messages,
+    qr,
+    // Die Frage nach dem Flyer kommt nach dem Kartenlink, wie am Schalter:
+    // erst der Weg, dann das Material dazu.
+    nachher: flyer
+      ? [
+          en
+            ? `Would you like the flyer „${flyer.titelEn}“ free of charge to go with it?`
+            : `Möchten Sie den Flyer „${flyer.titel}“ kostenlos dazu haben?`,
+        ]
+      : undefined,
+    jaNein: Boolean(flyer),
+    nein: flyer ? "flyer-nein" : undefined,
+    chips,
   }
+}
+
+/** Wer die Öffnungszeiten weiß, mit Telefon und Öffnungszeiten der TI. */
+export function zeitenSatz(sprache: Sprache): string {
+  return sprache === "en"
+    ? `I do not hold reliable opening times. The tourist information checks them with the operator: phone ${TOURIST_INFO.telefon}, ${TOURIST_INFO.oeffnungszeitenEn}.`
+    : `Aktuelle Öffnungszeiten habe ich nicht verlässlich hinterlegt. Die Tourist-Information fragt sie für Sie nach: Tel. ${TOURIST_INFO.telefon}, ${TOURIST_INFO.oeffnungszeiten}.`
 }
 
 /**
@@ -331,6 +418,8 @@ function geschwisterChips(eintrag: Ziel, en: boolean): Chip[] {
   if (gruppe) {
     for (const id of gruppe.ziele) {
       if (id === eintrag.id || chips.length >= 2) continue
+      const geschwister = findeZiel(id)
+      if (!geschwister || !vorschlagbar(geschwister)) continue
       chips.push(zielChip(id, en))
     }
     chips.push({
@@ -451,6 +540,7 @@ export function fahrplanKnoten(
       note: en ? eintrag.hinweisEn : eintrag.hinweis,
     },
     chips: [
+      zettelChip(`fahrplan:${verbindungsId}`, sprache),
       {
         label: en ? "Route to the station" : "Weg zum Bahnhof",
         to: "ziel:bahnhof",

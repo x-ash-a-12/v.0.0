@@ -15,9 +15,11 @@ export function ChatView() {
     isTyping,
     streaming,
     sprache,
+    zettelAnzahl,
     selectChip,
     sendText,
     wechsleSprache,
+    zeigeZettel,
     reset,
   } = useChat()
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -39,6 +41,8 @@ export function ChatView() {
         onReset={reset}
         sprache={sprache}
         onSprache={wechsleSprache}
+        zettelAnzahl={zettelAnzahl}
+        onZettel={zeigeZettel}
       />
 
       <div

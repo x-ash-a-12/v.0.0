@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select"
 import { BuehneContext } from "@/lib/buehne"
 import { StandortContext, STANDORTE } from "@/lib/location"
+import { WetterContext, WETTER, wetter as findeWetter } from "@/lib/wetter"
 import { exportiere } from "@/lib/telemetry"
 import { cn } from "@/lib/utils"
 
@@ -124,6 +125,9 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
   const standort =
     STANDORTE.find((eintrag) => eintrag.id === standortId) ?? STANDORTE[0]
 
+  // SIMULIERT: das Wetter stellt der Versuchsleiter ein, siehe wetter.ts.
+  const [wetterId, setWetterId] = React.useState(WETTER[0].id)
+
   return (
     <div className="flex h-svh w-full flex-col overflow-hidden bg-muted/40">
       <div className="flex flex-wrap items-center gap-1.5 border-b bg-background px-3 py-2">
@@ -188,6 +192,29 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
           </SelectContent>
         </Select>
 
+        <span className="mr-1 ml-3 text-xs font-medium text-muted-foreground">
+          Wetter
+        </span>
+        <Select
+          value={wetterId}
+          onValueChange={(wert) =>
+            setWetterId(findeWetter(wert ?? wetterId).id)
+          }
+        >
+          <SelectTrigger size="sm" className="w-28" aria-label="Wetter">
+            <SelectValue>
+              {(wert) => findeWetter(wert).label}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {WETTER.map((eintrag) => (
+              <SelectItem key={eintrag.id} value={eintrag.id}>
+                {eintrag.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* Auswertung der Tests, ebenfalls Werkzeug des Versuchsleiters. */}
         <Button
           type="button"
@@ -202,7 +229,9 @@ export function DevicePreview({ children }: { children: React.ReactNode }) {
       </div>
 
       <StandortContext.Provider value={standort}>
-        <DeviceStage device={device}>{children}</DeviceStage>
+        <WetterContext.Provider value={findeWetter(wetterId)}>
+          <DeviceStage device={device}>{children}</DeviceStage>
+        </WetterContext.Provider>
       </StandortContext.Provider>
     </div>
   )

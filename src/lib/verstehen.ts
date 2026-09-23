@@ -2,6 +2,18 @@ import { FOLGEN, TOPICS, type Chip } from "@/lib/chat-flow"
 import { leitbegriff } from "@/lib/sprache"
 import { GRUPPEN, VORSCHLAEGE, ZIELE } from "@/lib/ziele"
 import { VERBINDUNGEN } from "@/lib/fahrplan"
+import {
+  GLEICH_ZEIGEN,
+  UEBERSPRINGEN,
+  bedarfAusText,
+  dekodiere,
+  ergaenze,
+  kodiere,
+  naechsteFrage,
+  type Profil,
+} from "@/lib/bedarf"
+import { erkenneDienst, erkenneFernziel } from "@/lib/service"
+import { zettelbar } from "@/lib/zettel"
 
 /**
  * Der Verstehens-Kern: er ordnet freien Text einem Knoten des Antwortpfads zu.
@@ -174,7 +186,7 @@ const META: {
   {
     name: "faehigkeit",
     weichtThema: true,
-    test: /\bwas kannst du\b|\bwas kannst du alles\b|\bwer bist du\b|\bwas bist du\b|\bbist du (ein |eine )?(mensch|computer|bot|roboter|ki|programm|maschine)\b|\bwie funktionierst du\b|\bwomit kannst du helfen\b|\bwobei kannst du helfen\b|\bwhat can you do\b|\bwho are you\b|\bare you (a |an )?(human|bot|robot|ai)\b/,
+    test: /\bwas kannst du\b|\bwas koennen sie\b|\bwer sind sie\b|\bwas sind sie\b|\bsind sie (ein |eine )?(mensch|computer|bot|roboter|ki|programm|maschine)\b|\bwas kannst du alles\b|\bwer bist du\b|\bwas bist du\b|\bbist du (ein |eine )?(mensch|computer|bot|roboter|ki|programm|maschine)\b|\bwie funktionierst du\b|\bwomit kannst du helfen\b|\bwobei kannst du helfen\b|\bwhat can you do\b|\bwho are you\b|\bare you (a |an )?(human|bot|robot|ai)\b/,
     to: "ueber-mich",
   },
   {
@@ -285,7 +297,7 @@ const ANDERE =
  * drei Vorschläge, aus denen sich einer wählen lässt.
  */
 const EMPFEHLUNGSFRAGE =
-  /\bempfehl\w*\b|\bvorschlag\w*\b|\bvorschlaeg\w*\b|\btipp\w*\b|\bidee\w*\b|\bwas (kann|koennte|soll|sollte) (ich|man|wir)\b|\bwo (kann|koennte|soll|sollte) (ich|man|wir)\b|\bwas gibt es\b|\bwas gibts\b|\bwas lohnt sich\b|\bwohin\b|\bwas ist zu empfehlen\b|\bwelche\w*\b[^]*\b(gibt es|gibts|kann ich|kann man|sind|lohnen|empfiehlst)\b|\brecommend\w*\b|\bsuggestion\w*\b|\bwh(at|ere) (can|should) (i|we)\b|\bwhat is there\b/
+  /\bempfehl\w*\b|\bvorschlag\w*\b|\bvorschlaeg\w*\b|\btipp\w*\b|\bidee\w*\b|\bwas (kann|koennen|koennte|koennten|soll|sollen|sollte) (ich|man|wir)\b|\bwo (kann|koennen|koennte|koennten|soll|sollen|sollte) (ich|man|wir)\b|\bwas gibt es\b|\bwas gibts\b|\bwas lohnt sich\b|\bwohin\b|\bwas ist zu empfehlen\b|\bwelche\w*\b[^]*\b(gibt es|gibts|kann ich|kann man|sind|lohnen|empfiehlst)\b|\brecommend\w*\b|\bsuggestion\w*\b|\bwh(at|ere) (can|should) (i|we)\b|\bwhat is there\b/
 
 /**
  * Die Bekundung eines Vorhabens, im Unterschied zu einer Wissensfrage.
@@ -1309,6 +1321,16 @@ export type Kontext = {
    * greift, wenn zwischendurch etwas anderes gesagt wurde.
    */
   ziel: string | null
+  /** Der nächste Ausschnitt einer Vorschlagsliste aus der Bedarfsklärung. */
+  weiter?: string | null
+  /** Wohin ein "nein" auf eine Ja-Nein-Frage führt. */
+  nein?: string | null
+  /**
+   * Der zuletzt angebotene oder gezeigte Flyer. Er überlebt die einzelne
+   * Antwort, damit "ich will den Flyer doch ausgedruckt" auch zwei Schritte
+   * später noch weiß, welcher gemeint ist (Testlauf vom 23.09.2026).
+   */
+  flyer?: string | null
 }
 
 export function neuerKontext(): Kontext {
@@ -1342,6 +1364,9 @@ export type Grund =
   | "navigation"
   | "zielwahl"
   | "empfehlung"
+  | "bedarf"
+  | "dienst"
+  | "zettel"
 
 export type MatchResult =
   | { kind: "hit"; to: string; grund: Grund }
@@ -1366,9 +1391,38 @@ export function verstehe(
   const staende = bewerte(text)
   const spitze = staende[0]?.punkte ?? 0
 
+  /* Stufe 0: Antwort auf eine Ja-Nein-Frage, etwa nach dem Flyer. Vor den
+     Meta-Absichten, sonst landet "nein danke" beim Dank. */
+  if (kontext.nein && kontext.chips.length > 0) {
+    if (NEIN.test(roh)) return { kind: "hit", to: kontext.nein, grund: "auswahl" }
+    if (JA.test(roh)) {
+      return { kind: "hit", to: kontext.chips[0].to, grund: "auswahl" }
+    }
+  }
+
+  /* Stufe 0: alles rund um den Flyer. */
+  const flyer = zumFlyer(roh, kontext)
+  if (flyer) return { kind: "hit", to: flyer, grund: "auswahl" }
+
+  /* Stufe 0: Antwort auf eine Frage der Bedarfsklärung. */
+  const bedarf = zurBedarfsklaerung(roh, kontext)
+  if (bedarf) return bedarf
+
   /* Stufe 1: Meta-Absichten. */
   for (const meta of META) {
     if (!meta.test.test(roh)) continue
+
+    // "Was kann ich hier machen" beantwortet die Auskunft nicht mit einer
+    // Liste, sondern mit einer Gegenfrage (KA [00:13:11]). Was die Eingabe
+    // schon verrät, etwa "mit Kinderwagen", muss nicht noch einmal gefragt
+    // werden. Das gilt auch dann, wenn ein Wort wie "Kinderwagen" im Lexikon
+    // stark ist: die Frage bleibt eine nach Unternehmungen.
+    if (meta.name === "umgebung") {
+      const profil = bedarfAusText(roh)
+      if (Object.keys(profil).length > 0 || spitze < SCHWELLE) {
+        return { kind: "hit", to: `bedarf:${kodiere(profil)}`, grund: "bedarf" }
+      }
+    }
 
     // Steht neben der allgemeinen Form eine echte Sachfrage, gewinnt die
     // Sachfrage: "Danke, und wo kann ich parken?"
@@ -1383,6 +1437,25 @@ export function verstehe(
     return { kind: "hit", to: meta.to, grund: "meta" }
   }
 
+  /* Stufe 1b: Zettel, tägliche Fragen und Ziele außerhalb. */
+  const zettel = zumZettel(roh, kontext)
+  if (zettel) return { kind: "hit", to: zettel, grund: "zettel" }
+
+  if (HINWEISE.test(roh)) return { kind: "hit", to: "hinweise", grund: "dienst" }
+
+  const dienst = erkenneDienst(roh)
+  if (dienst) return { kind: "hit", to: dienst, grund: "dienst" }
+
+  const fernziel = erkenneFernziel(roh)
+  if (fernziel) return { kind: "hit", to: fernziel, grund: "dienst" }
+
+  // Radfahren hat kein eigenes Thema im Lexikon. Wer davon spricht, kommt
+  // in die Bedarfsklärung mit dem Interesse Rad.
+  if (RADWUNSCH.test(roh)) {
+    const profil = ergaenze(bedarfAusText(roh), { i: "rad" })
+    return { kind: "hit", to: `bedarf:${kodiere(profil)}`, grund: "bedarf" }
+  }
+
   /* Stufe 2: Fahrverbindung zu einem Ort außerhalb. */
   const verbindung = findeVerbindungImText(roh)
   if (verbindung && willFahren(roh, kontext, spitze)) {
@@ -1393,7 +1466,10 @@ export function verstehe(
   const weg = zurNavigation(roh, kontext)
   if (weg) return weg
 
-  /* Stufe 4: andere Vorschläge aus derselben Gruppe. */
+  /* Stufe 4: andere Vorschläge aus derselben Liste. */
+  if (kontext.weiter && ANDERE.test(roh)) {
+    return { kind: "hit", to: kontext.weiter, grund: "empfehlung" }
+  }
   if (kontext.gruppe && ANDERE.test(roh)) {
     const naechste = kontext.gruppe.ab + VORSCHLAEGE
     return {
@@ -1446,6 +1522,18 @@ export function verstehe(
       GRUPPEN[thema] &&
       EMPFEHLUNGSFRAGE.test(roh)
     ) {
+      // Bei Touren und bei Kindern hängt die richtige Antwort an Kondition,
+      // Begleitung und Wetter. Dort fragt die Auskunft erst nach
+      // (KA [00:12:01], [00:12:47]), statt eine feste Liste zu nennen.
+      const vorbelegt: Record<string, Profil> = {
+        wandern: { i: "berge" },
+        familie: { i: "familie", b: "kinder" },
+      }
+      const start = vorbelegt[thema]
+      if (start) {
+        const profil = ergaenze(bedarfAusText(roh), start)
+        return { kind: "hit", to: `bedarf:${kodiere(profil)}`, grund: "bedarf" }
+      }
       return { kind: "hit", to: `empfehlung:${thema}:0`, grund: "empfehlung" }
     }
 
@@ -1527,7 +1615,7 @@ function waehleAusChips(roh: string, kontext: Kontext): string | null {
   // Rückfrage: sonst wäre es eine Antwort auf eine Frage, die keiner gestellt
   // hat, und würde in ein zufälliges Thema führen.
   if (kontext.istRueckfrage && JA.test(roh)) return kontext.chips[0].to
-  if (kontext.istRueckfrage && NEIN.test(roh)) return "menu"
+  if (kontext.istRueckfrage && NEIN.test(roh)) return kontext.nein ?? "menu"
 
   // Ein Ordnungswort zählt ab dem obersten Vorschlag, eine blanke Zahl meint
   // die gedruckte Nummer. Auf der ersten Seite fällt beides zusammen, ab der
@@ -1665,3 +1753,191 @@ function willFahren(roh: string, kontext: Kontext, spitze: number): boolean {
   if (kontext.knoten?.startsWith("fahrplan:")) return true
   return spitze < SCHWELLE
 }
+
+/* ------------------------------------------------------------------ *
+ * Bedarfsklärung, Zettel und Hinweise
+ * ------------------------------------------------------------------ */
+
+/**
+ * Eine freie Antwort, während die Bedarfsklärung läuft.
+ *
+ * Sie darf mehrere Fragen auf einmal beantworten. Findet sich darin nichts
+ * zum Bedarf, geht der Durchlauf normal weiter: wer mitten in der Klärung
+ * nach der Toilette fragt, bekommt die Antwort auf diese Frage.
+ */
+function zurBedarfsklaerung(roh: string, kontext: Kontext): MatchResult | null {
+  if (!kontext.knoten?.startsWith("bedarf:")) return null
+  const bisher = dekodiere(kontext.knoten.slice(7))
+
+  if (GLEICH_ZEIGEN.test(roh)) {
+    return {
+      kind: "hit",
+      to: `vorschlag:${kodiere(bisher)}:0`,
+      grund: "bedarf",
+    }
+  }
+
+  const offen = naechsteFrage(bisher)
+  if (offen && UEBERSPRINGEN.test(roh)) {
+    return {
+      kind: "hit",
+      to: `bedarf:${kodiere(ergaenze(bisher, { [offen]: "x" } as Profil))}`,
+      grund: "bedarf",
+    }
+  }
+
+  const neu = bedarfAusText(roh)
+  // Was schon feststeht, überschreibt eine Nebenbemerkung nicht: "Berge"
+  // in "wir sind nur heute in den Bergen" soll das Interesse nicht ändern,
+  // wenn es schon "Kultur" war.
+  const nurNeues = Object.fromEntries(
+    Object.entries(neu).filter(
+      ([schluessel]) => !bisher[schluessel as keyof Profil] || schluessel === offen
+    )
+  ) as Profil
+  // Findet die Bedarfserkennung nichts, hilft das Themenlexikon bei der
+  // offenen Frage nach dem Interesse. Sonst verlässt eine Antwort wie
+  // "spazierengehen" die Klärung und landet im Themeneinstieg.
+  if (Object.keys(nurNeues).length === 0 && offen === "i") {
+    const thema = themenstaende(bewerte(roh))[0]
+    const interesse: Record<string, Profil["i"]> = {
+      wandern: "berge",
+      familie: "familie",
+      winter: "berge",
+    }
+    if (thema && thema.punkte >= SCHWELLE && interesse[thema.topic]) {
+      nurNeues.i = interesse[thema.topic]
+    }
+  }
+  if (Object.keys(nurNeues).length === 0) return null
+
+  return {
+    kind: "hit",
+    to: `bedarf:${kodiere(ergaenze(bisher, nurNeues))}`,
+    grund: "bedarf",
+  }
+}
+
+const DRUCKEN = /\b(aus)?druck\w*\b|\bprint\w*\b/
+const MAILEN =
+  /\bper (e ?)?mail\b|\b(schick|send|mail)\w*\b[^]*\b(mir|uns|me|us)\b|\bby e ?mail\b|\bemail me\b/
+const MERKEN =
+  /\bmerk\w*\b|\bnotier\w*\b|\baufschreib\w*\b|\bschreib\w* (mir |uns )?(das |es )?auf\b|\bauf (den|meinen) zettel\b|\bwrite (it|that) down\b|\badd (it|that|this) to my notes\b/
+const ZETTEL = /\bzettel\b|\bmy notes\b/
+
+/**
+ * Wünsche rund um den Zettel.
+ *
+ * "Druck mir das aus" meint das, was gerade auf dem Schirm steht. Ist das
+ * zettelbar und noch nicht darauf, legt use-chat.ts es vor dem Druck dazu.
+ */
+function zumZettel(roh: string, kontext: Kontext): string | null {
+  if (MERKEN.test(roh)) {
+    return zettelbar(kontext.knoten)
+      ? `zettel:neu:${kontext.knoten}`
+      : "zettel:zeigen"
+  }
+  if (DRUCKEN.test(roh)) return "zettel:drucken"
+  if (MAILEN.test(roh)) return "zettel:mail"
+  if (ZETTEL.test(roh)) return "zettel:zeigen"
+  return null
+}
+
+/** Die Frage nach Neuigkeiten, Sperrungen und aktuellen Hinweisen. */
+const HINWEISE =
+  /\baktuell\w*\b[^]*\b(hinweis\w*|meldung\w*|info\w*|neuigkeit\w*|lage)\b|\bhinweise\b|\bsperrung\w*\b|\bgesperrt\b|\bneuigkeit\w*\b|\bwas gibt es neues\b|\bnews\b|\bclosures?\b|\bnotices?\b/
+
+const DIGITAL =
+  /\bdigital\w*\b|\bhandy\b|\bsmartphone\b|\btelefon\b|\bqr\b|\bpdf\b|\bscan\w*\b|\bonline\b|\bphone\b|\bdownload\w*\b/
+/**
+ * Gedruckt, auch mit Tippfehler: "ausgedruck" blieb im Testlauf vom
+ * 23.09.2026 ohne Treffer.
+ */
+const GEDRUCKT =
+  /\bgedruck\w*\b|\bausgedruck\w*\b|\bausdruck\w*\b|\bdruck\w*\b|\bpapier\w*\b|\bphysisch\w*\b|\bschriftlich\w*\b|\bin der hand\b|\bzum mitnehmen\b|\banalog\w*\b|\bprint\w*\b|\bpaper\b/
+const FLYERWORT =
+  /\bflyer\w*\b|\bflier\w*\b|\bprospekt\w*\b|\bbroschuer\w*\b|\bfaltblatt\b|\bheft\w*\b|\bleaflet\w*\b|\bbrochure\w*\b/
+
+/**
+ * Wünsche zum Flyer, im Flyerdialog und außerhalb.
+ *
+ * Im Flyerdialog genügt ein Wort ("gedruckt", "digital"), auch wenn der Gast
+ * nach der digitalen Ausgabe doch noch den gedruckten will. Außerhalb muss
+ * das Wort "Flyer" fallen. Welcher gemeint ist, sagt der zuletzt angebotene;
+ * gibt es keinen, zeigt der Prototyp die Auswahl.
+ */
+function zumFlyer(roh: string, kontext: Kontext): string | null {
+  const imDialog =
+    Boolean(kontext.knoten?.startsWith("flyer")) ||
+    kontext.knoten === "dienst:ortsplan"
+  const erwaehnt = FLYERWORT.test(roh)
+  const genannt = flyerImText(roh, imDialog || erwaehnt)
+  if (!imDialog && !erwaehnt) return null
+
+  const form = GEDRUCKT.test(roh)
+    ? "gedruckt"
+    : DIGITAL.test(roh)
+      ? "digital"
+      : null
+
+  // 1. Ein Flyer beim Namen, auch mit Tippfehler: "Ortplan".
+  if (genannt) return form ? `flyer:${genannt}:${form}` : `flyer:${genannt}`
+
+  // 2. Die Frage nach der Auswahl gewinnt gegen den gemerkten Flyer.
+  //    "welche flyer gibt es" und "nein, ich will einen anderen" führten im
+  //    Testlauf vom 23.09.2026 immer wieder zum Ortsplan.
+  if (FLYER_AUSWAHL.test(roh)) return "flyer-liste"
+
+  // 3. Nur die Form: gilt für den zuletzt angebotenen Flyer.
+  const id = kontext.flyer
+  if (id && form) return `flyer:${id}:${form}`
+  if (id && erwaehnt) return `flyer:${id}`
+  if (erwaehnt) return "flyer-liste"
+  return null
+}
+
+/** Die Bitte um eine Auswahl statt um den gemerkten Flyer. */
+const FLYER_AUSWAHL =
+  /\bwelche\w*\b|\bander\w*\b|\balle\b|\bweitere\w*\b|\bnoch (mehr|einen|was)\b|\bgibt es\b|\bgibts\b|\bauswahl\b|\bliste\b|\bwhich\b|\bother\b|\ball\b/
+
+/**
+ * Welcher Flyer beim Namen genannt wird. Mit Vertipper-Toleranz, denn im
+ * Testlauf blieb "Ortplan" ohne Treffer.
+ *
+ * `offen` erlaubt auch allgemeine Wörter wie "Rad" oder "Gipfel". Das gilt
+ * nur, wenn ohnehin von Flyern die Rede ist; sonst wäre jede Frage nach
+ * einer Radtour eine Frage nach dem Radflyer.
+ */
+const FLYER_NAMEN: [string, string[], string[]][] = [
+  ["ortsplan", ["ortsplan", "ortskarte", "stadtplan"], ["plan", "karte", "orientierung"]],
+  ["almsommer", ["almsommer", "almflyer", "almenflyer"], ["alm", "almen", "almhuett", "huett"]],
+  ["rad", ["radflyer", "fahrradflyer", "mountainbikeflyer", "radtouren"], ["rad", "fahrrad", "radl", "bike", "mountainbike", "mtb"]],
+  ["gipfel", ["gipfelflyer", "gipfeltouren", "gipfeltour"], ["gipfel", "berg", "bergtour", "summit"]],
+  ["wandern", ["wanderflyer", "wanderwege", "spazierwege"], ["wander", "wanderung", "spazier", "spaziergang", "walk"]],
+]
+
+function flyerImText(roh: string, offen: boolean): string | null {
+  const woerter = roh.split(" ").filter(Boolean)
+  const staemme = woerter.map(stamm)
+  for (const [id, eindeutig, allgemein] of FLYER_NAMEN) {
+    // Eindeutige Namen mit Vertipper-Toleranz, verglichen am ungekürzten
+    // Wort: die Stammbildung macht aus "ortplan" sonst "ortpla".
+    const vertippt = eindeutig.some((name) =>
+      woerter.some((wort) => {
+        const grenze = toleranz(Math.max(wort.length, name.length))
+        return grenze > 0 && abstand(wort, name, grenze) <= grenze
+      })
+    )
+    if (vertippt || eindeutig.some((name) => trifft(name, woerter, staemme, 1))) {
+      return id
+    }
+    // Allgemeine Wörter nur exakt: mit Toleranz würde "andere" zu "wander".
+    if (offen && allgemein.some((wort) => trifft(wort, woerter, staemme, 1))) {
+      return id
+    }
+  }
+  return null
+}
+
+const RADWUNSCH =
+  /\bradfahren\b|\brad fahren\b|\bradeln\b|\bradtour\w*\b|\bfahrradtour\w*\b|\bfahrrad fahren\b|\bmountainbik\w*\b|\bbiken\b|\bcycling\b|\bbike (ride|tour)\w*\b/

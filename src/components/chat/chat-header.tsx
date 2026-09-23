@@ -1,4 +1,4 @@
-import { RotateCcw } from "lucide-react"
+import { NotebookPen, RotateCcw } from "lucide-react"
 
 import { BotAvatar } from "@/components/chat/bot-avatar"
 import { LanguageToggle } from "@/components/chat/language-toggle"
@@ -11,9 +11,18 @@ type ChatHeaderProps = {
   /** Aktive Dialogsprache. */
   sprache: Sprache
   onSprache: (sprache: Sprache) => void
+  /** Einträge auf dem Zettel des Gasts. */
+  zettelAnzahl: number
+  onZettel: () => void
 }
 
-export function ChatHeader({ onReset, sprache, onSprache }: ChatHeaderProps) {
+export function ChatHeader({
+  onReset,
+  sprache,
+  onSprache,
+  zettelAnzahl,
+  onZettel,
+}: ChatHeaderProps) {
   return (
     <header className="flex items-center gap-3 border-b bg-background/95 px-3 py-2.5 backdrop-blur @sm:px-4">
       <BotAvatar className="size-9" />
@@ -24,6 +33,28 @@ export function ChatHeader({ onReset, sprache, onSprache }: ChatHeaderProps) {
           Digitaler Assistent
         </p>
       </div>
+      {/*
+       * Der Zettel bleibt in der Kopfzeile sichtbar, sobald etwas darauf
+       * steht. Wer sammelt, soll jederzeit sehen, dass es angekommen ist,
+       * und ihn ohne Umweg über den Chat öffnen können.
+       */}
+      {zettelAnzahl > 0 ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onZettel}
+          aria-label={
+            sprache === "en"
+              ? `My notes, ${zettelAnzahl} entries`
+              : `Mein Zettel, ${zettelAnzahl} Einträge`
+          }
+          className="shrink-0 gap-1.5 px-2"
+        >
+          <NotebookPen className="size-4" aria-hidden="true" />
+          <span className="tabular-nums">{zettelAnzahl}</span>
+        </Button>
+      ) : null}
       <LanguageToggle sprache={sprache} onWechsel={onSprache} />
       <Button
         type="button"

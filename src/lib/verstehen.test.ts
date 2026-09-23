@@ -103,10 +103,11 @@ describe("Normalisierung", () => {
 })
 
 describe("Die Eingaben aus dem Testlauf vom 03.09.", () => {
-  test("„wo kann ich wandern gehen“ führt zu drei Vorschlägen", () => {
-    // Bis zum Testlauf um 12:30 endete das im Themeneinstieg. Die Frage ist
-    // aber die Bitte um eine Vorauswahl, nicht nach einem Überblickstext.
-    expect(ziel("wo kann ich wandern gehen")).toBe("empfehlung:wandern:0")
+  test("„wo kann ich wandern gehen“ führt in die Bedarfsklärung", () => {
+    // Bis zum Testlauf um 12:30 endete das im Themeneinstieg, danach in drei
+    // festen Vorschlägen. Seit dem Interview mit der Auskunft (22.09.) wird
+    // erst nachgefragt, das Interesse steht dabei schon fest.
+    expect(ziel("wo kann ich wandern gehen")).toBe("bedarf:i=berge")
   })
 
   test("„welche bergbahnen gibt es“ führt zu den Bahnen, nicht zum Einstieg", () => {
@@ -127,8 +128,8 @@ describe("Die Eingaben aus dem Testlauf vom 03.09.", () => {
     expect(ziel("qr")).toBe("qr-hinweis")
   })
 
-  test("„was kann ich hier machen“ ist eine Frage nach dem Ort", () => {
-    expect(ziel("was kann ich hier machen")).toBe("empfehlung:hier:0")
+  test("„was kann ich hier machen“ beginnt mit einer Gegenfrage", () => {
+    expect(ziel("was kann ich hier machen")).toBe("bedarf:")
   })
 
   test("„wo bin ich gerade“ und „wo bin ich“ nennen den Aufstellort", () => {
@@ -152,19 +153,17 @@ describe("Meta-Fragen an das Gerät", () => {
   })
 
   test("Fragen nach dem Ort und seinen Möglichkeiten", () => {
-    expect(ziel("was gibt es hier zu sehen")).toBe("empfehlung:hier:0")
-    expect(ziel("was kann man hier unternehmen")).toBe("empfehlung:hier:0")
-    expect(ziel("was gibts hier")).toBe("empfehlung:hier:0")
+    expect(ziel("was gibt es hier zu sehen")).toBe("bedarf:")
+    expect(ziel("was kann man hier unternehmen")).toBe("bedarf:")
+    expect(ziel("was gibts hier")).toBe("bedarf:")
   })
 
   test("die Frage nach dem Ort auch im Konjunktiv", () => {
-    expect(ziel("was könnte ich hier machen?")).toBe("empfehlung:hier:0")
-    expect(ziel("was könnte man hier unternehmen")).toBe("empfehlung:hier:0")
-    expect(ziel("was würde sich hier lohnen zu sehen")).toBe(
-      "empfehlung:hier:0"
-    )
-    expect(ziel("was macht man hier so")).toBe("empfehlung:hier:0")
-    expect(ziel("what could i do here")).toBe("empfehlung:hier:0")
+    expect(ziel("was könnte ich hier machen?")).toBe("bedarf:")
+    expect(ziel("was könnte man hier unternehmen")).toBe("bedarf:")
+    expect(ziel("was würde sich hier lohnen zu sehen")).toBe("bedarf:")
+    expect(ziel("was macht man hier so")).toBe("bedarf:")
+    expect(ziel("what could i do here")).toBe("bedarf:")
   })
 
   test("„nochmal“ wiederholt die letzte Antwort", () => {
@@ -235,7 +234,7 @@ describe("Rückbezug auf das laufende Thema", () => {
 
   test("Vertiefung ohne Thema", () => {
     expect(ziel("erzähl mir mehr", nach("unterkunft"))).toBe("unterkunft-hof")
-    expect(ziel("und weiter", nach("essen"))).toBe("essen-huette")
+    expect(ziel("und weiter", nach("essen"))).toBe("empfehlung:essen:0")
   })
 
   test("Zeitfragen ohne Thema", () => {
@@ -285,7 +284,7 @@ describe("Themenzuordnung", () => {
   }
 
   test("verträgt Vertipper ab einer gewissen Wortlänge", () => {
-    expect(ziel("wo kann ich wandren gehen")).toBe("empfehlung:wandern:0")
+    expect(ziel("wo kann ich wandren gehen")).toBe("bedarf:i=berge")
     expect(ziel("ich suche ein hotell")).toBe("unterkunft")
     expect(ziel("bergbahen")).toBe("bergbahnen")
   })
@@ -296,7 +295,7 @@ describe("Themenzuordnung", () => {
   })
 
   test("englische Eingaben landen im selben Thema", () => {
-    expect(ziel("where can i go hiking")).toBe("empfehlung:wandern:0")
+    expect(ziel("where can i go hiking")).toBe("bedarf:i=berge")
     expect(ziel("i am looking for a hotel")).toBe("unterkunft")
     expect(ziel("where can i park")).toBe("anreise-parken")
   })
@@ -313,7 +312,7 @@ describe("Rückfrage statt Raten", () => {
     // "Mit den Kindern schwimmen" nennt zwar auch das Essen, das Gewicht
     // liegt aber klar bei der Familie.
     expect(ziel("wo kann ich mit den kindern schwimmen und essen")).toBe(
-      "empfehlung:familie:0"
+      "bedarf:i=familie,b=kinder"
     )
   })
 
@@ -409,9 +408,7 @@ describe("Lieber keine Antwort als die falsche", () => {
     "wo ist die naechste apotheke",
     "ich brauche einen arzt",
     "gibt es einen geldautomaten",
-    "wo sind die toiletten",
     "gibt es ein taxi",
-    "kann ich hier fahrrad leihen",
     "gibt es hier einen supermarkt",
   ]
 
@@ -454,13 +451,15 @@ describe("Die Eingaben aus dem Testlauf vom 03.09., 11:57", () => {
   })
 
   test("„navigiere mich da hin“ nutzt das zuletzt genannte Ziel", () => {
+    // Seit dem 22.09. die Sesselbahn am Unternberg: die Rauschbergbahn
+    // fährt nicht, und die Auskunft über die Bahnen führt zur fahrenden.
     expect(ziel("navigiere mich da hin", nach("bergbahnen"))).toBe(
-      "ziel:rauschberg"
+      "ziel:unternberg"
     )
   })
 
   test("„google maps“ ebenso", () => {
-    expect(ziel("google maps", nach("bergbahnen"))).toBe("ziel:rauschberg")
+    expect(ziel("google maps", nach("bergbahnen"))).toBe("ziel:unternberg")
   })
 
   test("„wie komme ich von hier zu gondelbahn“ ebenso", () => {
@@ -482,12 +481,12 @@ describe("Die Eingaben aus dem Testlauf vom 03.09., 11:57", () => {
 })
 
 describe("Vorschlagen, auswählen, hinführen", () => {
-  test("eine allgemeine Frage führt zu drei Vorschlägen", () => {
-    expect(ziel("welche wandertouren kann ich machen")).toBe(
-      "empfehlung:wandern:0"
-    )
+  test("eine allgemeine Frage führt zu Vorschlägen oder zur Klärung", () => {
+    // Touren und Kinder hängen an Kondition, Begleitung und Wetter, dort wird
+    // erst gefragt. Beim Essen genügt die Liste.
+    expect(ziel("welche wandertouren kann ich machen")).toBe("bedarf:i=berge")
     expect(ziel("was kannst du empfehlen zum essen")).toBe("empfehlung:essen:0")
-    expect(ziel("hast du tipps für kinder")).toBe("empfehlung:familie:0")
+    expect(ziel("hast du tipps für kinder")).toBe("bedarf:i=familie,b=kinder")
   })
 
   test("eine konkrete Frage bleibt konkret", () => {
@@ -497,13 +496,15 @@ describe("Vorschlagen, auswählen, hinführen", () => {
     expect(ziel("was kostet der loipenpass")).toBe("winter-loipe")
   })
 
-  test("der Vorschlag nennt drei Ziele und hebt eines hervor", () => {
+  test("der Vorschlag nennt drei Ziele und hebt keines hervor", () => {
+    // Die Auszeichnung "beliebtester" war erfunden und stellte ein Angebot
+    // über ein anderes (M [00:43:01]).
     const node = getNode("empfehlung:wandern:0", "de", MITTAGS)
     expect(node.angebot).toHaveLength(3)
     // Einleitung, drei Vorschläge, Abschluss.
     expect(node.messages).toHaveLength(5)
     const text = node.messages.flat().join("\n")
-    expect(text).toContain("★")
+    expect(text).not.toContain("★")
     expect(text).toContain("1 · ")
     expect(text).toContain("3 · ")
   })
@@ -514,16 +515,18 @@ describe("Vorschlagen, auswählen, hinführen", () => {
       "ziel:rauschberg"
     )
     expect(ziel("das mit dem see klingt gut", vorschlag)).toBe(
-      "ziel:foerchensee"
+      "ziel:taubensee"
     )
+    // Die erste Runde nennt nur leichte Wege. Die Bitte um etwas Schweres
+    // führt deshalb zur anspruchsvollen Tour, nicht zu einem der drei.
     expect(ziel("lieber etwas anspruchsvolles", vorschlag)).toBe(
-      "ziel:sonntagshorn"
+      "wandern-schwer"
     )
   })
 
   test("ein Ziel lässt sich auch über die Position wählen", () => {
     expect(ziel("die zweite", nach("empfehlung:wandern:0"))).toBe(
-      "ziel:rauschberg"
+      "ziel:taubensee"
     )
   })
 
@@ -531,12 +534,12 @@ describe("Vorschlagen, auswählen, hinführen", () => {
     // Dort steht "4 ·" ganz oben. Im Testlauf vom 17.09. blieben "4" und "3"
     // ohne Treffer, obwohl eine Liste auf dem Schirm stand.
     const seite2 = nach("empfehlung:hier:3")
-    expect(seite2.angebot).toEqual(["vitalwelt", "gipfelalm", "arena"])
-    expect(ziel("4", seite2)).toBe("ziel:vitalwelt")
-    expect(ziel("nummer 5", seite2)).toBe("ziel:gipfelalm")
-    expect(ziel("ich nehme die 6", seite2)).toBe("ziel:arena")
+    expect(seite2.angebot).toEqual(["freizeitpark", "sagenweg", "heimatmuseum"])
+    expect(ziel("4", seite2)).toBe("ziel:freizeitpark")
+    expect(ziel("nummer 5", seite2)).toBe("ziel:sagenweg")
+    expect(ziel("ich nehme die 6", seite2)).toBe("ziel:heimatmuseum")
     // Ein Ordnungswort zählt dagegen ab dem obersten Vorschlag.
-    expect(ziel("die erste", seite2)).toBe("ziel:vitalwelt")
+    expect(ziel("die erste", seite2)).toBe("ziel:freizeitpark")
   })
 
   test("eine Nummer, die nicht dasteht, wird nicht geraten", () => {
@@ -597,19 +600,16 @@ describe("Vorschlagen, auswählen, hinführen", () => {
   })
 
   test("ein Vorschlag wiederholt sich innerhalb einer Gruppe nicht", () => {
-    const gesehen = new Set<string>()
+    const gesehen: string[] = []
     for (let ab = 0; ab < 9; ab += 3) {
-      for (const id of getNode(`empfehlung:wandern:${ab}`, "de", MITTAGS)
-        .angebot ?? []) {
-        if (ab > 0 && gesehen.has(id)) continue
-        gesehen.add(id)
-      }
+      const node = getNode(`empfehlung:wandern:${ab}`, "de", MITTAGS)
+      // Die Absage am Ende nennt die bisherigen noch einmal, sie zählt nicht.
+      if (!node.chips?.some((chip) => chip.label === "Andere Frage")) continue
+      if (node.messages.flat().join(" ").includes("Mehr habe ich")) continue
+      if (node.messages.flat().join(" ").includes("Das waren alle")) continue
+      gesehen.push(...(node.angebot ?? []))
     }
-    // Die erste Runde darf in der Absage am Ende noch einmal auftauchen,
-    // neue Ziele erfindet sie aber keine.
-    expect(gesehen.size).toBeLessThanOrEqual(
-      getNode("empfehlung:wandern:0", "de", MITTAGS).angebot!.length + 2
-    )
+    expect(new Set(gesehen).size).toBe(gesehen.length)
   })
 })
 
@@ -632,7 +632,7 @@ describe("Der Faden reißt nach einer Auswahl nicht ab", () => {
     // Nach einem gewählten Ziel aus der ersten Runde muss die zweite folgen.
     // Wieder bei den ersten dreien anzufangen, wäre die Antwort auf eine
     // Frage, die gerade nicht gestellt wurde.
-    expect(ziel("gibt es auch andere", nach("ziel:rauschberg"))).toBe(
+    expect(ziel("gibt es auch andere", nach("ziel:taubensee"))).toBe(
       "empfehlung:wandern:3"
     )
   })
@@ -781,35 +781,24 @@ describe("Zeitbewusstsein", () => {
     expect(statusText(undefined, zeitpunkt(12, 0))).toBeNull()
   })
 
-  test("der Vorschlag nennt den Öffnungsstand", () => {
+  test("ohne belegte Öffnungszeit nennt der Vorschlag keinen Öffnungsstand", () => {
+    // Die Sommerzeiten des Unternbergs enden am 14.09., für die übrigen
+    // Ziele gibt es keine belegten Zeiten. Ein "Jetzt geöffnet" wäre geraten.
     const mittags = getNode("empfehlung:wandern:0", "de", zeitpunkt(12, 0))
-    expect(mittags.messages.flat().join("\n")).toContain("Jetzt geöffnet")
-
-    // Am Abend steht die Bahn hinten, und dort steht warum.
-    const abends = getNode("empfehlung:wandern:3", "de", zeitpunkt(20, 0))
-    expect(abends.messages.flat().join("\n")).toMatch(/geschlossen|Öffnet um/)
+    expect(mittags.messages.flat().join("\n")).not.toContain("Jetzt geöffnet")
   })
 
-  test("ein Tagesausflug wird am Abend nicht mehr vorgeschlagen", () => {
-    // Neun Stunden Gehzeit passen um acht Uhr abends in keinen Tag mehr,
-    // auch wenn ein Berg keine Öffnungszeit hat.
-    const mittags = getNode("empfehlung:wandern:0", "de", zeitpunkt(9, 0))
-    expect(mittags.angebot).toContain("sonntagshorn")
-    const abends = getNode("empfehlung:wandern:0", "de", zeitpunkt(20, 0))
-    expect(abends.angebot).not.toContain("sonntagshorn")
-  })
-
-  test("was geschlossen ist, rutscht nach hinten statt zu verschwinden", () => {
-    const mittags = getNode("empfehlung:hier:0", "de", zeitpunkt(12, 0))
-    const abends = getNode("empfehlung:hier:0", "de", zeitpunkt(21, 0))
-    // Der Rauschberg schließt um 18 Uhr und ist mittags der Favorit.
-    expect(mittags.angebot).toContain("rauschberg")
-    expect(abends.angebot).not.toContain("rauschberg")
-    // Verschwunden ist er nicht, nur weiter hinten.
-    const spaeter = getNode("empfehlung:hier:3", "de", zeitpunkt(21, 0))
-    expect([...(abends.angebot ?? []), ...(spaeter.angebot ?? [])]).toContain(
-      "rauschberg"
-    )
+  test("ein Tagesausflug sagt am Abend, dass er heute nicht mehr passt", () => {
+    // Neun Stunden Gehzeit passen um acht Uhr abends in keinen Tag mehr.
+    // Die Liste ist seit der Bereinigung zu kurz, um ihn nach hinten zu
+    // schieben, also sagt er es selbst.
+    const morgens = getNode("empfehlung:gipfel:0", "de", zeitpunkt(9, 0))
+    expect(morgens.messages.flat().join("\n")).not.toContain("zu spät")
+    // Abends rutschen die Tagestouren nach hinten und sagen, warum.
+    const abends = getNode("empfehlung:gipfel:0", "de", zeitpunkt(20, 0))
+    expect(abends.angebot).not.toContain("hochfelln")
+    const spaeter = getNode("empfehlung:gipfel:3", "de", zeitpunkt(20, 0))
+    expect(spaeter.messages.flat().join("\n")).toContain("Für heute zu spät")
   })
 
   test("die Einleitung greift die Uhrzeit auf", () => {

@@ -12,8 +12,15 @@ import {
   type QrPayload,
 } from "@/lib/chat-flow"
 import { neuerKontext, verstehe, type Kontext } from "@/lib/verstehen"
-import { fallbackKnoten } from "@/lib/fallback"
+import { fallbackKnoten, rueckfrageImGespraech } from "@/lib/fallback"
+import { flyerVon } from "@/lib/flyer"
 import { aufloesen, useStandort } from "@/lib/location"
+import {
+  alsKarte,
+  meldung,
+  offeneMeldungen,
+  type HinweisKarte,
+} from "@/lib/meldungen"
 import { type Sprache } from "@/lib/sprache"
 import { protokolliere } from "@/lib/telemetry"
 import { erkenneSprache, uebersetze, WECHSELHINWEIS } from "@/lib/i18n"
@@ -23,6 +30,16 @@ import {
   neuerVerlauf,
   zieheRueckbezug,
 } from "@/lib/memory"
+import { useWetter } from "@/lib/wetter"
+import {
+  EMAIL,
+  eintragAus,
+  gesendetKnoten,
+  hinzugefuegtKnoten,
+  zettelbar,
+  type ZettelAnsicht,
+  type ZettelEintrag,
+} from "@/lib/zettel"
 
 export type ChatMessage =
   | { id: string; role: "user"; kind: "text"; text: string }
@@ -30,6 +47,20 @@ export type ChatMessage =
   | { id: string; role: "bot"; kind: "card"; card: InfoCard }
   | { id: string; role: "bot"; kind: "table"; table: DataTable }
   | { id: string; role: "bot"; kind: "qr"; qr: QrPayload }
+  | { id: string; role: "bot"; kind: "hinweis"; hinweis: HinweisKarte }
+  | { id: string; role: "bot"; kind: "zettel"; zettel: ZettelAnsicht }
+
+/** Was unter die Textnachrichten einer Antwort gehängt wird. */
+type Anhang =
+  | { kind: "card"; card: InfoCard }
+  | { kind: "table"; table: DataTable }
+  | { kind: "qr"; qr: QrPayload }
+  | { kind: "hinweis"; hinweis: HinweisKarte }
+  | { kind: "zettel"; zettel: ZettelAnsicht }
+
+/** Knoten, nach denen eine unverstandene Eingabe im Faden bleiben soll. */
+const IM_ABLAUF =
+  /^(bedarf:|vorschlag:|ziel:|flyer|dienst:|zettel:|empfehlung:|fahrplan:|wandern$|familie$)/
 
 let counter = 0
 function uid() {
@@ -79,6 +110,16 @@ function magKeineAnimation() {
   )
 }
 
+/**
+ * Eine E-Mail-Adresse gehört nicht ins Protokoll.
+ *
+ * Das Protokoll wird exportiert und ausgewertet. Eine Adresse darin wäre ein
+ * personenbezogenes Datum, das für die Auswertung nichts beiträgt.
+ */
+function ohneAdresse(text: string): string {
+  return text.replace(new RegExp(EMAIL.source, "g"), "[E-Mail-Adresse]")
+}
+
 export function useChat() {
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
   const [activeChips, setActiveChips] = React.useState<Chip[]>([])
@@ -94,6 +135,13 @@ export function useChat() {
   React.useEffect(() => {
     standortRef.current = standort
   }, [standort])
+
+  // Das Wetter aus der Vorschauleiste, aus demselben Grund als Ref.
+  const wetter = useWetter()
+  const wetterRef = React.useRef(wetter)
+  React.useEffect(() => {
+    wetterRef.current = wetter
+  }, [wetter])
 
   /** Was in diesem Gespräch schon gezeigt wurde. */
   const verlaufRef = React.useRef(neuerVerlauf())
@@ -113,151 +161,275 @@ export function useChat() {
   /** Wechselhinweis, den die nächste Antwort voranstellt. */
   const wechselRef = React.useRef<string | null>(null)
 
-  /** Nimmt eine Knoten-ID oder einen zur Laufzeit gebauten Knoten. */
-  const runNode = React.useCallback(async (ziel: string | FlowNode) => {
-    const myRun = runIdRef.current + 1
-    runIdRef.current = myRun
-    const aktiv = () => runIdRef.current === myRun
+  /**
+   * Der Zettel des Gasts. Als Ref für die Knotenbauer, als State für die
+   * Anzeige der Anzahl in der Kopfzeile.
+   */
+  const zettelRef = React.useRef<ZettelEintrag[]>([])
+  const [zettelAnzahl, setZettelAnzahl] = React.useState(0)
 
-    // Die Uhrzeit einmal je Antwort feststellen und durchreichen, statt sie
-    // in jedem Knotenbauer neu abzufragen. Sonst könnten zwei Teile derselben
-    // Antwort von unterschiedlichen Minuten ausgehen.
-    const roh =
-      typeof ziel === "string"
-        ? getNode(ziel, spracheRef.current, new Date())
-        : ziel
-    const node = roh.fertig ? roh : uebersetze(roh, spracheRef.current)
+  /** Aktuelle Hinweise, die in diesem Gespräch schon erschienen sind. */
+  const gezeigtRef = React.useRef(new Set<string>())
 
-    setActiveChips([])
-    setStreaming(null)
-    setIsTyping(true)
-
-    const sofort = magKeineAnimation()
-
-    // Die Denkpause der ersten Nachricht steht vor allem, was Zustand
-    // verändert. Ein Lauf, den der nächste Klick sofort ablöst, darf weder
-    // im Gedächtnis noch im Protokoll auftauchen.
-    await sleep(denkpause())
-    if (!aktiv()) return
-
-    protokolliere({
-      art: "antwort",
-      knoten: node.id,
-      standort: standortRef.current.id,
-    })
-
-    // Sobald feststeht, was geantwortet wird, gilt es als Bezugspunkt für die
-    // nächste Eingabe: nicht erst, wenn der Text zu Ende ausgerollt ist.
-    //
-    // Der Unterschied ist im Test der Normalfall, nicht die Ausnahme. Wer
-    // liest, tippt weiter, sobald er genug gesehen hat, und bricht damit die
-    // laufende Antwort ab. Stünde der Bezugspunkt erst am Ende, verlöre gerade
-    // die schnelle Nachfrage ihren Bezug, also genau die, die ihn braucht.
-    const vorher = kontextRef.current
-    kontextRef.current = {
-      knoten: node.id,
-      topic: node.topic ?? null,
-      chips: node.chips ?? [],
-      istRueckfrage: node.id.startsWith("rueckfrage"),
-      angebot: node.angebot ?? [],
-      gruppe: node.gruppe ?? null,
-      ziel: node.ziel ?? uebernommenesZiel(vorher, node),
+  /** Legt einen Eintrag auf den Zettel. Gibt zurück, ob er schon darauf war. */
+  const aufZettel = React.useCallback((eintrag: ZettelEintrag): boolean => {
+    const schonDa = zettelRef.current.some(
+      (vorhanden) => vorhanden.quelle === eintrag.quelle
+    )
+    if (!schonDa) {
+      zettelRef.current = [...zettelRef.current, eintrag]
+      setZettelAnzahl(zettelRef.current.length)
+      protokolliere({ art: "zettel", knoten: eintrag.quelle })
     }
+    return schonDa
+  }, [])
 
-    const verlauf = verlaufRef.current
-    // Beim zweiten Mal die kurze Fassung, statt dieselbe Textwand noch
-    // einmal auszurollen.
-    const inhalt =
-      istWiederholung(verlauf, node) && node.kurz ? node.kurz : node.messages
-    const bezug = zieheRueckbezug(verlauf, node, spracheRef.current)
-    merken(verlauf, node)
+  /**
+   * Knoten, die den Zettel verändern, bevor sie gebaut werden.
+   *
+   * "zettel:neu:<knoten>" legt den Inhalt dieses Knotens auf den Zettel.
+   * Druck, E-Mail und QR-Code nehmen vorher mit, was gerade auf dem Schirm
+   * steht, sofern es auf den Zettel passt: wer nach einer Fahrplanauskunft
+   * "druck mir das aus" sagt, will diese Auskunft gedruckt haben.
+   */
+  const vorbereiten = React.useCallback(
+    (id: string, jetzt: Date): string | FlowNode => {
+      if (id.startsWith("zettel:neu:")) {
+        const quelle = id.slice("zettel:neu:".length)
+        const eintrag = eintragAus(quelle, spracheRef.current, jetzt)
+        if (!eintrag) return "zettel:zeigen"
+        const schonDa = aufZettel(eintrag)
+        return hinzugefuegtKnoten(
+          eintrag,
+          zettelRef.current.length,
+          schonDa,
+          spracheRef.current
+        )
+      }
 
-    // Karten brauchen Vorlauf, sonst pulsieren nur die Punkte. Eine kurze
-    // Zwischenmeldung füllt die Wartezeit, statt sie zu verstecken.
-    const wechsel = wechselRef.current
-    wechselRef.current = null
+      if (
+        id === "zettel:drucken" ||
+        id === "zettel:mail" ||
+        id === "zettel:qr"
+      ) {
+        const aktuell = kontextRef.current.knoten
+        if (zettelbar(aktuell)) {
+          const eintrag = eintragAus(aktuell, spracheRef.current, jetzt)
+          if (eintrag) aufZettel(eintrag)
+        }
+      }
+      return id
+    },
+    [aufZettel]
+  )
 
-    const nachrichten = [
-      ...(wechsel ? [wechsel] : []),
-      ...(bezug ? [bezug] : []),
-      ...(node.bridge || node.card || node.table
-        ? [ueberbrueckung(spracheRef.current)]
-        : []),
-      ...ausformulieren(inhalt),
-    ].map((text) => aufloesen(text, standortRef.current, spracheRef.current))
+  /** Nimmt eine Knoten-ID oder einen zur Laufzeit gebauten Knoten. */
+  const runNode = React.useCallback(
+    async (ziel: string | FlowNode) => {
+      const myRun = runIdRef.current + 1
+      runIdRef.current = myRun
+      const aktiv = () => runIdRef.current === myRun
 
-    for (let i = 0; i < nachrichten.length; i++) {
-      const text = nachrichten[i]
+      // Die Uhrzeit einmal je Antwort feststellen und durchreichen, statt sie
+      // in jedem Knotenbauer neu abzufragen. Sonst könnten zwei Teile
+      // derselben Antwort von unterschiedlichen Minuten ausgehen.
+      const jetzt = new Date()
+      const vorbereitet =
+        typeof ziel === "string" ? vorbereiten(ziel, jetzt) : ziel
+      const roh =
+        typeof vorbereitet === "string"
+          ? getNode(vorbereitet, spracheRef.current, jetzt, {
+              wetter: wetterRef.current.id,
+              zettel: zettelRef.current,
+            })
+          : vorbereitet
+      const node = roh.fertig ? roh : uebersetze(roh, spracheRef.current)
 
-      // Die Pause der ersten Nachricht ist oben schon vergangen.
-      if (i > 0) {
+      setActiveChips([])
+      setStreaming(null)
+      setIsTyping(true)
+
+      const sofort = magKeineAnimation()
+
+      // Die Denkpause der ersten Nachricht steht vor allem, was Zustand
+      // verändert. Ein Lauf, den der nächste Klick sofort ablöst, darf weder
+      // im Gedächtnis noch im Protokoll auftauchen.
+      await sleep(denkpause())
+      if (!aktiv()) return
+
+      protokolliere({
+        art: "antwort",
+        knoten: node.id,
+        standort: standortRef.current.id,
+      })
+
+      // Sobald feststeht, was geantwortet wird, gilt es als Bezugspunkt für
+      // die nächste Eingabe: nicht erst, wenn der Text zu Ende ausgerollt ist.
+      //
+      // Der Unterschied ist im Test der Normalfall, nicht die Ausnahme. Wer
+      // liest, tippt weiter, sobald er genug gesehen hat, und bricht damit die
+      // laufende Antwort ab. Stünde der Bezugspunkt erst am Ende, verlöre
+      // gerade die schnelle Nachfrage ihren Bezug, also genau die, die ihn
+      // braucht.
+      const vorher = kontextRef.current
+      if (!node.behalteKontext) kontextRef.current = {
+        knoten: node.id,
+        topic: node.topic ?? null,
+        chips: node.chips ?? [],
+        istRueckfrage: node.id.startsWith("rueckfrage") || Boolean(node.jaNein),
+        angebot: node.angebot ?? [],
+        gruppe: node.gruppe ?? null,
+        ziel: node.ziel ?? uebernommenesZiel(vorher, node),
+        weiter: node.weiter ?? null,
+        nein: node.nein ?? null,
+        flyer: flyerVon(node) ?? vorher.flyer ?? null,
+      }
+
+      const verlauf = verlaufRef.current
+      // Beim zweiten Mal die kurze Fassung, statt dieselbe Textwand noch
+      // einmal auszurollen.
+      const inhalt =
+        istWiederholung(verlauf, node) && node.kurz ? node.kurz : node.messages
+      const bezug = zieheRueckbezug(verlauf, node, spracheRef.current)
+      merken(verlauf, node)
+
+      // Karten brauchen Vorlauf, sonst pulsieren nur die Punkte. Eine kurze
+      // Zwischenmeldung füllt die Wartezeit, statt sie zu verstecken.
+      const wechsel = wechselRef.current
+      wechselRef.current = null
+
+      const fuellen = (text: string) =>
+        aufloesen(text, standortRef.current, spracheRef.current, wetterRef.current)
+
+      const nachrichten = [
+        ...(wechsel ? [wechsel] : []),
+        ...(bezug ? [bezug] : []),
+        ...(node.bridge || node.card || node.table
+          ? [ueberbrueckung(spracheRef.current)]
+          : []),
+        ...ausformulieren(inhalt),
+      ]
+        .map(fuellen)
+        // Eine Nachricht, die nur aus einer unbelegten Wegangabe bestand,
+        // ist nach dem Auflösen leer und erscheint nicht.
+        .filter((text) => text.trim().length > 0)
+
+      /** Rollt eine Nachricht aus. false, wenn der Lauf abgelöst wurde. */
+      const ausrollen = async (text: string): Promise<boolean> => {
+        setIsTyping(false)
+        if (!sofort) {
+          setStreaming("")
+          let pos = 0
+          while (pos < text.length) {
+            await sleep(zufall(20, 35))
+            // Der Abbruch muss innerhalb der Schleife greifen, sonst bleibt
+            // eine halbe Blase stehen.
+            if (!aktiv()) {
+              setStreaming(null)
+              return false
+            }
+            pos = Math.min(text.length, pos + haeppchen())
+            setStreaming(text.slice(0, pos))
+          }
+          setStreaming(null)
+        }
+        setMessages((prev) => [
+          ...prev,
+          { id: uid(), role: "bot", kind: "text", text },
+        ])
+        return true
+      }
+
+      /** Hängt einen Anhang nach kurzer Pause an. */
+      const anhaengen = async (
+        nachricht: Anhang,
+        pause = zufall(600, 1000)
+      ): Promise<boolean> => {
+        setIsTyping(true)
+        await sleep(pause)
+        if (!aktiv()) return false
+        setMessages((prev) => [
+          ...prev,
+          { id: uid(), role: "bot", ...nachricht },
+        ])
+        return true
+      }
+
+      for (let i = 0; i < nachrichten.length; i++) {
+        // Die Pause der ersten Nachricht ist oben schon vergangen.
+        if (i > 0) {
+          setIsTyping(true)
+          await sleep(denkpause())
+          if (!aktiv()) return
+        }
+        if (!(await ausrollen(nachrichten[i]))) return
+      }
+
+      // Aktuelle Hinweise: die ausdrücklich verlangten und die, die zum Thema
+      // gehören und noch nicht gezeigt wurden. Sie stehen vor dem Anhang,
+      // damit der Hinweis zum Ersatzverkehr über dem Fahrplan steht und
+      // nicht darunter.
+      const hinweise = [
+        ...(node.hinweise ?? [])
+          .map(meldung)
+          .filter((eintrag) => eintrag !== undefined),
+        ...offeneMeldungen(node, wetterRef.current.id, gezeigtRef.current),
+      ].filter(
+        (eintrag, index, liste) =>
+          liste.findIndex((anderer) => anderer.id === eintrag.id) === index
+      )
+      for (const eintrag of hinweise) {
+        gezeigtRef.current.add(eintrag.id)
+        const ok = await anhaengen(
+          { kind: "hinweis", hinweis: alsKarte(eintrag, spracheRef.current) },
+          zufall(400, 700)
+        )
+        if (!ok) return
+      }
+
+      // Ein Vorgang, der dauert, zeigt es: die Punkte laufen weiter, bis das
+      // Ergebnis da ist (M [00:58:14]).
+      const erstePause = node.warten ?? zufall(600, 1000)
+
+      if (node.card) {
+        if (!(await anhaengen({ kind: "card", card: node.card }, erstePause)))
+          return
+      }
+      if (node.table) {
+        if (!(await anhaengen({ kind: "table", table: node.table }, erstePause)))
+          return
+      }
+      if (node.zettel) {
+        if (!(await anhaengen({ kind: "zettel", zettel: node.zettel }, erstePause)))
+          return
+      }
+      if (node.qr) {
+        if (
+          !(await anhaengen(
+            { kind: "qr", qr: { ...node.qr, title: fuellen(node.qr.title) } },
+            erstePause
+          ))
+        )
+          return
+      }
+
+      const danach = ausformulieren(node.nachher ?? [])
+        .map(fuellen)
+        .filter((text) => text.trim().length > 0)
+      for (const text of danach) {
+        setIsTyping(true)
         await sleep(denkpause())
         if (!aktiv()) return
+        if (!(await ausrollen(text))) return
       }
+
+      await sleep(250)
+      if (!aktiv()) return
       setIsTyping(false)
-
-      if (!sofort) {
-        setStreaming("")
-        let pos = 0
-        while (pos < text.length) {
-          await sleep(zufall(20, 35))
-          // Der Abbruch muss innerhalb der Schleife greifen, sonst bleibt
-          // eine halbe Blase stehen.
-          if (!aktiv()) {
-            setStreaming(null)
-            return
-          }
-          pos = Math.min(text.length, pos + haeppchen())
-          setStreaming(text.slice(0, pos))
-        }
-        setStreaming(null)
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        { id: uid(), role: "bot", kind: "text", text },
-      ])
-
-      if (i < nachrichten.length - 1 || node.card || node.table || node.qr) {
-        setIsTyping(true)
-      }
-    }
-
-    if (node.card) {
-      setIsTyping(true)
-      await sleep(zufall(600, 1000))
-      if (!aktiv()) return
-      setMessages((prev) => [
-        ...prev,
-        { id: uid(), role: "bot", kind: "card", card: node.card! },
-      ])
-    }
-
-    if (node.table) {
-      setIsTyping(true)
-      await sleep(zufall(600, 1000))
-      if (!aktiv()) return
-      setMessages((prev) => [
-        ...prev,
-        { id: uid(), role: "bot", kind: "table", table: node.table! },
-      ])
-    }
-
-    if (node.qr) {
-      setIsTyping(true)
-      await sleep(zufall(600, 1000))
-      if (!aktiv()) return
-      setMessages((prev) => [
-        ...prev,
-        { id: uid(), role: "bot", kind: "qr", qr: node.qr! },
-      ])
-    }
-
-    await sleep(250)
-    if (!aktiv()) return
-    setIsTyping(false)
-    setActiveChips(node.chips ?? [])
-  }, [])
+      setActiveChips(node.chips ?? [])
+    },
+    [vorbereiten]
+  )
 
   const selectChip = React.useCallback(
     (chip: Chip) => {
@@ -279,6 +451,18 @@ export function useChat() {
         ...prev,
         { id: uid(), role: "user", kind: "text", text },
       ])
+
+      // Die Antwort auf "an welche Adresse?". Sie geht an keinen Server und
+      // landet nicht im Protokoll.
+      const adresse = EMAIL.exec(text)?.[0]
+      if (adresse && kontextRef.current.knoten === "zettel:mail") {
+        protokolliere({ art: "eingabe", text: "[E-Mail-Adresse]" })
+        void runNode(
+          gesendetKnoten(adresse, zettelRef.current, spracheRef.current)
+        )
+        return
+      }
+
       // Die Antwort folgt der Sprache der Eingabe. Bleibt sie uneindeutig,
       // etwa bei einem einzelnen Wort, gilt die bisherige weiter.
       const erkannt = erkenneSprache(text)
@@ -291,7 +475,7 @@ export function useChat() {
       const ergebnis = verstehe(text, kontextRef.current)
       protokolliere({
         art: "eingabe",
-        text,
+        text: ohneAdresse(text),
         treffer: ergebnis.kind,
         // Bei einem Treffer hält der Grund fest, welche Stufe gegriffen hat.
         // Ohne ihn steht in der Auswertung nur, dass es geklappt hat.
@@ -308,12 +492,26 @@ export function useChat() {
             spracheRef.current
           )
         )
+      } else if (
+        kontextRef.current.chips.length > 0 &&
+        IM_ABLAUF.test(kontextRef.current.knoten ?? "")
+      ) {
+        // Mitten in einem Ablauf: die vorigen Möglichkeiten stehen lassen.
+        void runNode(
+          rueckfrageImGespraech(kontextRef.current.chips, spracheRef.current)
+        )
       } else {
         void runNode(fallbackKnoten(text, spracheRef.current))
       }
     },
     [runNode]
   )
+
+  /** Den Zettel zeigen, über die Schaltfläche in der Kopfzeile. */
+  const zeigeZettel = React.useCallback(() => {
+    protokolliere({ art: "chip", text: "Zettel", knoten: "zettel:zeigen" })
+    void runNode("zettel:zeigen")
+  }, [runNode])
 
   /**
    * Sprache umstellen und die letzte Antwort in der neuen Sprache wiederholen.
@@ -341,10 +539,16 @@ export function useChat() {
       // Zur Laufzeit gebaute Knoten (Rückfrage, Fallback) tragen keine ID,
       // unter der sie sich neu bauen ließen. Dann bleibt der Einstieg: eine
       // unverstandene Eingabe in der neuen Sprache noch einmal vorzuhalten,
-      // führt ohnehin nicht weiter.
+      // führt ohnehin nicht weiter. Dasselbe gilt für Knoten, die den Zettel
+      // verändern: sie noch einmal auszuführen, hieße ihn noch einmal zu
+      // verändern.
       const aktuell = kontextRef.current.knoten
       const erneut =
-        aktuell && getNode(aktuell, ziel).id === aktuell ? aktuell : "menu"
+        aktuell &&
+        !aktuell.startsWith("zettel:") &&
+        getNode(aktuell, ziel).id === aktuell
+          ? aktuell
+          : "menu"
       void runNode(erneut)
     },
     [runNode]
@@ -357,6 +561,9 @@ export function useChat() {
     kontextRef.current = neuerKontext()
     spracheRef.current = "de"
     wechselRef.current = null
+    zettelRef.current = []
+    gezeigtRef.current = new Set()
+    setZettelAnzahl(0)
     setSprache("de")
     setMessages([])
     setActiveChips([])
@@ -379,9 +586,11 @@ export function useChat() {
     isTyping,
     streaming,
     sprache,
+    zettelAnzahl,
     selectChip,
     sendText,
     wechsleSprache,
+    zeigeZettel,
     reset,
   }
 }

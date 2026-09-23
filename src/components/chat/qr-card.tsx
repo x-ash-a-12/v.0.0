@@ -1,8 +1,11 @@
 import * as React from "react"
 import QRCode from "qrcode"
 
+import { FileText, MapPin } from "lucide-react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { QrPayload } from "@/lib/chat-flow"
+import { cn } from "@/lib/utils"
 
 /**
  * Der Code entsteht im Browser, nicht über einen Bilddienst. Das Terminal
@@ -29,10 +32,31 @@ export function QrCard({ qr }: { qr: QrPayload }) {
     }
   }, [qr.url])
 
+  // Zwei Arten von Codes stehen oft direkt untereinander: der Weg zum
+  // Ausgangspunkt und der Flyer dazu. Rahmen und Symbol unterscheiden sie,
+  // damit niemand den falschen scannt.
+  const flyer = qr.art === "flyer"
+  const Symbol = flyer ? FileText : MapPin
+
   return (
-    <Card size="sm" className="w-full max-w-full">
+    <Card
+      size="sm"
+      className={cn(
+        "w-full max-w-full",
+        flyer && "border-2 border-primary bg-muted/40"
+      )}
+    >
       <CardHeader>
-        <CardTitle className="text-sm">{qr.title}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <Symbol
+            className={cn(
+              "size-4 shrink-0",
+              flyer ? "text-primary" : "text-muted-foreground"
+            )}
+            aria-hidden="true"
+          />
+          {qr.title}
+        </CardTitle>
       </CardHeader>
       <CardContent className="grid justify-items-center gap-2">
         {/*
@@ -42,7 +66,10 @@ export function QrCard({ qr }: { qr: QrPayload }) {
         */}
         <div
           // 176 px minus 2x8 px Innenabstand: der Code selbst bleibt bei 160 px.
-          className="size-44 rounded-lg bg-white p-2 [&>svg]:size-full"
+          className={cn(
+            "size-44 rounded-lg bg-white p-2 [&>svg]:size-full",
+            flyer && "ring-4 ring-primary"
+          )}
           role="img"
           aria-label={qr.title}
           dangerouslySetInnerHTML={svg ? { __html: svg } : undefined}

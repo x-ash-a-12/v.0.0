@@ -1,3 +1,5 @@
+import type { Grund } from "@/lib/verstehen"
+
 /**
  * Interaktionsprotokoll für die Think-Aloud-Tests.
  *
@@ -12,7 +14,7 @@
 export type LogEintrag = {
   /** Millisekunden seit Sitzungsbeginn. */
   t: number
-  art: "eingabe" | "chip" | "antwort" | "reset" | "sprache"
+  art: "eingabe" | "chip" | "antwort" | "reset" | "sprache" | "zettel"
   /**
    * Roheingabe bei "eingabe", Beschriftung bei "chip", das eingestellte
    * Kürzel bei "sprache".
@@ -25,16 +27,7 @@ export type LogEintrag = {
    * Gesprächszustand, ist der Unterschied zwischen "es hat funktioniert" und
    * einer Aussage darüber, warum.
    */
-  grund?:
-    | "meta"
-    | "auswahl"
-    | "lexikon"
-    | "anapher"
-    | "wiederholung"
-    | "navigation"
-    | "zielwahl"
-    | "empfehlung"
-    | "fahrplan"
+  grund?: Grund
   knoten?: string
   standort?: string
 }

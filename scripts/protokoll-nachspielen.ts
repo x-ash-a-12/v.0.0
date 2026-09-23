@@ -15,6 +15,7 @@
  * ein Rückbezug wie "und was kostet das" nicht nachvollziehbar.
  */
 import { getNode } from "../src/lib/chat-flow"
+import { flyerVon } from "../src/lib/flyer"
 import { neuerKontext, verstehe, type Kontext } from "../src/lib/verstehen"
 
 type Eintrag = {
@@ -49,12 +50,17 @@ function betrete(id: string): void {
     knoten: node.id,
     topic: node.topic ?? null,
     chips: node.chips ?? [],
-    istRueckfrage: node.id.startsWith("rueckfrage"),
+    // Wie use-chat.ts: Ja-Nein-Fragen, Listenfortsetzung und der zuletzt
+    // angebotene Flyer gehören zum Zustand.
+    istRueckfrage: node.id.startsWith("rueckfrage") || Boolean(node.jaNein),
     angebot: node.angebot ?? [],
     gruppe: node.gruppe ?? null,
     ziel:
       node.ziel ??
       (node.id === "menu" || node.id === "start" ? null : vorher.ziel),
+    weiter: node.weiter ?? null,
+    nein: node.nein ?? null,
+    flyer: flyerVon(node) ?? vorher.flyer ?? null,
   }
 }
 
@@ -88,6 +94,13 @@ for (const eintrag of eintraege) {
   if (ergebnis.kind === "hit") {
     jetztTreffer++
     betrete(ergebnis.to)
+  } else if (
+    kontext.chips.length > 0 &&
+    /^(bedarf:|vorschlag:|ziel:|flyer|dienst:|zettel:|empfehlung:|fahrplan:|wandern$|familie$)/.test(
+      kontext.knoten ?? ""
+    )
+  ) {
+    // Wie use-chat.ts: mitten im Ablauf bleibt der Zustand stehen.
   } else {
     kontext = {
       ...kontext,
