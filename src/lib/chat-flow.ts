@@ -23,7 +23,6 @@ import { webChip, webKnoten, type WebId } from "@/lib/web"
 import type { WetterId } from "@/lib/wetter"
 import { mapsSuche } from "@/lib/ziele"
 import {
-  zettelChip,
   zettelKnoten,
   type ZettelAnsicht,
   type ZettelEintrag,
@@ -1068,7 +1067,6 @@ export const FLOW: Record<string, FlowNode> = {
       note: TOURIST_INFO.kartenhinweis,
     },
     chips: [
-      zettelChip("info", "de"),
       web("kontakt"),
       { label: "Andere Frage", to: "menu" },
     ],

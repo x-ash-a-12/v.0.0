@@ -4,6 +4,7 @@ import {
   ausformulieren,
   getNode,
   rueckfrageKnoten,
+  TOPICS,
   ueberbrueckung,
   type Chip,
   type BildAnzeige,
@@ -34,23 +35,30 @@ import {
 import { useWetter } from "@/lib/wetter"
 import {
   EMAIL,
-  eintragAus,
+  eintraegeAus,
   gesendetKnoten,
   hinzugefuegtKnoten,
-  zettelbar,
+  type Antwort,
   type ZettelAnsicht,
   type ZettelEintrag,
 } from "@/lib/zettel"
 
+/**
+ * Eine Nachricht des Assistenten trägt die Kennung der Antwort, zu der sie
+ * gehört. Daran erkennt die Ansicht, welche Blasen zusammengehören und wo
+ * der Merken-Knopf steht.
+ */
+type Bot = { id: string; role: "bot"; antwort?: string }
+
 export type ChatMessage =
   | { id: string; role: "user"; kind: "text"; text: string }
-  | { id: string; role: "bot"; kind: "text"; text: string }
-  | { id: string; role: "bot"; kind: "card"; card: InfoCard }
-  | { id: string; role: "bot"; kind: "table"; table: DataTable }
-  | { id: string; role: "bot"; kind: "qr"; qr: QrPayload }
-  | { id: string; role: "bot"; kind: "hinweis"; hinweis: HinweisKarte }
-  | { id: string; role: "bot"; kind: "zettel"; zettel: ZettelAnsicht }
-  | { id: string; role: "bot"; kind: "bild"; bild: BildAnzeige }
+  | (Bot & { kind: "text"; text: string })
+  | (Bot & { kind: "card"; card: InfoCard })
+  | (Bot & { kind: "table"; table: DataTable })
+  | (Bot & { kind: "qr"; qr: QrPayload })
+  | (Bot & { kind: "hinweis"; hinweis: HinweisKarte })
+  | (Bot & { kind: "zettel"; zettel: ZettelAnsicht })
+  | (Bot & { kind: "bild"; bild: BildAnzeige })
 
 /** Was unter die Textnachrichten einer Antwort gehängt wird. */
 type Anhang =
@@ -171,6 +179,26 @@ export function useChat() {
   const zettelRef = React.useRef<ZettelEintrag[]>([])
   const [zettelAnzahl, setZettelAnzahl] = React.useState(0)
 
+  /** Die Antworten dieses Gesprächs, nach ihrer Kennung. */
+  const antwortenRef = React.useRef(new Map<string, Antwort>())
+  /** Antworten, die etwas zum Mitnehmen enthalten und einen Knopf tragen. */
+  const [merkbar, setMerkbar] = React.useState<ReadonlySet<string>>(new Set())
+  /** Antworten, die schon auf dem Zettel stehen. */
+  const [gemerkt, setGemerkt] = React.useState<ReadonlySet<string>>(new Set())
+  /** Die Antwort, die gerade ausgerollt wird. Ihr Knopf kommt erst danach. */
+  const [laufend, setLaufend] = React.useState<string | null>(null)
+
+  /** Die jüngste Antwort, die ein bestimmter Knoten gegeben hat. */
+  const antwortVon = React.useCallback(
+    (knoten: string | null): Antwort | undefined => {
+      if (!knoten) return undefined
+      return [...antwortenRef.current.values()]
+        .reverse()
+        .find((antwort) => antwort.knoten === knoten)
+    },
+    []
+  )
+
   /** Aktuelle Hinweise, die in diesem Gespräch schon erschienen sind. */
   const gezeigtRef = React.useRef(new Set<string>())
 
@@ -188,24 +216,44 @@ export function useChat() {
   }, [])
 
   /**
+   * Legt eine Antwort auf den Zettel. Gibt die Einträge zurück und ob sie
+   * alle schon darauf standen.
+   */
+  const merkeAntwortIntern = React.useCallback(
+    (antwort: Antwort, jetzt: Date) => {
+      const eintraege = eintraegeAus(antwort, spracheRef.current, jetzt)
+      let alleSchonDa = eintraege.length > 0
+      for (const eintrag of eintraege) {
+        if (!aufZettel(eintrag)) alleSchonDa = false
+      }
+      if (eintraege.length > 0) {
+        setGemerkt((vorher) => new Set(vorher).add(antwort.id))
+      }
+      return { eintraege, alleSchonDa }
+    },
+    [aufZettel]
+  )
+
+  /**
    * Knoten, die den Zettel verändern, bevor sie gebaut werden.
    *
-   * "zettel:neu:<knoten>" legt den Inhalt dieses Knotens auf den Zettel.
-   * Druck, E-Mail und QR-Code nehmen vorher mit, was gerade auf dem Schirm
-   * steht, sofern es auf den Zettel passt: wer nach einer Fahrplanauskunft
-   * "druck mir das aus" sagt, will diese Auskunft gedruckt haben.
+   * "zettel:neu:<knoten>" legt die letzte Antwort dieses Knotens auf den
+   * Zettel, getippt als "merk dir das". Druck, E-Mail und QR-Code nehmen
+   * vorher mit, was gerade auf dem Schirm steht: wer nach einer
+   * Fahrplanauskunft "druck mir das aus" sagt, will diese Auskunft gedruckt
+   * haben.
    */
   const vorbereiten = React.useCallback(
     (id: string, jetzt: Date): string | FlowNode => {
       if (id.startsWith("zettel:neu:")) {
-        const quelle = id.slice("zettel:neu:".length)
-        const eintrag = eintragAus(quelle, spracheRef.current, jetzt)
-        if (!eintrag) return "zettel:zeigen"
-        const schonDa = aufZettel(eintrag)
+        const antwort = antwortVon(id.slice("zettel:neu:".length))
+        if (!antwort) return "zettel:zeigen"
+        const { eintraege, alleSchonDa } = merkeAntwortIntern(antwort, jetzt)
+        if (eintraege.length === 0) return "zettel:zeigen"
         return hinzugefuegtKnoten(
-          eintrag,
+          eintraege,
           zettelRef.current.length,
-          schonDa,
+          alleSchonDa,
           spracheRef.current
         )
       }
@@ -215,15 +263,12 @@ export function useChat() {
         id === "zettel:mail" ||
         id === "zettel:qr"
       ) {
-        const aktuell = kontextRef.current.knoten
-        if (zettelbar(aktuell)) {
-          const eintrag = eintragAus(aktuell, spracheRef.current, jetzt)
-          if (eintrag) aufZettel(eintrag)
-        }
+        const antwort = antwortVon(kontextRef.current.knoten)
+        if (antwort) merkeAntwortIntern(antwort, jetzt)
       }
       return id
     },
-    [aufZettel]
+    [antwortVon, merkeAntwortIntern]
   )
 
   /** Nimmt eine Knoten-ID oder einen zur Laufzeit gebauten Knoten. */
@@ -302,7 +347,35 @@ export function useChat() {
       wechselRef.current = null
 
       const fuellen = (text: string) =>
-        aufloesen(text, standortRef.current, spracheRef.current, wetterRef.current)
+        aufloesen(
+          text,
+          standortRef.current,
+          spracheRef.current,
+          wetterRef.current
+        )
+
+      // Die Antwort, wie sie gleich auf dem Schirm steht, für den
+      // Merken-Knopf. Ohne Überleitung und Rückbezug: die gehören zum
+      // Gespräch, nicht zur Auskunft.
+      const antwortId = `a${myRun}`
+      const antwort: Antwort = {
+        id: antwortId,
+        knoten: node.id,
+        titel:
+          TOPICS.find((topic) => topic.id === node.topic)?.[
+            spracheRef.current === "en" ? "labelEn" : "label"
+          ] ?? (spracheRef.current === "en" ? "Information" : "Auskunft"),
+        texte: ausformulieren(inhalt)
+          .map(fuellen)
+          .filter((text) => text.trim().length > 0),
+        angebot: node.angebot ?? [],
+        link: node.qr?.url,
+      }
+      antwortenRef.current.set(antwortId, antwort)
+      setLaufend(antwortId)
+      if (eintraegeAus(antwort, spracheRef.current, jetzt).length > 0) {
+        setMerkbar((vorher) => new Set(vorher).add(antwortId))
+      }
 
       const nachrichten = [
         ...(wechsel ? [wechsel] : []),
@@ -338,7 +411,7 @@ export function useChat() {
         }
         setMessages((prev) => [
           ...prev,
-          { id: uid(), role: "bot", kind: "text", text },
+          { id: uid(), role: "bot", kind: "text", text, antwort: antwortId },
         ])
         return true
       }
@@ -353,7 +426,7 @@ export function useChat() {
         if (!aktiv()) return false
         setMessages((prev) => [
           ...prev,
-          { id: uid(), role: "bot", ...nachricht },
+          { id: uid(), role: "bot", antwort: antwortId, ...nachricht },
         ])
         return true
       }
@@ -436,6 +509,7 @@ export function useChat() {
       await sleep(250)
       if (!aktiv()) return
       setIsTyping(false)
+      setLaufend(null)
       setActiveChips(node.chips ?? [])
     },
     [vorbereiten]
@@ -517,6 +591,17 @@ export function useChat() {
     [runNode]
   )
 
+  /** Der Merken-Knopf unter einer Antwort. Ohne neue Nachricht im Chat. */
+  const merkeAntwort = React.useCallback(
+    (antwortId: string) => {
+      const antwort = antwortenRef.current.get(antwortId)
+      if (!antwort) return
+      protokolliere({ art: "chip", text: "Merken", knoten: antwort.knoten })
+      merkeAntwortIntern(antwort, new Date())
+    },
+    [merkeAntwortIntern]
+  )
+
   /** Den Zettel zeigen, über die Schaltfläche in der Kopfzeile. */
   const zeigeZettel = React.useCallback(() => {
     protokolliere({ art: "chip", text: "Zettel", knoten: "zettel:zeigen" })
@@ -572,6 +657,10 @@ export function useChat() {
     spracheRef.current = "de"
     wechselRef.current = null
     zettelRef.current = []
+    antwortenRef.current = new Map()
+    setMerkbar(new Set())
+    setGemerkt(new Set())
+    setLaufend(null)
     gezeigtRef.current = new Set()
     setZettelAnzahl(0)
     setSprache("de")
@@ -597,10 +686,14 @@ export function useChat() {
     streaming,
     sprache,
     zettelAnzahl,
+    merkbar,
+    gemerkt,
+    laufend,
     selectChip,
     sendText,
     wechsleSprache,
     zeigeZettel,
+    merkeAntwort,
     reset,
   }
 }

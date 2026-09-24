@@ -7,7 +7,13 @@ import { aufloesen, STANDORTE } from "@/lib/location"
 import { MELDUNGEN, offeneMeldungen } from "@/lib/meldungen"
 import { neuerKontext, verstehe, type Kontext } from "@/lib/verstehen"
 import { wetter } from "@/lib/wetter"
-import { alsText, eintragAus, zettelKnoten } from "@/lib/zettel"
+import {
+  alsText,
+  eintraegeAus,
+  eintragAus,
+  zettelKnoten,
+  type Antwort,
+} from "@/lib/zettel"
 import { flyerVon } from "@/lib/flyer"
 import { rueckfrageImGespraech } from "@/lib/fallback"
 import { GRUPPEN, ZIELE, vorschlagbar } from "@/lib/ziele"
@@ -282,6 +288,62 @@ describe("Der Zettel zum Mitnehmen (KA [00:28:47], M [00:26:09])", () => {
     expect(ziel("merk dir das", nach("fahrplan:traunstein"))).toBe(
       "zettel:neu:fahrplan:traunstein"
     )
+  })
+
+  test("„merk dir das“ gilt für jede Antwort mit Inhalt, nicht fürs Menü", () => {
+    expect(ziel("merk dir das", nach("essen"))).toBe("zettel:neu:essen")
+    expect(ziel("merk dir das", nach("menu"))).toBe("zettel:zeigen")
+  })
+
+  test("der Merken-Knopf: Liste, Text und was nicht auf den Zettel gehört", () => {
+    const antwort = (
+      knoten: string,
+      extra: Partial<Antwort> = {}
+    ): Antwort => ({
+      id: "a1",
+      knoten,
+      titel: "Essen & Einkehr",
+      texte: [],
+      angebot: [],
+      ...extra,
+    })
+    // Eine Vorschlagsliste ergibt je Ort einen Eintrag mit Kartenlink.
+    const liste = eintraegeAus(
+      antwort("empfehlung:essen-italienisch:0", {
+        angebot: ["pizza-co", "bell-ponte"],
+      }),
+      "de",
+      MITTAGS
+    )
+    expect(liste.map((eintrag) => eintrag.titel)).toEqual([
+      "Pizza & Co",
+      "Bell Ponte",
+    ])
+    expect(liste[0].zeilen.join(" ")).toContain("google.com/maps")
+    // Text ohne die Rückfrage am Ende.
+    const text = eintraegeAus(
+      antwort("essen-ruhetag", {
+        texte: ["Einen festen Ruhetag für alle gibt es nicht.", "Noch etwas?"],
+      }),
+      "de",
+      MITTAGS
+    )
+    expect(text).toHaveLength(1)
+    expect(text[0].zeilen).toEqual([
+      "Einen festen Ruhetag für alle gibt es nicht.",
+    ])
+    // Begrüßung, Menü, Rückfragen und der Zettel selbst tragen keinen Knopf.
+    for (const knoten of [
+      "start",
+      "menu",
+      "essen-wahl",
+      "bedarf:",
+      "zettel:zeigen",
+    ]) {
+      expect(
+        eintraegeAus(antwort(knoten, { texte: ["Hallo."] }), "de", MITTAGS)
+      ).toEqual([])
+    }
   })
 
   test("drucken und mailen werden erkannt", () => {

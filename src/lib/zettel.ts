@@ -43,12 +43,73 @@ export function zettelbar(knoten: string | null): knoten is string {
   return false
 }
 
-/** Die Schaltfläche unter einem Knoten, der auf den Zettel kann. */
-export function zettelChip(knoten: string, sprache: Sprache): Chip {
-  return {
-    label: sprache === "en" ? "Add to my notes" : "Auf meinen Zettel",
-    to: `zettel:neu:${knoten}`,
+/**
+ * Eine Antwort, so wie sie auf dem Schirm stand, für den Merken-Knopf.
+ *
+ * Bis 24.09.2026 ließ sich nur ein gewähltes Ziel, eine Verbindung oder die
+ * Tourist-Info merken, über eine Schaltfläche zwischen vielen anderen. Der
+ * Autor hat sie selbst kaum gefunden. Seitdem trägt jede Antwort ihren
+ * eigenen Knopf, und gemerkt wird die ganze Antwort, nicht eine Blase.
+ */
+export type Antwort = {
+  id: string
+  knoten: string
+  /** Überschrift auf dem Zettel, wenn die Antwort als Text übernommen wird. */
+  titel: string
+  /** Die Blasen der Antwort, aufgelöst, ohne Überleitung und Rückbezug. */
+  texte: string[]
+  /** Die vorgeschlagenen Ziele einer Vorschlagsliste. */
+  angebot: string[]
+  /** Adresse hinter dem QR-Code, sofern die Antwort einen hatte. */
+  link?: string
+}
+
+/**
+ * Antworten, die nichts zum Mitnehmen enthalten: Begrüßung, Menü, Dank,
+ * Rückfragen, die Bedarfsklärung und der Zettel selbst.
+ */
+const NICHT_MERKBAR =
+  /^(start|menu|danke|abschied|ueber-mich|notknoten|zettel:|rueckfrage|bedarf:|essen-wahl|flyer)/
+
+export function merkbarerKnoten(knoten: string | null): knoten is string {
+  return Boolean(knoten) && !NICHT_MERKBAR.test(knoten as string)
+}
+
+/**
+ * Was eine Antwort auf dem Zettel ergibt.
+ *
+ * Ein Ziel, eine Verbindung und die Tourist-Info wie bisher als sauberer
+ * Eintrag. Eine Vorschlagsliste als ein Eintrag je vorgeschlagenem Ort, mit
+ * Kartenlink, denn den braucht man unterwegs. Alles andere als Text, ohne
+ * die Rückfragen am Ende ("Ist etwas für Sie dabei?"): auf dem Zettel steht
+ * die Auskunft, nicht das Gespräch (M [00:26:09]).
+ */
+export function eintraegeAus(
+  antwort: Antwort,
+  sprache: Sprache,
+  jetzt: Date
+): ZettelEintrag[] {
+  if (!merkbarerKnoten(antwort.knoten)) return []
+
+  if (zettelbar(antwort.knoten)) {
+    const eintrag = eintragAus(antwort.knoten, sprache, jetzt)
+    return eintrag ? [eintrag] : []
   }
+
+  if (antwort.angebot.length > 0) {
+    return antwort.angebot
+      .map((id) => eintragAus(`ziel:${id}`, sprache, jetzt))
+      .filter((eintrag): eintrag is ZettelEintrag => eintrag !== null)
+  }
+
+  const zeilen = antwort.texte
+    .map((text) => text.trim())
+    .filter((text) => text.length > 0 && !text.endsWith("?"))
+  if (antwort.link?.startsWith("http")) {
+    zeilen.push(`Link: ${antwort.link}`)
+  }
+  if (zeilen.length === 0) return []
+  return [{ quelle: `antwort:${antwort.knoten}`, titel: antwort.titel, zeilen }]
 }
 
 /**
@@ -152,8 +213,8 @@ function leer(sprache: Sprache): FlowNode {
     fertig: true,
     messages: [
       en
-        ? "Your notes are still empty. Under every place and every connection there is an “Add to my notes” button, and whatever you collect there you can print or take with you at the end."
-        : "Ihr Zettel ist noch leer. Unter jedem Ziel und jeder Verbindung steht „Auf meinen Zettel“. Was Sie dort sammeln, können Sie am Ende ausdrucken oder mitnehmen.",
+        ? "Your notes are still empty. Under each of my answers there is a “Save” button. Whatever you collect that way you can print, email or take on your phone."
+        : "Ihr Zettel ist noch leer. Unter jeder meiner Antworten steht „Merken“. Was Sie so sammeln, können Sie ausdrucken, per E-Mail schicken oder aufs Handy nehmen.",
     ],
     chips: [
       {
@@ -167,19 +228,21 @@ function leer(sprache: Sprache): FlowNode {
 
 /** Bestätigung nach dem Hinzufügen. */
 export function hinzugefuegtKnoten(
-  eintrag: ZettelEintrag,
+  eintraege: ZettelEintrag[],
   anzahl: number,
   schonDa: boolean,
   sprache: Sprache
 ): FlowNode {
   const en = sprache === "en"
+  const titel = eintraege.map((eintrag) => eintrag.titel).join(", ")
+  const mehrere = eintraege.length > 1
   const satz = schonDa
     ? en
-      ? `${eintrag.titel} is already on your notes.`
-      : `${eintrag.titel} steht schon auf Ihrem Zettel.`
+      ? `${titel} ${mehrere ? "are" : "is"} already on your notes.`
+      : `${titel} ${mehrere ? "stehen" : "steht"} schon auf Ihrem Zettel.`
     : en
-      ? `Done, ${eintrag.titel} is on your notes.`
-      : `Erledigt, ${eintrag.titel} steht auf Ihrem Zettel.`
+      ? `Done, ${titel} ${mehrere ? "are" : "is"} on your notes.`
+      : `Erledigt, ${titel} ${mehrere ? "stehen" : "steht"} auf Ihrem Zettel.`
   const stand = en
     ? `There ${anzahl === 1 ? "is 1 entry" : `are ${anzahl} entries`} on it. Would you like to take it with you now, or keep asking?`
     : `Darauf ${anzahl === 1 ? "steht 1 Eintrag" : `stehen ${anzahl} Einträge`}. Möchten Sie ihn jetzt mitnehmen oder weiter fragen?`

@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { ChatComposer } from "@/components/chat/chat-composer"
 import { ChatHeader } from "@/components/chat/chat-header"
+import { MerkenKnopf } from "@/components/chat/merken-knopf"
 import { MessageItem } from "@/components/chat/message-item"
 import { QuickReplies } from "@/components/chat/quick-replies"
 import { StreamingBubble } from "@/components/chat/streaming-bubble"
@@ -27,6 +28,27 @@ function avatarAn(
   return naechste.role === "user" ? "still" : null
 }
 
+/**
+ * Die Kennung der Antwort, unter deren letzter Nachricht der Merken-Knopf
+ * steht, oder null. Die letzte Nachricht einer Antwort ist die, nach der
+ * eine andere Antwort oder eine Eingabe des Gasts folgt.
+ */
+function antwortEndetHier(
+  messages: ChatMessage[],
+  index: number
+): string | null {
+  const message = messages[index]
+  if (message.role !== "bot" || !message.antwort) return null
+  const naechste = messages[index + 1]
+  if (
+    naechste &&
+    naechste.role === "bot" &&
+    naechste.antwort === message.antwort
+  )
+    return null
+  return message.antwort
+}
+
 export function ChatView() {
   const {
     messages,
@@ -35,6 +57,10 @@ export function ChatView() {
     streaming,
     sprache,
     zettelAnzahl,
+    merkbar,
+    gemerkt,
+    laufend,
+    merkeAntwort,
     selectChip,
     sendText,
     wechsleSprache,
@@ -69,13 +95,32 @@ export function ChatView() {
         className="scrollbar-hidden min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
       >
         <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-3 px-3 py-4 @sm:px-4">
-          {messages.map((message, index) => (
-            <MessageItem
-              key={message.id}
-              message={message}
-              avatar={avatarAn(messages, index, isTyping || streaming !== null)}
-            />
-          ))}
+          {messages.map((message, index) => {
+            const antwort = antwortEndetHier(messages, index)
+            const knopf =
+              antwort !== null && antwort !== laufend && merkbar.has(antwort)
+            return (
+              <React.Fragment key={message.id}>
+                <MessageItem
+                  message={message}
+                  avatar={avatarAn(
+                    messages,
+                    index,
+                    isTyping || streaming !== null
+                  )}
+                />
+                {knopf ? (
+                  <div className="-mt-2 pl-12">
+                    <MerkenKnopf
+                      gemerkt={gemerkt.has(antwort)}
+                      sprache={sprache}
+                      onMerken={() => merkeAntwort(antwort)}
+                    />
+                  </div>
+                ) : null}
+              </React.Fragment>
+            )
+          })}
 
           {streaming !== null ? <StreamingBubble text={streaming} /> : null}
 

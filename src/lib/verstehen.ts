@@ -13,7 +13,7 @@ import {
   type Profil,
 } from "@/lib/bedarf"
 import { erkenneDienst, erkenneFernziel } from "@/lib/service"
-import { zettelbar } from "@/lib/zettel"
+import { merkbarerKnoten } from "@/lib/zettel"
 import { THEMA_WEB } from "@/lib/web"
 
 /**
@@ -1988,11 +1988,12 @@ const ZETTEL = /\bzettel\b|\bmy notes\b/
  * Wünsche rund um den Zettel.
  *
  * "Druck mir das aus" meint das, was gerade auf dem Schirm steht. Ist das
- * zettelbar und noch nicht darauf, legt use-chat.ts es vor dem Druck dazu.
+ * merkbar und noch nicht darauf, legt use-chat.ts es vor dem Druck dazu.
+ * "Merk dir das" gilt für jede Antwort, die auch den Merken-Knopf trägt.
  */
 function zumZettel(roh: string, kontext: Kontext): string | null {
   if (MERKEN.test(roh)) {
-    return zettelbar(kontext.knoten)
+    return merkbarerKnoten(kontext.knoten)
       ? `zettel:neu:${kontext.knoten}`
       : "zettel:zeigen"
   }

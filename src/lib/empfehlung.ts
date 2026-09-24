@@ -21,7 +21,6 @@ import { WEB } from "@/lib/web"
 import { BILDER } from "@/lib/bilder"
 import type { WetterId } from "@/lib/wetter"
 import { schalterSatz } from "@/lib/service"
-import { zettelChip } from "@/lib/zettel"
 import { FLYER, flyerQuelle } from "@/lib/flyer"
 import { TOURIST_INFO } from "@/lib/daten"
 
@@ -400,8 +399,9 @@ export function zielKnoten(
   if (flyer || seite) {
     chips.push({ label: en ? "No, thank you" : "Nein, danke", to: "flyer-nein" })
   }
+  // "Auf meinen Zettel" steht seit 24.09.2026 nicht mehr hier, sondern als
+  // Merken-Knopf unter jeder Antwort (chat-view.tsx).
   chips.push(
-    zettelChip(`ziel:${zielId}`, sprache),
     ...geschwisterChips(eintrag, en).filter((chip) => chip.to !== "menu")
   )
   if (!flyer && !seite)
@@ -608,7 +608,6 @@ export function fahrplanKnoten(
       note: en ? eintrag.hinweisEn : eintrag.hinweis,
     },
     chips: [
-      zettelChip(`fahrplan:${verbindungsId}`, sprache),
       {
         label: en ? "Route to the station" : "Weg zum Bahnhof",
         to: "ziel:bahnhof",
