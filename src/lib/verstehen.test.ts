@@ -721,6 +721,14 @@ describe("Essen im Ort, Testlauf vom 23.09.2026", () => {
     expect(almen("empfehlung:almen:0")).toBe(true)
   })
 
+  test("„gibt es mehr?“ nach der Liste, danach „1“", () => {
+    const liste = nach("empfehlung:essen-international:0")
+    expect(ziel("gibt es mehr", liste)).toBe("empfehlung:essen-international:3")
+    const ende = nach("empfehlung:essen-international:3")
+    expect(ziel("Gibt es mehr?", ende)).toBe("empfehlung:essen-international:3")
+    expect(ziel("1", ende)).toBe("ziel:safran")
+  })
+
   test("die Restaurants im Ort enthalten keine Alm", () => {
     for (const gruppe of Object.keys(GRUPPEN).filter((id) =>
       id.startsWith("essen")

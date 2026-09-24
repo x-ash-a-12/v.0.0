@@ -125,7 +125,10 @@ export function empfehlungsKnoten(
       ],
       // Das bisherige Angebot bleibt wählbar: die Ziele sind ja genannt.
       angebot: bisher,
-      gruppe: { id: gruppenId, ab },
+      // Die Position der Schaltflächen, nicht die hinter dem Listenende:
+      // sonst zählt "1" ab Stelle 6 und trifft nichts (Testlauf vom
+      // 24.09.2026, nach zweimal "gibt es mehr").
+      gruppe: { id: gruppenId, ab: Math.max(0, bisher.length - VORSCHLAEGE) },
       chips: [
         ...bisher.slice(-VORSCHLAEGE).map((id) => zielChip(id, en)),
         { label: en ? "Something else" : "Andere Frage", to: "menu" },

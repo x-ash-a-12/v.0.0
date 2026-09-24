@@ -291,9 +291,14 @@ const NAVIGATION =
 const NUR_QR =
   /\bqr\b|\bqrcode\b|\bqr code\b|\bgoogle ?maps\b|\bscannen?\b|\bscan\b/
 
-/** Die Bitte um andere Vorschläge, wenn keiner der drei gepasst hat. */
+/**
+ * Die Bitte um andere Vorschläge, wenn keiner der drei gepasst hat.
+ *
+ * "Gibt es mehr?" fehlte bis 24.09.2026 und lief nach einer Vorschlagsliste
+ * zweimal ins Leere (Testlauf vor dem Interview).
+ */
 const ANDERE =
-  /\b(andere|weitere|mehr)\b[^]*\b(vorschlaeg\w*|optionen|moeglichkeit\w*|ziele|touren|ideen|tipps)\b|\bgibt es (noch |auch )?(was |etwas )?(andere|anderes|weitere)\b|\bhast du (noch |auch )?(was |etwas )?(andere|anderes|weitere)\b|\bnichts dabei\b|\bgefaellt mir nicht\b|\bnichts fuer mich\b|\bwas anderes\b|\bnoch mehr\b|\bandere vorschlaege\b|\bwas sonst\b|\bsonst was\b|\bsonst noch\b|\bund sonst\b|\bwas noch\b|\bwas gibt es noch\b|\bzeig mir mehr\b|\bgib mir mehr\b|\bother (suggestions|options)\b|\banything else\b|\bwhat else\b|\bnone of (them|these)\b/
+  /\b(andere|weitere|mehr)\b[^]*\b(vorschlaeg\w*|optionen|moeglichkeit\w*|ziele|touren|ideen|tipps)\b|\b(gibt es|gibts|hast du|haben sie|kennst du) (noch |auch )?(was |etwas )?(andere|anderes|weitere|mehr)\b|\bmehr davon\b|\b(any|some) more\b|\bmore (suggestions|options|places|restaurants)\b|\bnichts dabei\b|\bgefaellt mir nicht\b|\bnichts fuer mich\b|\bwas anderes\b|\bnoch mehr\b|\bandere vorschlaege\b|\bwas sonst\b|\bsonst was\b|\bsonst noch\b|\bund sonst\b|\bwas noch\b|\bwas gibt es noch\b|\bzeig mir mehr\b|\bgib mir mehr\b|\bother (suggestions|options)\b|\banything else\b|\bwhat else\b|\bnone of (them|these)\b/
 
 /**
  * Eine Frage, die nach Auswahl verlangt statt nach Auskunft.
