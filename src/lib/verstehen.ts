@@ -213,6 +213,12 @@ const META: {
     to: "danke",
   },
   {
+    name: "abschied",
+    weichtThema: true,
+    test: /\btschuess\w*\b|\bauf wiedersehen\b|\bauf wiederschauen\b|\bpfiat\w*\b|\bbis bald\b|\bciao\b|\bbye\b|\bgoodbye\b|\bsee you\b/,
+    to: "abschied",
+  },
+  {
     name: "gruss",
     weichtThema: true,
     test: /\bhallo\b|\bhallihallo\b|\bgruess\w*\b|\bservus\b|\bmoin\b|\bguten (tag|morgen|abend)\b|\bhi\b|\bhey\b|\bhello\b|\bgood (morning|afternoon|evening)\b/,
@@ -299,6 +305,10 @@ const ANDERE =
  */
 const EMPFEHLUNGSFRAGE =
   /\bempfehl\w*\b|\bvorschlag\w*\b|\bvorschlaeg\w*\b|\btipp\w*\b|\bidee\w*\b|\bwas (kann|koennen|koennte|koennten|soll|sollen|sollte) (ich|man|wir)\b|\bwo (kann|koennen|koennte|koennten|soll|sollen|sollte) (ich|man|wir)\b|\bwas gibt es\b|\bwas gibts\b|\bwas lohnt sich\b|\bwohin\b|\bwas ist zu empfehlen\b|\bwelche\w*\b[^]*\b(gibt es|gibts|kann ich|kann man|sind|lohnen|empfiehlst)\b|\brecommend\w*\b|\bsuggestion\w*\b|\bwh(at|ere) (can|should) (i|we)\b|\bwhat is there\b/
+
+/** Die Frage bezieht sich auf den Ort selbst, nicht auf den Berg. */
+const IM_ORT =
+  /\b(im|in dem) (ort|dorf|zentrum|ortskern|ortszentrum)\b|\bin ruhpolding\b|\bhier\b|\bin the village\b|\bin town\b/
 
 /**
  * Die Bekundung eines Vorhabens, im Unterschied zu einer Wissensfrage.
@@ -623,6 +633,9 @@ const LEXIKON: Eintrag[] = [
       "am wochenende",
       "diese tage",
       "this week",
+      "heute los",
+      "morgen los",
+      "was ist los",
     ],
   },
 
@@ -757,8 +770,6 @@ const LEXIKON: Eintrag[] = [
       "fruehstueck",
       "abendessen",
       "mittagessen",
-      "vegan",
-      "vegetarisch",
       "imbiss",
       "speisekart",
       "wirtshaus",
@@ -767,7 +778,6 @@ const LEXIKON: Eintrag[] = [
       "lunch",
       "breakfast",
       "hungry",
-      "restaurants",
     ],
     phrasen: ["etwas essen", "was essen", "essen gehen"],
   },
@@ -802,6 +812,91 @@ const LEXIKON: Eintrag[] = [
     gewicht: 3,
     woerter: ["ruhetag", "geschlossen", "closed"],
   },
+  // Die Küchen führen zur Liste dieser Küche, ohne erst nachzufragen. Welche
+  // Lokale dazugehören, steht in GRUPPEN (ziele.ts). Gewicht 5, damit die
+  // Küche gegen "Restaurant" und "Küche" im selben Satz gewinnt: "gibt es
+  // ein Restaurant mit bayerischer Küche" meint die bayerischen.
+  {
+    to: "empfehlung:essen-regional:0",
+    topic: "essen",
+    gewicht: 5,
+    woerter: ["bayerisch", "regional", "schmankerl", "bavarian"],
+  },
+  {
+    to: "empfehlung:essen-italienisch:0",
+    topic: "essen",
+    gewicht: 5,
+    woerter: ["italienisch", "italiener", "mediterran", "italian"],
+  },
+  {
+    to: "empfehlung:essen-international:0",
+    topic: "essen",
+    gewicht: 5,
+    woerter: ["international"],
+  },
+  {
+    to: "empfehlung:essen-vegetarisch:0",
+    topic: "essen",
+    gewicht: 5,
+    woerter: ["vegetarisch", "vegan", "veggie", "vegetarian"],
+  },
+  {
+    to: "empfehlung:almen:0",
+    topic: "essen",
+    gewicht: 3,
+    woerter: [],
+    phrasen: [
+      "auf der alm",
+      "auf einer alm",
+      "am berg essen",
+      "almen zum essen",
+    ],
+  },
+  // Die vollen Namen der Lokale. Ohne sie gewinnt ein Allgemeinwort im Namen:
+  // "Restaurant Maiers" landete beim Thema Essen, "Ruhpoldinger Hof" bei den
+  // Bauernhöfen und "Pizza & Co" bei der Pizzeria Made in Italy.
+  {
+    to: "ziel:maiers",
+    topic: "essen",
+    gewicht: 3,
+    woerter: [],
+    phrasen: ["restaurant maiers"],
+  },
+  {
+    to: "ziel:ruhpoldinger-hof",
+    topic: "essen",
+    gewicht: 3,
+    woerter: [],
+    phrasen: ["ruhpoldinger hof"],
+  },
+  {
+    to: "ziel:weingarten",
+    topic: "essen",
+    gewicht: 3,
+    woerter: [],
+    phrasen: ["gasthaus weingarten", "gasthof weingarten"],
+  },
+  {
+    to: "ziel:holzstube",
+    topic: "essen",
+    gewicht: 3,
+    woerter: [],
+    phrasen: ["am maibaum"],
+  },
+  {
+    to: "ziel:pizza-co",
+    topic: "essen",
+    gewicht: 3,
+    woerter: [],
+    phrasen: ["pizza co", "pizza und co"],
+  },
+  {
+    to: "ziel:safran",
+    topic: "essen",
+    gewicht: 3,
+    woerter: [],
+    phrasen: ["indisches restaurant", "indisch essen"],
+  },
 
   /* Familie */
   {
@@ -825,7 +920,15 @@ const LEXIKON: Eintrag[] = [
     to: "familie",
     topic: "familie",
     gewicht: 1,
-    woerter: ["schwimm", "spielen", "rutsch", "museum", "badesee", "swimming"],
+    woerter: ["schwimm", "spielen", "rutsch", "badesee", "swimming"],
+  },
+  // "museum" allein ergab eine Rückfrage mit einer einzigen Möglichkeit,
+  // "welche museen gibt es" gar nichts.
+  {
+    to: "empfehlung:museen:0",
+    topic: "familie",
+    gewicht: 3,
+    woerter: ["museum", "museen", "ausstellung", "museums"],
   },
   {
     to: "familie-regen",
@@ -1195,10 +1298,16 @@ function bewerte(text: string): Punktestand[] {
       if (roh.includes(phrase)) addiere(eintrag, eintrag.gewicht * 2)
     }
 
-    for (const stichwort of eintrag.woerter) {
-      if (trifft(stichwort, woerter, staemme, eintrag.gewicht)) {
-        addiere(eintrag, eintrag.gewicht)
-      }
+    // Gezählt wird je Wort der Eingabe, nicht je Stichwort. Sonst trifft
+    // "restaurants" beim Essen sowohl "restaurant" als auch "restaurants"
+    // und zählt doppelt, und das Thema überstimmt jede speziellere Antwort:
+    // "welche Restaurants haben Ruhetag" landete beim Essen statt bei den
+    // Ruhetagen.
+    for (let i = 0; i < woerter.length; i++) {
+      const getroffen = eintrag.woerter.some((stichwort) =>
+        trifft(stichwort, [woerter[i]], [staemme[i]], eintrag.gewicht)
+      )
+      if (getroffen) addiere(eintrag, eintrag.gewicht)
     }
   }
 
@@ -1556,6 +1665,16 @@ export function verstehe(
         wandern: { i: "berge" },
         familie: { i: "familie", b: "kinder" },
       }
+      // Beim Essen fragt die Auskunft nach der Küche. Wer ausdrücklich im Ort
+      // essen will, bekommt dabei keine Alm angeboten.
+      if (thema === "essen") {
+        const imOrt = IM_ORT.test(roh)
+        return {
+          kind: "hit",
+          to: imOrt ? "essen-wahl-ort" : "essen-wahl",
+          grund: "empfehlung",
+        }
+      }
       const start = vorbelegt[thema]
       if (start) {
         const profil = ergaenze(bedarfAusText(roh), start)
@@ -1684,6 +1803,14 @@ function waehleAusChips(roh: string, kontext: Kontext): string | null {
     if (label.size === 0) continue
     let gleich = 0
     for (const wort of eingabe) if (label.has(wort)) gleich++
+    // Nennt die Eingabe ein Thema, das auf der Schaltfläche nicht steht, ist
+    // sie kein Klick darauf. Testlauf vom 23.09.2026: "was kann ich hier im
+    // Ort essen" teilte "kann" und "hier" mit "Was kann ich hier
+    // unternehmen?" und landete in der Bedarfsklärung statt beim Essen.
+    const mehr = [...eingabe].some(
+      (wort) => !label.has(wort) && gehoertZumThema(wort)
+    )
+    if (mehr) continue
     if (
       gleich >= 2 ||
       (gleich === 1 && gleich === label.size && eingabe.size <= 2)

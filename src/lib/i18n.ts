@@ -168,7 +168,8 @@ const CHIPS_GLOBAL: Record<string, string> = {
   hinweise: "Current notices",
   info: "Tourist information",
   "zettel:neu:info": "Add to my notes",
-  "empfehlung:essen:0": "Suggestions for eating out",
+  "empfehlung:essen:0": "All restaurants in the village",
+  "essen-wahl": "Suggestions for eating out",
   "fahrplan:traunstein": "Train to Traunstein",
   // Wege zu einzelnen Zielen.
   "ziel:rauschberg": `Route to the ${BERGBAHNEN.rauschbergName} valley station`,
@@ -193,6 +194,11 @@ const CHIPS_GLOBAL: Record<string, string> = {
 }
 
 const EN: Record<string, Uebersetzung> = {
+  abschied: {
+    messages: [
+      "Goodbye and have a lovely time in Ruhpolding! If anything else comes to mind, just come back.",
+    ],
+  },
   sport: {
     kurz: [
       "As I said: from tandem flights at the Unternberg to golf and the BergFit trail, there is plenty on offer.",
@@ -329,13 +335,14 @@ const EN: Record<string, Uebersetzung> = {
   },
   essen: {
     kurz: [
-      `As said: in the village among others the ${GASTRONOMIE.gasthausPost} and the ${GASTRONOMIE.pizzeria}, up the mountain the ${GASTRONOMIE.almstueberl}.`,
+      `As said: in the village among others the ${GASTRONOMIE.gasthausPost} and ${GASTRONOMIE.maiers}, up the mountain the ${GASTRONOMIE.almstueberl}.`,
     ],
     messages: [
-      `Ruhpolding Tourismus keeps a list of the restaurants in the village, among them the ${GASTRONOMIE.gasthausPost}, the ${GASTRONOMIE.pizzeria} and, up the mountain, the ${GASTRONOMIE.almstueberl}.`,
+      `Ruhpolding Tourismus keeps a list of the restaurants in the village, among them the ${GASTRONOMIE.gasthausPost}, ${GASTRONOMIE.maiers} and, up the mountain, the ${GASTRONOMIE.almstueberl}.`,
+      "My knowledge does not cover every restaurant in Ruhpolding, only a selection from that list. You will find the full list at ruhpolding.de/gaststaetten-und-restaurants.",
       "I do not have reliable opening times or closing days, so please check those with the restaurant.",
     ],
-    chips: { "empfehlung:essen:0": "Suggestions for eating out" },
+    chips: { "essen-wahl": "Suggestions for eating out" },
   },
   familie: {
     kurz: [
@@ -475,6 +482,40 @@ const EN: Record<string, Uebersetzung> = {
     messages: [
       "I cannot show webcam images here. ruhpolding.de has a webcam page, though, including a view over Ruhpolding to the Rauschberg and one from the Hochfelln towards the Chiemsee.",
     ],
+  },
+  "essen-wahl": {
+    messages: [
+      [
+        "Of course. What do you fancy?",
+        "Gladly. Which cuisine would you like?",
+      ],
+      "My knowledge does not cover every restaurant in Ruhpolding. You will find the full list at ruhpolding.de/gaststaetten-und-restaurants.",
+    ],
+    chips: {
+      "empfehlung:essen-regional:0": "Bavarian & regional",
+      "empfehlung:essen-italienisch:0": "Italian & Mediterranean",
+      "empfehlung:essen-international:0": "International",
+      "empfehlung:essen-vegetarisch:0": "Vegetarian",
+      "empfehlung:almen:0": "A mountain inn",
+      "empfehlung:essen:0": "All restaurants in the village",
+    },
+  },
+  "essen-wahl-ort": {
+    messages: [
+      [
+        "Of course. What do you fancy?",
+        "Gladly. Which cuisine would you like?",
+      ],
+      "My knowledge does not cover every restaurant in Ruhpolding. You will find the full list at ruhpolding.de/gaststaetten-und-restaurants.",
+    ],
+    chips: {
+      "empfehlung:essen-regional:0": "Bavarian & regional",
+      "empfehlung:essen-italienisch:0": "Italian & Mediterranean",
+      "empfehlung:essen-international:0": "International",
+      "empfehlung:essen-vegetarisch:0": "Vegetarian",
+      "empfehlung:almen:0": "A mountain inn",
+      "empfehlung:essen:0": "All restaurants in the village",
+    },
   },
   "essen-huette": {
     messages: [

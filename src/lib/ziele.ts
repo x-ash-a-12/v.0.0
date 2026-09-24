@@ -35,12 +35,7 @@ import {
 
 /** Wofür sich jemand interessiert, gefragt wie am Schalter. */
 export type Interesse =
-  | "berge"
-  | "rad"
-  | "familie"
-  | "kultur"
-  | "gemuetlich"
-  | "sport"
+  "berge" | "rad" | "familie" | "kultur" | "gemuetlich" | "sport"
 
 /** Wer mitkommt. Frau Amort fragt nach Kindern, Kinderwagen und Älteren. */
 export type Begleitung = "kinder" | "senioren" | "erwachsene"
@@ -1121,49 +1116,237 @@ export const ZIELE: Ziel[] = [
    * ---------------------------------------------------------------- */
   {
     id: "post",
-    web: "restaurants",
+    // ruhpolding.de/hotel-post-1, abgerufen 2026-09-23
+    web: "restaurant-post",
     suche: "Hotel zur Post",
     name: GASTRONOMIE.gasthausPost,
     nameEn: GASTRONOMIE.gasthausPost,
     beschreibung:
-      "Restaurant mitten im Ort, in der Gastronomieliste von Ruhpolding Tourismus geführt.",
+      "Mitten im Ort. Auf der Karte stehen typisch bayerische Gerichte ebenso wie ein veganes Gemüsecurry, dazu gibt es einen Biergarten.",
     beschreibungEn:
-      "A restaurant in the middle of the village, listed by Ruhpolding Tourismus.",
-    eckdaten: "Im Ortszentrum",
-    eckdatenEn: "In the village centre",
+      "In the middle of the village. The menu has typical Bavarian dishes as well as a vegan vegetable curry, and there is a beer garden.",
+    eckdaten: "Regionale Küche, auch vegetarisch · Hauptstraße 35",
+    eckdatenEn: "Regional cooking, vegetarian dishes too · Hauptstraße 35",
+    geeignet: {
+      de: "Familien, Ruhpolding Tourismus führt das Haus als kinderfreundlich und barrierefrei.",
+      en: "Families, Ruhpolding Tourismus lists it as child-friendly and barrier-free.",
+    },
     zeitenErfragen: true,
     topic: "essen",
-    stichwoerter: [
-      "post",
-      "gasthaus",
-      "gasthof",
-      "bayerisch",
-      "wirtshaus",
-      "abendessen",
-    ],
+    // Nicht "bayerisch": das Wort führt zur Auswahl nach Küche.
+    stichwoerter: ["post", "gasthaus", "gasthof", "wirtshaus", "abendessen"],
   },
   {
     id: "pizzeria",
-    web: "restaurants",
+    // ruhpolding.de/pizzeria-eiscafe-made-in-italy, abgerufen 2026-09-23
+    web: "restaurant-made-in-italy",
     suche: "Made in Italy Ruhpolding",
     name: GASTRONOMIE.pizzeria,
     nameEn: GASTRONOMIE.pizzeria,
-    beschreibung:
-      "Pizzeria und Eiscafé, in der Gastronomieliste von Ruhpolding Tourismus geführt.",
-    beschreibungEn:
-      "Pizzeria and ice cream café, listed by Ruhpolding Tourismus.",
-    eckdaten: "Im Ortszentrum",
-    eckdatenEn: "In the village centre",
+    beschreibung: "Pizzeria und Eiscafé mit Terrasse.",
+    beschreibungEn: "Pizzeria and ice cream café with a terrace.",
+    eckdaten: "Mediterrane Küche, auch vegetarisch · Hauptstraße 28",
+    eckdatenEn: "Mediterranean cooking, vegetarian dishes too · Hauptstraße 28",
     zeitenErfragen: true,
     topic: "essen",
-    stichwoerter: [
-      "pizzeria",
-      "pizza",
-      "eis",
-      "italien",
-      "eiscafe",
-      "icecream",
-    ],
+    // Google Maps führt den Betrieb unter Hauptstraße 28 als "Dauerhaft
+    // geschlossen" (geprüft 24.09.2026), ruhpolding.de noch mit
+    // Öffnungszeiten. Solange das nicht geklärt ist, wird er nicht
+    // vorgeschlagen (Entscheidung des Autors vom 24.09.2026).
+    ungesichert:
+      "Laut Google Maps dauerhaft geschlossen, laut ruhpolding.de geöffnet",
+    // Nicht "italien": das träfe auch "italienisch", und das führt zur
+    // Auswahl nach Küche. "pizza" allein führt zu Pizza & Co.
+    stichwoerter: ["pizzeria", "made", "italy", "eis", "eiscafe", "icecream"],
+  },
+
+  /*
+   * Die folgenden zehn stammen jeweils von der Detailseite des Betriebs auf
+   * ruhpolding.de (siehe `web`), abgerufen 2026-09-23. Beschreibung,
+   * Küche und Adresse sind dort so angegeben. Öffnungszeiten und Ruhetage
+   * stehen ebenfalls dort, werden hier aber nicht genannt: die Seite
+   * schreibt selbst "Alle Angaben ohne Gewähr".
+   */
+  {
+    id: "maiers",
+    web: "restaurant-maiers",
+    // "Restaurant Maiers" findet Google Maps nicht (geprüft 24.09.2026). Das
+    // Restaurant gehört zum Landhotel Maiergschwendt, Maiergschwendt 1.
+    suche: "Landhotel Maiergschwendt",
+    name: GASTRONOMIE.maiers,
+    nameEn: GASTRONOMIE.maiers,
+    beschreibung:
+      "Bekannt für moderne bayerische Küche mit Produkten aus der Region, dazu ein Biergarten und eine Weinkarte mit Weinen aus Deutschland und Österreich.",
+    beschreibungEn:
+      "Known for modern Bavarian cooking with produce from the region, with a beer garden and a wine list from Germany and Austria.",
+    eckdaten: "Regionale Küche, auch vegetarisch · Maiergschwendt 1",
+    eckdatenEn: "Regional cooking, vegetarian dishes too · Maiergschwendt 1",
+    zeitenErfragen: true,
+    topic: "essen",
+    stichwoerter: ["maiers", "maier", "maiergschwendt"],
+  },
+  {
+    id: "haeusler",
+    web: "restaurant-haeusler",
+    suche: GASTRONOMIE.haeusler,
+    name: GASTRONOMIE.haeusler,
+    nameEn: GASTRONOMIE.haeusler,
+    beschreibung:
+      "Gemütlich umgebautes Bauernhaus mit traditionell bayerischer Speisekarte und einem Biergarten mit Blick über den Golfplatz zum Rauschberg.",
+    beschreibungEn:
+      "A cosily converted farmhouse with a traditional Bavarian menu and a beer garden looking across the golf course to the Rauschberg.",
+    eckdaten: "Regionale Küche · Zell 37 a",
+    eckdatenEn: "Regional cooking · Zell 37 a",
+    geeignet: {
+      de: "Familien, Ruhpolding Tourismus führt das Lokal als kinderfreundlich.",
+      en: "Families, Ruhpolding Tourismus lists it as child-friendly.",
+    },
+    zeitenErfragen: true,
+    topic: "essen",
+    interessen: ["familie", "gemuetlich"],
+    stichwoerter: ["haeusler", "bauernhaus"],
+  },
+  {
+    id: "ruhpoldinger-hof",
+    web: "restaurant-ruhpoldinger-hof",
+    suche: GASTRONOMIE.ruhpoldingerHof,
+    name: GASTRONOMIE.ruhpoldingerHof,
+    nameEn: GASTRONOMIE.ruhpoldingerHof,
+    beschreibung:
+      "Hotel mit Speisesaal, Stuben und großem Biergarten. Am Abend gibt es à la carte Gerichte aus der bayerischen Küche.",
+    beschreibungEn:
+      "A hotel with a dining hall, parlours and a large beer garden. In the evening Bavarian dishes are served à la carte.",
+    eckdaten: "Regionale Küche · Hauptstraße 30",
+    eckdatenEn: "Regional cooking · Hauptstraße 30",
+    geeignet: {
+      de: "Gäste, die auf Barrierefreiheit achten: Ruhpolding Tourismus führt das Haus als barrierefrei.",
+      en: "Guests who need step-free access: Ruhpolding Tourismus lists it as barrier-free.",
+    },
+    zeitenErfragen: true,
+    topic: "essen",
+    stichwoerter: ["ruhpoldingerhof", "braustueberl", "stuben"],
+  },
+  {
+    id: "fischerwirt",
+    web: "restaurant-fischerwirt",
+    suche: GASTRONOMIE.fischerwirt,
+    name: GASTRONOMIE.fischerwirt,
+    nameEn: GASTRONOMIE.fischerwirt,
+    beschreibung:
+      "Am Rand des Ruhpoldinger Talkessels mit Blick auf die Berge. Regionale und internationale Küche mit saisonalen Produkten, dazu Fischgerichte und eine große Sonnenterrasse.",
+    beschreibungEn:
+      "On the edge of the Ruhpolding valley with a view of the mountains. Regional and international cooking with seasonal produce, fish dishes and a large sun terrace.",
+    eckdaten: "Regionale und internationale Küche · Rauschbergstraße 1",
+    eckdatenEn: "Regional and international cooking · Rauschbergstraße 1",
+    zeitenErfragen: true,
+    topic: "essen",
+    stichwoerter: ["fischerwirt", "fisch", "fischgericht", "sonnenterrasse"],
+  },
+  {
+    id: "weingarten",
+    web: "restaurant-weingarten",
+    suche: GASTRONOMIE.weingarten,
+    name: GASTRONOMIE.weingarten,
+    nameEn: GASTRONOMIE.weingarten,
+    beschreibung:
+      "Berggasthof mit gutbürgerlicher bayerischer Küche, etwa Schweinshaxe und Topfenstrudel, und einer Terrasse mit Blick über das Ruhpoldinger Tal.",
+    beschreibungEn:
+      "A mountain inn with traditional Bavarian cooking, such as pork knuckle and curd strudel, and a terrace looking over the Ruhpolding valley.",
+    eckdaten: "Bayerische Küche · Weingarten 1",
+    eckdatenEn: "Bavarian cooking · Weingarten 1",
+    geeignet: {
+      de: "Auch größere Gruppen, mit 120 Plätzen drinnen.",
+      en: "Larger groups too, with 120 seats inside.",
+    },
+    zeitenErfragen: true,
+    topic: "essen",
+    interessen: ["gemuetlich"],
+    stichwoerter: ["weingarten", "schweinshaxe", "haxe", "topfenstrudel"],
+  },
+  {
+    id: "butznwirt",
+    web: "restaurant-butznwirt",
+    suche: GASTRONOMIE.butznwirt,
+    name: GASTRONOMIE.butznwirt,
+    nameEn: GASTRONOMIE.butznwirt,
+    beschreibung:
+      "Traditioneller Berggasthof in Brand auf 850 m, einen Kilometer südwestlich des Freizeitparks. Der Wirt kocht selbst, europäische und deutsche Küche.",
+    beschreibungEn:
+      "A traditional mountain inn in Brand at 850 m, one kilometre south-west of the leisure park. The landlord cooks himself, European and German cuisine.",
+    eckdaten: "Europäische und deutsche Küche · Brand 18",
+    eckdatenEn: "European and German cuisine · Brand 18",
+    zeitenErfragen: true,
+    topic: "essen",
+    interessen: ["gemuetlich"],
+    stichwoerter: ["butz", "butzn", "butznwirt"],
+  },
+  {
+    id: "holzstube",
+    web: "restaurant-holzstube",
+    suche: GASTRONOMIE.holzstube,
+    name: GASTRONOMIE.holzstube,
+    nameEn: GASTRONOMIE.holzstube,
+    beschreibung:
+      "Kleines Steakhouse-Pub an großen gemeinsamen Tischen, mit Steaks, Ribs und Burgern. Das Fleisch kommt von Bauern aus der Region.",
+    beschreibungEn:
+      "A small steakhouse pub with large shared tables, serving steaks, ribs and burgers. The meat comes from farmers in the region.",
+    eckdaten: "Steakhouse · Hauptstraße 34",
+    eckdatenEn: "Steakhouse · Hauptstraße 34",
+    zeitenErfragen: true,
+    topic: "essen",
+    stichwoerter: ["holzstube", "steak", "steakhouse", "burger", "ribs", "pub"],
+  },
+  {
+    id: "pizza-co",
+    web: "restaurant-pizza-co",
+    suche: GASTRONOMIE.pizzaCo,
+    name: GASTRONOMIE.pizzaCo,
+    nameEn: GASTRONOMIE.pizzaCo,
+    beschreibung:
+      "Italienisches Restaurant mit Biergarten. Ruhpolding Tourismus empfiehlt besonders die Pesto-Pizza.",
+    beschreibungEn:
+      "An Italian restaurant with a beer garden. Ruhpolding Tourismus particularly recommends the pesto pizza.",
+    eckdaten: "Mediterrane Küche, auch vegetarisch · Hauptstraße 47",
+    eckdatenEn: "Mediterranean cooking, vegetarian dishes too · Hauptstraße 47",
+    geeignet: {
+      de: "Auch mit Hund, das Lokal ist als hundefreundlich geführt.",
+      en: "Dog owners too, it is listed as dog-friendly.",
+    },
+    zeitenErfragen: true,
+    topic: "essen",
+    stichwoerter: ["pizza", "pizzaco", "pesto"],
+  },
+  {
+    id: "bell-ponte",
+    web: "restaurant-bell-ponte",
+    suche: GASTRONOMIE.bellPonte,
+    name: GASTRONOMIE.bellPonte,
+    nameEn: GASTRONOMIE.bellPonte,
+    beschreibung: "Restaurant und Bar mit Pizza und Pasta, auch auf ein Bier.",
+    beschreibungEn:
+      "A restaurant and bar with pizza and pasta, also for a beer.",
+    eckdaten: "Mediterrane Küche, auch vegetarisch · Waldbahnstraße 2",
+    eckdatenEn:
+      "Mediterranean cooking, vegetarian dishes too · Waldbahnstraße 2",
+    zeitenErfragen: true,
+    topic: "essen",
+    stichwoerter: ["bellponte", "ponte", "pasta", "nudeln"],
+  },
+  {
+    id: "safran",
+    web: "restaurant-safran",
+    suche: GASTRONOMIE.safran,
+    name: GASTRONOMIE.safran,
+    nameEn: "Safran Indian restaurant",
+    beschreibung:
+      "Indisches Restaurant mit Terrasse, auch mit vegetarischen Gerichten.",
+    beschreibungEn:
+      "An Indian restaurant with a terrace, with vegetarian dishes too.",
+    eckdaten: "Indische Küche · Hauptstraße 25 a",
+    eckdatenEn: "Indian cuisine · Hauptstraße 25 a",
+    zeitenErfragen: true,
+    topic: "essen",
+    stichwoerter: ["safran", "indisch", "indien", "indian", "curry"],
   },
 
   /* ---------------------------------------------------------------- *
@@ -1554,6 +1737,21 @@ export type Gruppe = {
   einleitungEn: string[]
   /** Ziel-IDs in Vorschlagsreihenfolge. */
   ziele: string[]
+  /**
+   * Ein Satz, der in der ersten Runde und am Ende der Liste mitkommt, etwa
+   * dass die Auswahl nicht vollständig ist.
+   */
+  hinweis?: { de: string; en: string }
+}
+
+/*
+ * Vorgabe des Autors vom 23.09.2026: Wer nach Restaurants fragt, soll
+ * erfahren, dass der Prototyp nur einen Teil der Lokale kennt. Die Liste auf
+ * ruhpolding.de führt 62 Betriebe.
+ */
+const HINWEIS_RESTAURANTS = {
+  de: "Mein Wissensstand umfasst nicht alle Restaurants in Ruhpolding. Die vollständige Liste finden Sie unter ruhpolding.de/gaststaetten-und-restaurants.",
+  en: "My knowledge does not cover every restaurant in Ruhpolding. You will find the full list at ruhpolding.de/gaststaetten-und-restaurants.",
 }
 
 export const GRUPPEN: Record<string, Gruppe> = {
@@ -1641,6 +1839,14 @@ export const GRUPPEN: Record<string, Gruppe> = {
       "foerchensee",
     ],
   },
+  // Wer nach Museen fragt, bekam die Kulturliste mit Kirche und Kapellenweg
+  // vorneweg (Browsertest vom 24.09.2026). Hier stehen nur die Museen.
+  museen: {
+    id: "museen",
+    einleitung: ["Im Ort gibt es drei Museen:"],
+    einleitungEn: ["There are three museums in the village:"],
+    ziele: ["heimatmuseum", "holzknechtmuseum", "glockenschmiede"],
+  },
   kultur: {
     id: "kultur",
     einleitung: [
@@ -1659,21 +1865,87 @@ export const GRUPPEN: Record<string, Gruppe> = {
       "glockenschmiede",
     ],
   },
+  /*
+   * Essen ist nach Ort getrennt: die Restaurants im Ort und die Almen am
+   * Berg. Wer im Ort essen will, bekommt keine Alm vorgeschlagen (Vorgabe
+   * des Autors vom 23.09.2026).
+   *
+   * Die Küchen folgen dem Feld "Art der Küche" auf der Detailseite jedes
+   * Lokals bei ruhpolding.de, abgerufen 2026-09-23. Drei Seiten haben das
+   * Feld nicht, dort gilt die Beschreibung: Weingarten ("typisch bayerischen
+   * Schmankerln"), Butz'n Wirt ("Europäische/Deutsche Küche", deshalb bei
+   * den regionalen) und die Holzstube ("Steakhouse Pub", deshalb
+   * international).
+   */
   essen: {
     id: "essen",
     einleitung: [
-      "Diese Almen und Lokale nennen der Almflyer und die Gastronomieliste von Ruhpolding Tourismus:",
+      "Diese Restaurants im Ort führt Ruhpolding Tourismus in seiner Gastronomieliste:",
     ],
     einleitungEn: [
-      "These mountain inns and restaurants are in the alpine flyer and the Ruhpolding Tourismus list:",
+      "These restaurants in the village are on the Ruhpolding Tourismus list:",
     ],
     ziele: [
-      "unternbergalm",
-      "langerbauer",
-      "brander",
       "post",
+      "maiers",
       "pizzeria",
+      "haeusler",
+      "safran",
+      "fischerwirt",
+      "ruhpoldinger-hof",
+      "pizza-co",
+      "holzstube",
+      "weingarten",
+      "bell-ponte",
+      "butznwirt",
     ],
+    hinweis: HINWEIS_RESTAURANTS,
+  },
+  "essen-regional": {
+    id: "essen-regional",
+    einleitung: ["Bayerische und regionale Küche gibt es zum Beispiel hier:"],
+    einleitungEn: ["For Bavarian and regional cooking, for example:"],
+    ziele: [
+      "post",
+      "maiers",
+      "haeusler",
+      "ruhpoldinger-hof",
+      "fischerwirt",
+      "weingarten",
+      "butznwirt",
+    ],
+    hinweis: HINWEIS_RESTAURANTS,
+  },
+  "essen-italienisch": {
+    id: "essen-italienisch",
+    einleitung: ["Italienisch und mediterran essen Sie hier:"],
+    einleitungEn: ["For Italian and Mediterranean food:"],
+    ziele: ["pizzeria", "pizza-co", "bell-ponte"],
+    hinweis: HINWEIS_RESTAURANTS,
+  },
+  "essen-international": {
+    id: "essen-international",
+    einleitung: ["Internationale Küche gibt es hier:"],
+    einleitungEn: ["For international cooking:"],
+    ziele: ["safran", "holzstube", "fischerwirt"],
+    hinweis: HINWEIS_RESTAURANTS,
+  },
+  "essen-vegetarisch": {
+    id: "essen-vegetarisch",
+    einleitung: [
+      "Vegetarische Gerichte führen laut Ruhpolding Tourismus diese Lokale:",
+    ],
+    einleitungEn: [
+      "According to Ruhpolding Tourismus these places have vegetarian dishes:",
+    ],
+    ziele: ["post", "maiers", "pizzeria", "pizza-co", "bell-ponte", "safran"],
+    hinweis: HINWEIS_RESTAURANTS,
+  },
+  almen: {
+    id: "almen",
+    einleitung: ["Zum Einkehren am Berg nennt der Almflyer diese Almen:"],
+    einleitungEn: ["For a stop on the mountain, the alpine flyer names these:"],
+    ziele: ["unternbergalm", "langerbauer", "brander"],
   },
   sport: {
     id: "sport",

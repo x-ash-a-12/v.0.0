@@ -32,6 +32,18 @@ export type WebId =
   | "wetter"
   | "webcams"
   | "restaurants"
+  | "restaurant-post"
+  | "restaurant-made-in-italy"
+  | "restaurant-maiers"
+  | "restaurant-haeusler"
+  | "restaurant-ruhpoldinger-hof"
+  | "restaurant-fischerwirt"
+  | "restaurant-weingarten"
+  | "restaurant-butznwirt"
+  | "restaurant-holzstube"
+  | "restaurant-pizza-co"
+  | "restaurant-bell-ponte"
+  | "restaurant-safran"
   | "familien"
   | "bei-regen"
   | "baeder"
@@ -143,6 +155,60 @@ export const WEB: Record<WebId, WebSeite> = Object.fromEntries([
     "gaststaetten-und-restaurants",
     "Gaststätten & Restaurants",
     "Restaurants and inns"
+  ),
+  // Die Detailseiten der einzelnen Lokale, abgerufen am 23.09.2026, jeweils
+  // HTTP 200. Dort stehen Öffnungszeiten und Ruhetage des Betriebs.
+  seite(
+    "restaurant-post",
+    "hotel-post-1",
+    "Hotel zur Post Restaurant",
+    "Hotel zur Post Restaurant"
+  ),
+  seite(
+    "restaurant-made-in-italy",
+    "pizzeria-eiscafe-made-in-italy",
+    "Pizzeria Eiscafé „Made in Italy“",
+    "Pizzeria Eiscafé „Made in Italy“"
+  ),
+  seite(
+    "restaurant-maiers",
+    "maiergschwendt",
+    "Restaurant Maiers",
+    "Restaurant Maiers"
+  ),
+  seite(
+    "restaurant-haeusler",
+    "beim-haeusler-1",
+    "Beim Häusler",
+    "Beim Häusler"
+  ),
+  seite(
+    "restaurant-ruhpoldinger-hof",
+    "ruhpoldinger-hof",
+    "Ruhpoldinger Hof",
+    "Ruhpoldinger Hof"
+  ),
+  seite("restaurant-fischerwirt", "fischerwirt", "Fischerwirt", "Fischerwirt"),
+  seite(
+    "restaurant-weingarten",
+    "gasthof-weingarten",
+    "Berggasthaus Weingarten",
+    "Berggasthaus Weingarten"
+  ),
+  seite("restaurant-butznwirt", "butznwirt-1", "Butz'n Wirt", "Butz'n Wirt"),
+  seite(
+    "restaurant-holzstube",
+    "holzstube-steakhouse-pub-1",
+    "Holzstube am Maibaum",
+    "Holzstube am Maibaum"
+  ),
+  seite("restaurant-pizza-co", "pizza-co", "Pizza & Co", "Pizza & Co"),
+  seite("restaurant-bell-ponte", "bell-ponte", "Bell Ponte", "Bell Ponte"),
+  seite(
+    "restaurant-safran",
+    "safran-indisches-restaurant",
+    "Safran Indisches Restaurant",
+    "Safran Indian restaurant"
   ),
   seite("familien", "fuer-familien", "Für Familien", "For families"),
   seite(

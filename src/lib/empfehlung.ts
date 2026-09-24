@@ -119,7 +119,10 @@ export function empfehlungsKnoten(
     return {
       id: `empfehlung:${gruppenId}:${ab}`,
       fertig: true,
-      messages: [en ? NICHTS_MEHR_EN : NICHTS_MEHR],
+      messages: [
+        en ? NICHTS_MEHR_EN : NICHTS_MEHR,
+        ...(gruppe.hinweis ? [en ? gruppe.hinweis.en : gruppe.hinweis.de] : []),
+      ],
       // Das bisherige Angebot bleibt wählbar: die Ziele sind ja genannt.
       angebot: bisher,
       gruppe: { id: gruppenId, ab },
@@ -159,6 +162,9 @@ export function empfehlungsKnoten(
       ...ausschnitt.map((eintrag, index) =>
         vorschlag(eintrag, ab + index + 1, en, jetzt)
       ),
+      ...(ab === 0 && gruppe.hinweis
+        ? [en ? gruppe.hinweis.en : gruppe.hinweis.de]
+        : []),
       waehle(en ? ABSCHLUSS_EN : ABSCHLUSS),
     ],
     angebot: ausschnitt.map((eintrag) => eintrag.id),

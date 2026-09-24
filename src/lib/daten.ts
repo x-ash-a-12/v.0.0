@@ -283,6 +283,23 @@ export const GASTRONOMIE = {
    * sagt "das", die Alm ist weiblich. Siehe Bericht.
    */
   almstueberl: "Unternberg Alm",
+
+  /*
+   * Zehn weitere Lokale im Ort, Namen wie in der Liste. Jede Angabe dazu in
+   * ziele.ts wurde gegen die Detailseite des Betriebs auf ruhpolding.de
+   * geprüft (abgerufen 2026-09-23, jeweils HTTP 200). Die Liste führt 62
+   * Betriebe, der Prototyp kennt also nur einen Teil davon.
+   */
+  maiers: "Restaurant Maiers",
+  haeusler: "Beim Häusler",
+  ruhpoldingerHof: "Ruhpoldinger Hof",
+  fischerwirt: "Fischerwirt",
+  weingarten: "Berggasthaus Weingarten",
+  butznwirt: "Butz'n Wirt",
+  holzstube: "Holzstube am Maibaum",
+  pizzaCo: "Pizza & Co",
+  bellPonte: "Bell Ponte",
+  safran: "Safran Indisches Restaurant",
 } as const
 
 /**

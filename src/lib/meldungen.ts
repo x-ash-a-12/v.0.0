@@ -83,8 +83,14 @@ export const MELDUNGEN: Meldung[] = [
   },
   {
     id: "almen",
+    // Nicht mehr das ganze Thema Essen: wer ausdrücklich im Ort essen will
+    // oder eine Restaurantliste bekommt, braucht den Almenhinweis nicht
+    // (Browsertest vom 24.09.2026).
     bei: [
-      "thema:essen",
+      "essen",
+      "essen-wahl",
+      "essen-huette",
+      "empfehlung:almen:",
       "ziel:schwarzachen",
       "ziel:langerbauer",
       "ziel:brander",

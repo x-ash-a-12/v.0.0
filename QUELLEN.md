@@ -10,7 +10,7 @@ Nicht aufgeführt sind die beiden Fußnotentexte der Karten
 (`TOURIST_INFO.kartenhinweis`, `BERGBAHNEN.kartenhinweis`). Sie sind keine
 Angaben über Ruhpolding, sondern Hinweise auf den Stand der Daten.
 
-Belegt: 45. Offen geblieben: 55.
+Belegt: 55. Offen geblieben: 55.
 
 Nachgetragen am 3. September 2026: die Fahrplandaten in `src/lib/fahrplan.ts`
 und die Buslinien in `ANREISE`. Sie stehen in einer eigenen Tabelle am Ende
@@ -61,6 +61,16 @@ werden und ein Ablaufdatum haben.
 | GASTRONOMIE | pizzeria | Pizzeria Eiscafé „Made in Italy“ | https://www.ruhpolding.de/gaststaetten-und-restaurants | 2026-09-03 |
 | GASTRONOMIE | hotelGehoben | Steinbach | https://www.ruhpolding.de/gaststaetten-und-restaurants | 2026-09-03 |
 | GASTRONOMIE | almstueberl | Unternberg Alm | https://www.ruhpolding.de/gaststaetten-und-restaurants | 2026-09-03 |
+| GASTRONOMIE | maiers | Restaurant Maiers | https://www.ruhpolding.de/maiergschwendt | 2026-09-23 |
+| GASTRONOMIE | haeusler | Beim Häusler | https://www.ruhpolding.de/beim-haeusler-1 | 2026-09-23 |
+| GASTRONOMIE | ruhpoldingerHof | Ruhpoldinger Hof | https://www.ruhpolding.de/ruhpoldinger-hof | 2026-09-23 |
+| GASTRONOMIE | fischerwirt | Fischerwirt | https://www.ruhpolding.de/fischerwirt | 2026-09-23 |
+| GASTRONOMIE | weingarten | Berggasthaus Weingarten | https://www.ruhpolding.de/gasthof-weingarten | 2026-09-23 |
+| GASTRONOMIE | butznwirt | Butz'n Wirt | https://www.ruhpolding.de/butznwirt-1 | 2026-09-23 |
+| GASTRONOMIE | holzstube | Holzstube am Maibaum | https://www.ruhpolding.de/holzstube-steakhouse-pub-1 | 2026-09-23 |
+| GASTRONOMIE | pizzaCo | Pizza & Co | https://www.ruhpolding.de/pizza-co | 2026-09-23 |
+| GASTRONOMIE | bellPonte | Bell Ponte | https://www.ruhpolding.de/bell-ponte | 2026-09-23 |
+| GASTRONOMIE | safran | Safran Indisches Restaurant | https://www.ruhpolding.de/safran-indisches-restaurant | 2026-09-23 |
 | FAMILIE | freizeitpark | Freizeitpark Ruhpolding | https://www.freizeitpark.by/ | 2026-09-03 |
 | FAMILIE | vitalwelt | Vita Alpina | https://www.ruhpolding.de/bei-regen | 2026-09-03 |
 | FAMILIE | heimatmuseum | Heimatmuseum Ruhpolding | https://www.ruhpolding.de/bei-regen | 2026-09-03 |

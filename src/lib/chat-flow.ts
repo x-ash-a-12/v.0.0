@@ -384,6 +384,39 @@ export function ueberbrueckung(sprache: Sprache = "de"): string {
   )
 }
 
+/**
+ * Die Rückfrage nach der Küche, bevor Lokale vorgeschlagen werden.
+ *
+ * Wer fragt, was es zu essen gibt, bekam vorher Almen und Gasthäuser gemischt,
+ * und in einem Testlauf am 23.09.2026 sogar die Frage nach Wandern und Sport.
+ * Am Schalter fragt man stattdessen, worauf der Gast Lust hat. Wer
+ * ausdrücklich im Ort essen will, bekommt die Almen nicht angeboten.
+ */
+function essenWahl(id: string, mitAlmen: boolean): FlowNode {
+  return {
+    id,
+    topic: "essen",
+    messages: [
+      ["Gern. Worauf haben Sie Lust?", "Sehr gern. Welche Küche darf es sein?"],
+      "Mein Wissensstand umfasst nicht alle Restaurants in Ruhpolding. Die vollständige Liste finden Sie unter ruhpolding.de/gaststaetten-und-restaurants.",
+    ],
+    chips: [
+      { label: "Bayerisch & regional", to: "empfehlung:essen-regional:0" },
+      {
+        label: "Italienisch & mediterran",
+        to: "empfehlung:essen-italienisch:0",
+      },
+      { label: "International", to: "empfehlung:essen-international:0" },
+      { label: "Vegetarisch", to: "empfehlung:essen-vegetarisch:0" },
+      ...(mitAlmen
+        ? [{ label: "Einkehr auf der Alm", to: "empfehlung:almen:0" }]
+        : []),
+      { label: "Alle Restaurants im Ort", to: "empfehlung:essen:0" },
+      web("restaurants"),
+    ],
+  }
+}
+
 export const FLOW: Record<string, FlowNode> = {
   start: {
     id: "start",
@@ -405,6 +438,13 @@ export const FLOW: Record<string, FlowNode> = {
     chips: menuChips,
   },
 
+  abschied: {
+    id: "abschied",
+    messages: [
+      "Auf Wiedersehen und eine schöne Zeit in Ruhpolding! Wenn Ihnen noch etwas einfällt, kommen Sie einfach wieder vorbei.",
+    ],
+    chips: menuChips,
+  },
   danke: {
     id: "danke",
     messages: [
@@ -832,24 +872,29 @@ export const FLOW: Record<string, FlowNode> = {
     id: "essen",
     topic: "essen",
     kurz: [
-      `Wie gesagt: im Ort unter anderem das ${GASTRONOMIE.gasthausPost} und die ${GASTRONOMIE.pizzeria}, am Berg die ${GASTRONOMIE.almstueberl}.`,
+      `Wie gesagt: im Ort unter anderem das ${GASTRONOMIE.gasthausPost} und das ${GASTRONOMIE.maiers}, am Berg die ${GASTRONOMIE.almstueberl}.`,
     ],
     // Vorher mit der Gipfelalm am Rauschberg, die in der Gastronomieliste
     // nicht vorkommt und deren Bahn nicht fährt.
     messages: [
       [
-        `Ruhpolding Tourismus führt die Lokale im Ort in einer Liste, darunter das ${GASTRONOMIE.gasthausPost}, die ${GASTRONOMIE.pizzeria} und am Berg die ${GASTRONOMIE.almstueberl}.`,
-        `In der Gastronomieliste von Ruhpolding Tourismus stehen unter anderem das ${GASTRONOMIE.gasthausPost}, die ${GASTRONOMIE.pizzeria} und die ${GASTRONOMIE.almstueberl}.`,
+        `Ruhpolding Tourismus führt die Lokale im Ort in einer Liste, darunter das ${GASTRONOMIE.gasthausPost}, das ${GASTRONOMIE.maiers} und am Berg die ${GASTRONOMIE.almstueberl}.`,
+        `In der Gastronomieliste von Ruhpolding Tourismus stehen unter anderem das ${GASTRONOMIE.gasthausPost}, das ${GASTRONOMIE.maiers} und die ${GASTRONOMIE.almstueberl}.`,
       ],
+      // Vorgabe des Autors vom 23.09.2026: der Prototyp kennt 15 der 62
+      // Betriebe aus der Liste, und das soll der Gast wissen.
+      "Mein Wissensstand umfasst nicht alle Restaurants in Ruhpolding, sondern eine Auswahl aus dieser Liste. Die vollständige Liste finden Sie unter ruhpolding.de/gaststaetten-und-restaurants.",
       "Öffnungszeiten und Ruhetage habe ich nicht gesichert hinterlegt, die erfragt die Tourist-Information für Sie.",
     ],
     chips: [
-      { label: "Vorschläge zum Essen", to: "empfehlung:essen:0" },
+      { label: "Vorschläge zum Essen", to: "essen-wahl" },
       { label: "Ruhetage beachten", to: "essen-ruhetag" },
       web("restaurants"),
       { label: "Andere Frage", to: "menu" },
     ],
   },
+  "essen-wahl": essenWahl("essen-wahl", true),
+  "essen-wahl-ort": essenWahl("essen-wahl-ort", false),
   "essen-huette": {
     id: "essen-huette",
     // Vorher drei Hütten mit Spielplatz, zwei davon stehen in keiner Liste.
@@ -1068,7 +1113,7 @@ export const FOLGEN: Record<string, Folge> = {
     zeit: "wetter-3tage",
   },
   essen: {
-    vertiefung: "empfehlung:essen:0",
+    vertiefung: "essen-wahl",
     zeit: "essen-ruhetag",
   },
   familie: {

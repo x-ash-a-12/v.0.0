@@ -22,6 +22,7 @@ import {
   zeitpunkt,
 } from "@/lib/fahrplan"
 import { status, statusText } from "@/lib/jetzt"
+import { offeneMeldungen } from "@/lib/meldungen"
 import {
   neuerKontext,
   normalisiere,
@@ -232,7 +233,7 @@ describe("Rückbezug auf das laufende Thema", () => {
 
   test("Vertiefung ohne Thema", () => {
     expect(ziel("erzähl mir mehr", nach("unterkunft"))).toBe("unterkunft-hof")
-    expect(ziel("und weiter", nach("essen"))).toBe("empfehlung:essen:0")
+    expect(ziel("und weiter", nach("essen"))).toBe("essen-wahl")
   })
 
   test("Zeitfragen ohne Thema", () => {
@@ -481,9 +482,9 @@ describe("Die Eingaben aus dem Testlauf vom 03.09., 11:57", () => {
 describe("Vorschlagen, auswählen, hinführen", () => {
   test("eine allgemeine Frage führt zu Vorschlägen oder zur Klärung", () => {
     // Touren und Kinder hängen an Kondition, Begleitung und Wetter, dort wird
-    // erst gefragt. Beim Essen genügt die Liste.
+    // erst gefragt. Beim Essen fragt sie nach der Küche.
     expect(ziel("welche wandertouren kann ich machen")).toBe("bedarf:i=berge")
-    expect(ziel("was kannst du empfehlen zum essen")).toBe("empfehlung:essen:0")
+    expect(ziel("was kannst du empfehlen zum essen")).toBe("essen-wahl")
     expect(ziel("hast du tipps für kinder")).toBe("bedarf:i=familie,b=kinder")
   })
 
@@ -643,19 +644,102 @@ describe("Der Faden reißt nach einer Auswahl nicht ab", () => {
 })
 
 describe("Die Eingaben aus dem Testlauf vom 03.09., 12:30", () => {
-  test("„wo kann ich was essen gehen“ schlägt Lokale vor", () => {
-    // Vorher: der Themeneinstieg mit einer Aufzählung im Fließtext.
-    expect(ziel("wo kann ich was essen gehen")).toBe("empfehlung:essen:0")
+  test("„wo kann ich was essen gehen“ fragt nach der Küche", () => {
+    // Vorher: der Themeneinstieg mit einer Aufzählung im Fließtext, danach
+    // eine Liste, in der Almen und Gasthäuser gemischt standen.
+    expect(ziel("wo kann ich was essen gehen")).toBe("essen-wahl")
   })
 
-  test("„pizza“ meint die Pizzeria, nicht das Thema Essen", () => {
-    expect(ziel("pizza")).toBe("ziel:pizzeria")
+  test("„pizza“ meint ein Lokal, nicht das Thema Essen", () => {
+    // Bis 24.09.2026 die Pizzeria Made in Italy. Die ist laut Google Maps
+    // dauerhaft geschlossen und wird nicht mehr vorgeschlagen.
+    expect(ziel("pizza")).toBe("ziel:pizza-co")
   })
 
   test("ein Lokal beim Namen genannt führt zum Lokal", () => {
     expect(ziel("wo ist die pizzeria eiscafe made in italy")).toBe(
       "ziel:pizzeria"
     )
+  })
+
+  test.each([
+    ["restaurant maiers", "ziel:maiers"],
+    ["ruhpoldinger hof", "ziel:ruhpoldinger-hof"],
+    ["berggasthaus weingarten", "ziel:weingarten"],
+    ["pizza & co", "ziel:pizza-co"],
+    ["gibt es ein indisches restaurant", "ziel:safran"],
+    ["beim häusler", "ziel:haeusler"],
+    ["butz'n wirt", "ziel:butznwirt"],
+  ])("„%s“ führt zum Lokal aus der Gastronomieliste", (text, erwartet) => {
+    expect(ziel(text)).toBe(erwartet)
+  })
+
+  test("die Essensantworten sagen, dass nicht alle Restaurants bekannt sind", () => {
+    const hinweis = /nicht alle Restaurants[^]*gaststaetten-und-restaurants/
+    for (const id of ["essen", "essen-wahl", "empfehlung:essen-regional:0"]) {
+      expect(JSON.stringify(getNode(id, "de", MITTAGS).messages)).toMatch(
+        hinweis
+      )
+    }
+  })
+})
+
+describe("Systemprüfung vom 24.09.2026", () => {
+  test.each([
+    [
+      "gibt es ein restaurant mit bayerischer küche",
+      "empfehlung:essen-regional:0",
+    ],
+    ["welche restaurants haben montag ruhetag", "essen-ruhetag"],
+    ["museum", "empfehlung:museen:0"],
+    ["welche museen gibt es", "empfehlung:museen:0"],
+    ["was ist heute los", "events-woche"],
+    ["tschüss", "abschied"],
+  ])("„%s“ → %s", (text, erwartet) => {
+    expect(ziel(text)).toBe(erwartet)
+  })
+})
+
+describe("Essen im Ort, Testlauf vom 23.09.2026", () => {
+  test.each(["was gibt es im ort zum essen", "was kann ich hier im ort essen"])(
+    "„%s“ fragt nach der Küche, ohne Almen",
+    (text) => {
+      expect(ziel(text, nach("start"))).toBe("essen-wahl-ort")
+      const chips = getNode("essen-wahl-ort").chips ?? []
+      expect(chips.some((chip) => chip.to === "empfehlung:almen:0")).toBe(false)
+    }
+  )
+
+  test("der Almenhinweis erscheint nicht, wenn jemand im Ort essen will", () => {
+    const almen = (id: string) =>
+      offeneMeldungen(getNode(id, "de", MITTAGS), "sonne", new Set()).some(
+        (meldung) => meldung.id === "almen"
+      )
+    expect(almen("essen-wahl")).toBe(true)
+    expect(almen("essen-wahl-ort")).toBe(false)
+    expect(almen("empfehlung:essen-regional:0")).toBe(false)
+    expect(almen("empfehlung:almen:0")).toBe(true)
+  })
+
+  test("die Restaurants im Ort enthalten keine Alm", () => {
+    for (const gruppe of Object.keys(GRUPPEN).filter((id) =>
+      id.startsWith("essen")
+    )) {
+      for (const id of GRUPPEN[gruppe].ziele) {
+        expect(ZIELE.find((eintrag) => eintrag.id === id)?.flyer).not.toBe(
+          "almsommer"
+        )
+      }
+    }
+  })
+
+  test.each([
+    ["wo kann ich italienisch essen", "empfehlung:essen-italienisch:0"],
+    ["ich suche was bayerisches", "empfehlung:essen-regional:0"],
+    ["wo gibt es vegetarisches essen", "empfehlung:essen-vegetarisch:0"],
+    ["wo kann ich auf der alm essen", "empfehlung:almen:0"],
+  ])("„%s“ führt direkt zur Küche", (text, erwartet) => {
+    expect(ziel(text)).toBe(erwartet)
   })
 
   test("„welche buslinien gibt es“ wird beantwortet", () => {
@@ -859,6 +943,8 @@ describe("Die englische Fassung ist vollständig", () => {
     WANDERN.sonntagshornStart,
     EVENTS.biathlonName,
     "Grüß Gott",
+    // Die Adresse der Gastronomieliste, im Hinweis zu den Restaurants.
+    "ruhpolding.de/gaststaetten-und-restaurants",
   ]
 
   const ohneNamen = (text: string) =>
