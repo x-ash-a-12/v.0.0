@@ -79,6 +79,7 @@ function nach(knotenId: string, jetzt: Date = MITTAGS): Kontext {
     chips: node.chips ?? [],
     istRueckfrage: false,
     angebot: node.angebot ?? [],
+    nummern: node.nummern,
     gruppe: node.gruppe ?? null,
     ziel: node.ziel ?? null,
   }

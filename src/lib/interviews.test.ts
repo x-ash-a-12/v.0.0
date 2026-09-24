@@ -39,6 +39,7 @@ function nach(id: string, wetterId: "sonne" | "regen" = "sonne"): Kontext {
     chips: node.chips ?? [],
     istRueckfrage: Boolean(node.jaNein),
     angebot: node.angebot ?? [],
+    nummern: node.nummern,
     gruppe: node.gruppe ?? null,
     ziel: node.ziel ?? null,
     weiter: node.weiter ?? null,
@@ -344,6 +345,43 @@ describe("Der Zettel zum Mitnehmen (KA [00:28:47], M [00:26:09])", () => {
         eintraegeAus(antwort(knoten, { texte: ["Hallo."] }), "de", MITTAGS)
       ).toEqual([])
     }
+  })
+
+  test("auf dem Zettel meint eine Zahl den Eintrag, nicht die Schaltfläche", () => {
+    const eintraege = ["ziel:zinnkopf", "ziel:rad-tal", "ziel:rad-staubfall"]
+      .map((id) => eintragAus(id, "de", MITTAGS))
+      .filter((eintrag) => eintrag !== null)
+    const node = zettelKnoten("zeigen", eintraege, "de")
+    expect(node?.nummern).toEqual([
+      "ziel:zinnkopf",
+      "ziel:rad-tal",
+      "ziel:rad-staubfall",
+    ])
+    const kontext: Kontext = {
+      ...neuerKontext(),
+      knoten: "zettel:zeigen",
+      chips: node?.chips ?? [],
+      angebot: node?.angebot ?? [],
+      nummern: node?.nummern,
+    }
+    expect(verstehe("3", kontext)).toMatchObject({ to: "ziel:rad-staubfall" })
+    expect(verstehe("mit dem rad zum staubfall", kontext)).toMatchObject({
+      to: "ziel:rad-staubfall",
+    })
+  })
+
+  test("der Name eines Ziels führt auch ohne Liste zu genau diesem Ziel", () => {
+    expect(ziel("Mit dem Rad zum Staubfall")).toBe("ziel:rad-staubfall")
+    expect(ziel("Schmugglerweg zum Staubfall")).toBe("ziel:staubfall")
+  })
+
+  test("auf dem Zettel heißt der Link zum Ausgangspunkt auch so", () => {
+    const tour = eintragAus("ziel:rad-staubfall", "de", MITTAGS)
+    expect(tour?.zeilen.at(-1)).toMatch(
+      /^Weg zum Start \(Tourist Information\): /
+    )
+    const lokal = eintragAus("ziel:maiers", "de", MITTAGS)
+    expect(lokal?.zeilen.at(-1)).toMatch(/^Karte: /)
   })
 
   test("drucken und mailen werden erkannt", () => {

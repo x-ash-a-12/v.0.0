@@ -366,6 +366,17 @@ function findeVerbindungImText(text: string): string | null {
  * auf die drei gerade vorgeschlagenen.
  */
 function findeZielImText(text: string, nur?: string[]): string | null {
+  // Der volle Name entscheidet vor den Stichwörtern: "Mit dem Rad zum
+  // Staubfall" traf sonst über "rad" eher "Mit dem Rad durchs Tal".
+  const genannt = ZIELE.find(
+    (eintrag) =>
+      (!nur || nur.includes(eintrag.id)) &&
+      ` ${text} `.includes(
+        ` ${normalisiere(eintrag.name.replace(/\([^)]*\)/g, ""))} `
+      )
+  )
+  if (genannt) return genannt.id
+
   const woerter = text.split(" ").filter(Boolean)
   const staemme = woerter.map(stamm)
 
@@ -1154,7 +1165,16 @@ const ZIEL_EINTRAEGE: Eintrag[] = ZIELE.map((eintrag) => ({
   // Parkplätze, "leihen" den Skiverleih statt gar nichts. Was hier
   // durchfällt, bleibt über die Wegfrage und die Auswahl erreichbar.
   woerter: eintrag.stichwoerter.filter((wort) => !gehoertZumThema(wort)),
-})).filter((eintrag) => eintrag.woerter.length > 0)
+  // Der Name selbst als Wendung, ohne Höhenangabe in Klammern. Wer ihn so
+  // tippt, wie er in der Liste oder auf dem Zettel steht, meint genau dieses
+  // Ziel: "Mit dem Rad zum Staubfall" führte vorher zum Schmugglerweg, weil
+  // beide das Stichwort "staubfall" tragen (Testlauf vom 24.09.2026).
+  phrasen: [normalisiere(eintrag.name.replace(/\([^)]*\)/g, ""))].filter(
+    (name) => name.includes(" ")
+  ),
+})).filter(
+  (eintrag) => eintrag.woerter.length > 0 || eintrag.phrasen.length > 0
+)
 
 /** Wie viele Punkte ein Ziel braucht, damit es ohne Rückfrage gilt. */
 const SCHWELLE = 2
@@ -1450,6 +1470,8 @@ export type Kontext = {
   angebot: string[]
   /** Aus welcher Vorschlagsgruppe das Angebot stammt, und ab welcher Stelle. */
   gruppe: { id: string; ab: number } | null
+  /** Wohin eine Zahl führt, siehe FlowNode.nummern. */
+  nummern?: string[]
   /**
    * Das zuletzt behandelte Ziel.
    *
@@ -1753,6 +1775,7 @@ function alsChips(staende: Themenstand[]): Chip[] {
  */
 function chipAnStelle(kontext: Kontext, index: number): string | null {
   if (index < 0) return null
+  if (kontext.nummern?.length) return kontext.nummern[index] ?? null
   const grenze =
     kontext.angebot.length > 0 ? kontext.angebot.length : kontext.chips.length
   if (index >= grenze) return null
@@ -1780,7 +1803,10 @@ function waehleAusChips(roh: string, kontext: Kontext): string | null {
   // Gezählt wird nur, wo etwas zur Auswahl steht: eine Vorschlagsliste oder
   // eine Rückfrage. Die Kacheln eines Themenmenues sind Wegweiser, keine
   // Auswahl, und tragen keine Nummern.
-  const zaehlbar = kontext.angebot.length > 0 || kontext.istRueckfrage
+  const zaehlbar =
+    kontext.angebot.length > 0 ||
+    kontext.istRueckfrage ||
+    Boolean(kontext.nummern?.length)
   const ziffer = zaehlbar ? ZIFFER.exec(roh) : null
   if (ziffer) {
     const gewaehlt = chipAnStelle(kontext, Number(ziffer[1]) - 1 - versatz)

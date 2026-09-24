@@ -149,6 +149,12 @@ export type FlowNode = {
    * anzufassen.
    */
   angebot?: string[]
+  /**
+   * Wohin eine Zahl führt, wenn die Nummern nicht die der Schaltflächen
+   * sind: auf dem Zettel meint "5" den fünften Eintrag, nicht die fünfte
+   * Schaltfläche darunter (Testlauf vom 24.09.2026).
+   */
+  nummern?: string[]
   /** Aus welcher Vorschlagsgruppe das Angebot stammt, und ab welcher Stelle. */
   gruppe?: { id: string; ab: number }
   /**

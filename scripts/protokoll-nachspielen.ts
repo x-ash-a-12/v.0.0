@@ -54,6 +54,7 @@ function betrete(id: string): void {
     // angebotene Flyer gehören zum Zustand.
     istRueckfrage: node.id.startsWith("rueckfrage") || Boolean(node.jaNein),
     angebot: node.angebot ?? [],
+    nummern: node.nummern,
     gruppe: node.gruppe ?? null,
     ziel:
       node.ziel ??

@@ -150,7 +150,19 @@ export function eintragAus(
     if (eintrag.ausserBetrieb) {
       zeilen.push(en ? eintrag.ausserBetrieb.en : eintrag.ausserBetrieb.de)
     }
-    zeilen.push(`${en ? "Map" : "Karte"}: ${mapsSuche(eintrag.suche)}`)
+    // Die Kartensuche führt zum Ausgangspunkt, bei einer Tour also etwa zur
+    // Tourist-Information. Als "Karte" beschriftet sah das aus wie der Ort
+    // des Ziels selbst (Testlauf vom 24.09.2026).
+    // Bei einem Lokal ist die Suche der Ort selbst, auch wenn sie anders
+    // heißt (Maiers liegt im Landhotel Maiergschwendt).
+    const zumStart =
+      eintrag.topic !== "essen" &&
+      !normalisiert(eintrag.name).includes(normalisiert(eintrag.suche))
+    zeilen.push(
+      zumStart
+        ? `${en ? "Route to the start" : "Weg zum Start"} (${eintrag.suche}): ${mapsSuche(eintrag.suche)}`
+        : `${en ? "Map" : "Karte"}: ${mapsSuche(eintrag.suche)}`
+    )
     return {
       quelle: knoten,
       titel: en ? eintrag.nameEn : eintrag.name,
@@ -182,6 +194,30 @@ export function eintragAus(
   }
 
   return null
+}
+
+function normalisiert(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-zäöüß0-9]+/g, " ")
+    .trim()
+}
+
+/**
+ * Die Einträge des Zettels als Auswahl: "5" meint den fünften Eintrag, und
+ * ein Ziel darauf lässt sich beim Namen nennen wie in einer Vorschlagsliste.
+ */
+function auswahl(eintraege: ZettelEintrag[]) {
+  return {
+    nummern: eintraege.map((eintrag) =>
+      eintrag.quelle.startsWith("antwort:")
+        ? eintrag.quelle.slice("antwort:".length)
+        : eintrag.quelle
+    ),
+    angebot: eintraege
+      .filter((eintrag) => eintrag.quelle.startsWith("ziel:"))
+      .map((eintrag) => eintrag.quelle.slice("ziel:".length)),
+  }
 }
 
 function ansicht(
@@ -279,6 +315,7 @@ export function zettelKnoten(
             : "Das steht bisher auf Ihrem Zettel. Nur was Sie gesammelt haben, nicht unser ganzes Gespräch.",
         ],
         zettel: ansicht(eintraege, sprache),
+        ...auswahl(eintraege),
         chips: AUSGABE_CHIPS(en),
       }
 
@@ -295,11 +332,8 @@ export function zettelKnoten(
             : "Einen Moment, ich drucke Ihnen Ihren Zettel aus.",
         ],
         warten: 1800,
-        zettel: ansicht(
-          eintraege,
-          sprache,
-          en ? "Printout" : "Ausdruck"
-        ),
+        zettel: ansicht(eintraege, sprache, en ? "Printout" : "Ausdruck"),
+        ...auswahl(eintraege),
         nachher: [
           en
             ? "Done, your notes are in the tray below the screen. (Prototype: no printer is connected, nothing has been printed.)"
@@ -369,6 +403,7 @@ export function gesendetKnoten(
     ],
     warten: 1500,
     zettel: ansicht(eintraege, sprache, en ? "Email" : "E-Mail"),
+    ...auswahl(eintraege),
     nachher: [
       en
         ? "Sent. Only what is on your notes went out, not our conversation. (Prototype: no email is sent and the address is not stored.)"

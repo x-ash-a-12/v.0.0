@@ -327,6 +327,7 @@ export function useChat() {
         istRueckfrage: node.id.startsWith("rueckfrage") || Boolean(node.jaNein),
         angebot: node.angebot ?? [],
         gruppe: node.gruppe ?? null,
+        nummern: node.nummern,
         ziel: node.ziel ?? uebernommenesZiel(vorher, node),
         weiter: node.weiter ?? null,
         nein: node.nein ?? null,
