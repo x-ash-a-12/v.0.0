@@ -11,7 +11,10 @@ import type { WetterId } from "@/lib/wetter"
  *    nicht "kein Treffer".
  * 2: Kopf mit `gestartet` und `build`; bei Eingaben Ziel, Kandidaten und
  *    Leitbegriff; bei Antworten Lauf, Sprache, Wetter, Bauart und Kurzfassung;
- *    dazu das Ereignis "fertig".
+ *    dazu das Ereignis "fertig". Zum Lesen und für den Abgleich mit der
+ *    Tonaufnahme außerdem `datum`, `startzeit` und `dauer` im Kopf und
+ *    `zeit` je Eintrag, alle in deutscher Zeit bzw. als Abstand zum Start.
+ *    Maßgeblich für die Auswertung bleiben `t`, `gestartet` und `dauerMs`.
  *
  * Neue Felder kommen nur hinzu. Bestehende ändern ihre Bedeutung nicht, damit
  * alte und neue Exporte gemeinsam auswertbar bleiben.
@@ -102,6 +105,21 @@ export function protokoll(): LogEintrag[] {
   return [...eintraege]
 }
 
+/** Millisekunden als hh:mm:ss, wie die Zeitmarken der Transkripte. */
+export function alsDauer(ms: number): string {
+  const sekunden = Math.floor(ms / 1000)
+  const zahl = (wert: number) => String(wert).padStart(2, "0")
+  return [
+    Math.floor(sekunden / 3600),
+    Math.floor(sekunden / 60) % 60,
+    sekunden % 60,
+  ]
+    .map(zahl)
+    .join(":")
+}
+
+const DEUTSCH = { timeZone: "Europe/Berlin" } as const
+
 function zeitstempel(): string {
   const jetzt = new Date()
   const zahl = (wert: number) => String(wert).padStart(2, "0")
@@ -123,10 +141,21 @@ export function exportiere(): void {
     {
       protokollVersion: PROTOKOLL_VERSION,
       build: typeof __BUILD__ === "undefined" ? "unbekannt" : __BUILD__,
+      datum: new Date(beginn).toLocaleDateString("de-DE", {
+        ...DEUTSCH,
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
+      startzeit: new Date(beginn).toLocaleTimeString("de-DE", DEUTSCH),
+      dauer: alsDauer(Date.now() - beginn),
       gestartet,
       erzeugt: new Date().toISOString(),
       dauerMs: Date.now() - beginn,
-      eintraege,
+      eintraege: eintraege.map((eintrag) => ({
+        zeit: alsDauer(eintrag.t),
+        ...eintrag,
+      })),
     },
     null,
     2
