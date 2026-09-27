@@ -1261,6 +1261,15 @@ export type Lage = {
 
 const KEINE_LAGE: Lage = { wetter: "sonne", zettel: [] }
 
+/**
+ * Steht der Knoten fest im Dialogbaum? Nur lesend, für das Protokoll: es
+ * unterscheidet damit vorformulierte von situativ zusammengestellten
+ * Antworten.
+ */
+export function ausDemBaum(id: string): boolean {
+  return Object.hasOwn(FLOW, id)
+}
+
 export function getNode(
   id: string,
   sprache: Sprache = "de",

@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import {
+  ausDemBaum,
   ausformulieren,
   getNode,
   rueckfrageKnoten,
@@ -309,6 +310,14 @@ export function useChat() {
         art: "antwort",
         knoten: node.id,
         standort: standortRef.current.id,
+        lauf: myRun,
+        sprache: spracheRef.current,
+        wetter: wetterRef.current.id,
+        bauart:
+          typeof vorbereitet === "string" && ausDemBaum(vorbereitet)
+            ? "baum"
+            : "situativ",
+        kurz: istWiederholung(verlaufRef.current, node) && Boolean(node.kurz),
       })
 
       // Sobald feststeht, was geantwortet wird, gilt es als Bezugspunkt für
@@ -507,6 +516,9 @@ export function useChat() {
         if (!(await ausrollen(text))) return
       }
 
+      // Die Antwort steht vollständig da, bevor die nächste Eingabe kam.
+      protokolliere({ art: "fertig", lauf: myRun })
+
       await sleep(250)
       if (!aktiv()) return
       setIsTyping(false)
@@ -565,6 +577,15 @@ export function useChat() {
         // Bei einem Treffer hält der Grund fest, welche Stufe gegriffen hat.
         // Ohne ihn steht in der Auswertung nur, dass es geklappt hat.
         grund: ergebnis.kind === "hit" ? ergebnis.grund : undefined,
+        ziel: ergebnis.kind === "hit" ? ergebnis.to : undefined,
+        kandidaten:
+          ergebnis.kind === "ambiguous"
+            ? ergebnis.candidates.map((chip) => chip.to)
+            : undefined,
+        term:
+          ergebnis.kind === "hit"
+            ? undefined
+            : ergebnis.term && ohneAdresse(ergebnis.term),
       })
 
       if (ergebnis.kind === "hit") {

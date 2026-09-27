@@ -1,4 +1,30 @@
+import type { Sprache } from "@/lib/sprache"
 import type { Grund } from "@/lib/verstehen"
+import type { WetterId } from "@/lib/wetter"
+
+/**
+ * Stand des Protokollformats.
+ *
+ * 1: alle Exporte ohne diese Angabe. Innerhalb von 1 fehlen je nach Datum
+ *    `grund` (vor dem 03.09.2026 nachmittags), `sprache` (vor dem 17.09.) und
+ *    `zettel` (vor dem 23.09.). Ein fehlendes Feld heißt dort "unbekannt",
+ *    nicht "kein Treffer".
+ * 2: Kopf mit `gestartet` und `build`; bei Eingaben Ziel, Kandidaten und
+ *    Leitbegriff; bei Antworten Lauf, Sprache, Wetter, Bauart und Kurzfassung;
+ *    dazu das Ereignis "fertig".
+ *
+ * Neue Felder kommen nur hinzu. Bestehende ändern ihre Bedeutung nicht, damit
+ * alte und neue Exporte gemeinsam auswertbar bleiben.
+ */
+export const PROTOKOLL_VERSION = 2
+
+/**
+ * Der Code-Stand, aus dem die Seite gebaut wurde: Commit-Kürzel, mit
+ * "-dirty" bei nicht committeten Änderungen, "dev" im Dev-Server. Gesetzt in
+ * vite.config.ts. Ohne ihn lässt sich ein Export nicht gegen den Code
+ * nachspielen, der ihn erzeugt hat.
+ */
+declare const __BUILD__: string
 
 /**
  * Interaktionsprotokoll für die Think-Aloud-Tests.
@@ -14,7 +40,14 @@ import type { Grund } from "@/lib/verstehen"
 export type LogEintrag = {
   /** Millisekunden seit Sitzungsbeginn. */
   t: number
-  art: "eingabe" | "chip" | "antwort" | "reset" | "sprache" | "zettel"
+  art:
+    | "eingabe"
+    | "chip"
+    | "antwort"
+    | "fertig"
+    | "reset"
+    | "sprache"
+    | "zettel"
   /**
    * Roheingabe bei "eingabe", Beschriftung bei "chip", das eingestellte
    * Kürzel bei "sprache".
@@ -30,9 +63,34 @@ export type LogEintrag = {
   grund?: Grund
   knoten?: string
   standort?: string
+  /** Eingabe mit Treffer: der Knoten, auf den die Zuordnung zeigt. */
+  ziel?: string
+  /** Mehrdeutige Eingabe: die Knoten, die die Rückfrage anbietet. */
+  kandidaten?: string[]
+  /** Eingabe: der Leitbegriff, an dem Rückfrage und Fallback hängen. */
+  term?: string | null
+  /**
+   * Antwort und "fertig": die laufende Nummer der Antwort. Eine Antwort ohne
+   * "fertig" mit derselben Nummer wurde nicht zu Ende ausgegeben, weil vorher
+   * die nächste Eingabe kam.
+   */
+  lauf?: number
+  /** Antwort: die Sprache, in der sie ausgegeben wurde. */
+  sprache?: Sprache
+  /** Antwort: das Wetter, das der Versuchsleiter eingestellt hatte. */
+  wetter?: WetterId
+  /**
+   * Antwort: "baum", wenn der Text fest im Dialogbaum steht, "situativ", wenn
+   * er zur Laufzeit zusammengestellt wurde (Ziel, Fahrplan, Vorschläge,
+   * Rückfrage). Entspricht der Weiche "Antwort vorformuliert?" im Ablauf.
+   */
+  bauart?: "baum" | "situativ"
+  /** Antwort: die Kurzfassung, weil der Knoten schon einmal gezeigt wurde. */
+  kurz?: boolean
 }
 
 const beginn = Date.now()
+const gestartet = new Date(beginn).toISOString()
 const eintraege: LogEintrag[] = []
 
 export function protokolliere(eintrag: Omit<LogEintrag, "t">): void {
@@ -63,6 +121,9 @@ function zeitstempel(): string {
 export function exportiere(): void {
   const inhalt = JSON.stringify(
     {
+      protokollVersion: PROTOKOLL_VERSION,
+      build: typeof __BUILD__ === "undefined" ? "unbekannt" : __BUILD__,
+      gestartet,
       erzeugt: new Date().toISOString(),
       dauerMs: Date.now() - beginn,
       eintraege,
